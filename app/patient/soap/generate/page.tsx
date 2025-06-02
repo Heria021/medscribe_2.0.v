@@ -137,8 +137,8 @@ export default function GenerateSOAPPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Please complete your patient profile before generating SOAP notes.
-              <Button 
-                variant="link" 
+              <Button
+                variant="link"
                 className="p-0 h-auto ml-2"
                 onClick={() => router.push("/patient/settings/profile")}
               >
@@ -155,7 +155,7 @@ export default function GenerateSOAPPage() {
     <DashboardLayout>
       <div className="space-y-8">
         {/* Audio Recording Section */}
-        <Card className="shadow-md">
+        <Card className="bg-card text-card-foreground border border-border rounded-lg shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mic className="h-5 w-5" />
@@ -174,35 +174,33 @@ export default function GenerateSOAPPage() {
             />
 
             {audioBlob && !isProcessing && (
-              <div className="p-4 border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium">Ready to generate</span>
+              <Card className="border rounded-lg shadow-none p-6">
+                <CardContent className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium">Ready to generate</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {(audioBlob.size / 1024 / 1024).toFixed(2)} MB
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {(audioBlob.size / 1024 / 1024).toFixed(2)} MB
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">File: {fileName}</p>
-                <Button
-                  onClick={handleGenerateSOAP}
-                  className="w-full"
-                  size="sm"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate SOAP Notes
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    File: <span className="text-foreground">{fileName}</span>
+                  </p>
+                  <Button onClick={handleGenerateSOAP} className="w-full" size="sm">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate SOAP Notes
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </CardContent>
         </Card>
 
-
-
         {/* How it Works Card */}
-        <Card className="shadow-md">
+        <Card className="border rounded-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4" />
@@ -210,30 +208,30 @@ export default function GenerateSOAPPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div className="flex items-start gap-2">
-                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 flex-shrink-0">1</div>
+                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-1 flex-shrink-0">1</div>
                 <div>
                   <p className="font-medium">Audio Processing</p>
                   <p className="text-muted-foreground">Speech-to-text conversion</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 flex-shrink-0">2</div>
+                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-1 flex-shrink-0">2</div>
                 <div>
                   <p className="font-medium">Medical Analysis</p>
                   <p className="text-muted-foreground">AI categorizes clinical info</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 flex-shrink-0">3</div>
+                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-1 flex-shrink-0">3</div>
                 <div>
                   <p className="font-medium">SOAP Structure</p>
                   <p className="text-muted-foreground">Organized clinical format</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 flex-shrink-0">4</div>
+                <div className="w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold mt-1 flex-shrink-0">4</div>
                 <div>
                   <p className="font-medium">Quality Check</p>
                   <p className="text-muted-foreground">Accuracy validation</p>

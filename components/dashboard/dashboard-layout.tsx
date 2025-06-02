@@ -54,7 +54,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         currentPath={pathname}
       />
       <SidebarInset className="flex flex-col">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="flex h-14 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center gap-2 px-4 flex-1">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -69,21 +69,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                      {currentRoute?.subItem ? (
-                        <BreadcrumbLink href="#">
-                          {currentRoute?.item}
-                        </BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbPage>{currentRoute?.item}</BreadcrumbPage>
-                      )}
-                    </BreadcrumbItem>
-                  </>
-                )}
-                {currentRoute?.subItem && (
-                  <>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{currentRoute?.subItem}</BreadcrumbPage>
+                      <BreadcrumbPage className="font-medium">{currentRoute?.item}</BreadcrumbPage>
                     </BreadcrumbItem>
                   </>
                 )}
@@ -94,8 +80,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <DashboardHeader user={session.user} />
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-h-0 overflow-hidden">
-          <div className="flex-1 rounded-xl bg-muted/50 p-4 min-h-0 overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-6 p-6 pt-4 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {children}
           </div>
         </div>

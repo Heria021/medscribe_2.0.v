@@ -40,22 +40,22 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
   const handleProfileClick = () => {
     if (user.role === "patient") {
-      router.push("/patient/settings/profile");
+      router.push("/patient/settings");
     } else if (user.role === "doctor") {
-      router.push("/doctor/settings/profile");
+      router.push("/doctor/settings");
     }
   };
 
   const handleSettingsClick = () => {
     if (user.role === "patient") {
-      router.push("/patient/settings/preferences");
+      router.push("/patient/settings");
     } else if (user.role === "doctor") {
-      router.push("/doctor/settings/preferences");
+      router.push("/doctor/settings");
     }
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 h-full">
+    <div className="flex items-center gap-2 h-full">
       {/* Notifications */}
       <NotificationBell />
 
@@ -67,23 +67,23 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-3 h-12 px-3 py-2 hover:bg-accent rounded-xl transition-colors"
+            className="flex items-center gap-2 h-10 px-2 py-1 hover:bg-accent rounded-lg transition-colors"
           >
-            <Avatar className="h-9 w-9 border-2 border-border">
+            <Avatar className="h-8 w-8 border border-border">
               <AvatarImage src="" alt={user.name} />
-              <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
+              <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
                 {getInitials(user.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="hidden md:flex flex-col items-start min-w-0">
-              <span className="text-sm font-semibold leading-tight truncate max-w-[120px]">
+            <div className="hidden lg:flex flex-col items-start min-w-0">
+              <span className="text-sm font-medium leading-tight truncate max-w-[100px]">
                 {user.name}
               </span>
-              <span className="text-xs text-muted-foreground leading-tight truncate max-w-[120px]">
-                {user.email}
+              <span className="text-xs text-muted-foreground leading-tight truncate max-w-[100px]">
+                {user.role}
               </span>
             </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground ml-1" />
+            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64 p-2">

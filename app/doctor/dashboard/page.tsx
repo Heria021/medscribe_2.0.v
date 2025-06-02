@@ -3,15 +3,26 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useQuery } from "convex/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Calendar, FileText, Stethoscope } from "lucide-react";
+import { Users, Calendar, FileText, Stethoscope, Activity } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { DoctorProfileCompletion } from "@/components/doctor/doctor-profile-completion";
+import { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import { ScheduledAppointments } from "@/components/doctor/scheduled-appointments";
+import { ActionCard, ActionCardGrid } from "@/components/ui/action-card";
+import { api } from "@/convex/_generated/api";
 
 export default function DoctorDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Get doctor profile
+  const doctorProfile = useQuery(
+    api.doctors.getDoctorProfile,
+    session?.user?.id ? { userId: session.user.id as any } : "skip"
+  );
 
   useEffect(() => {
     if (status === "loading") return; // Still loading
@@ -41,93 +52,93 @@ export default function DoctorDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Welcome Header */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight">
             Welcome back, Dr. {session.user.name?.split(' ')[1] || session.user.name || 'Doctor'}!
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Manage your patients, appointments, and medical records
           </p>
         </div>
 
         {/* Profile Completion */}
-        <DoctorProfileCompletion />
+        <DoctorProfileCompletion doctorProfile={doctorProfile} />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="border-0 shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Patients</CardTitle>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950">
-                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                No patients registered yet
-              </p>
-            </CardContent>
-          </Card>
+        {/* Enhanced Stats Cards */}
+        <DashboardStats userRole="doctor" />
 
-          <Card className="border-0 shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Today's Appointments</CardTitle>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 dark:bg-green-950">
-                <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                No appointments scheduled
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Medical Records</CardTitle>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950">
-                <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                No records created yet
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Today's Schedule */}
+        {doctorProfile && (
+          <ScheduledAppointments doctorId={doctorProfile._id} />
+        )}
 
         {/* Quick Actions */}
-        <Card className="border-0 shadow-md">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+          <p className="text-sm text-muted-foreground">Common tasks and features</p>
+        </div>
+
+        <ActionCardGrid columns={4}>
+          <ActionCard
+            title="Manage Patients"
+            description="View and manage patient records"
+            icon={<Users className="h-4 w-4" />}
+            href="/doctor/patients"
+            className="border shadow-none"
+          />
+          <ActionCard
+            title="View Appointments"
+            description="Check your schedule"
+            icon={<Calendar className="h-4 w-4" />}
+            href="/doctor/appointments"
+            className="border shadow-none"
+          />
+          <ActionCard
+            title="Review SOAP Notes"
+            description="Shared medical records"
+            icon={<FileText className="h-4 w-4" />}
+            href="/doctor/shared-soap"
+            className="border shadow-none"
+          />
+          <ActionCard
+            title="Manage Referrals"
+            description="Patient referrals and consultations"
+            icon={<Stethoscope className="h-4 w-4" />}
+            href="/doctor/referrals"
+            className="border shadow-none"
+          />
+        </ActionCardGrid>
+
+        {/* Recent Activity */}
+        <Card className="border shadow-none">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Common tasks and features for doctors
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Latest updates and notifications
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm">
+                <Activity className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Button className="h-16 flex flex-col gap-2 text-sm font-medium">
-              <Users className="h-5 w-5" />
-              <span>Manage Patients</span>
-            </Button>
-            <Button className="h-16 flex flex-col gap-2 text-sm font-medium" variant="outline">
-              <Calendar className="h-5 w-5" />
-              <span>Schedule Appointment</span>
-            </Button>
-            <Button className="h-16 flex flex-col gap-2 text-sm font-medium" variant="outline">
-              <FileText className="h-5 w-5" />
-              <span>Create Record</span>
-            </Button>
-            <Button className="h-16 flex flex-col gap-2 text-sm font-medium" variant="outline">
-              <Stethoscope className="h-5 w-5" />
-              <span>Start Consultation</span>
-            </Button>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-center py-8 text-center">
+                <div className="space-y-2">
+                  <Activity className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <p className="text-sm text-muted-foreground">No recent activity</p>
+                  <p className="text-xs text-muted-foreground">
+                    Patient interactions and updates will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

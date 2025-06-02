@@ -21,6 +21,9 @@ import {
   Phone
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
+import { DataTableCompact } from "@/components/ui/data-table-compact";
+import { MetricCard } from "@/components/ui/metric-card";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import { api } from "@/convex/_generated/api";
 
 export default function PatientsPage() {
@@ -102,57 +105,36 @@ export default function PatientsPage() {
         {/* Statistics Cards */}
         {patientStats && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{patientStats.totalPatients}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active patient relationships
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Via Referrals</CardTitle>
-                <UserPlus className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{patientStats.referralAssignments}</div>
-                <p className="text-xs text-muted-foreground">
-                  Assigned through referrals
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Via Appointments</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{patientStats.appointmentAssignments}</div>
-                <p className="text-xs text-muted-foreground">
-                  Assigned through appointments
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
-                <Stethoscope className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{patientStats.totalAssignments}</div>
-                <p className="text-xs text-muted-foreground">
-                  All time assignments
-                </p>
-              </CardContent>
-            </Card>
+            <MetricCard
+              title="Total Patients"
+              value={patientStats.totalPatients}
+              icon={<Users className="h-4 w-4" />}
+              description="Active patient relationships"
+              variant="compact"
+            />
+            <MetricCard
+              title="Via Referrals"
+              value={patientStats.referralAssignments}
+              icon={<UserPlus className="h-4 w-4" />}
+              description="Assigned through referrals"
+              variant="compact"
+              status="info"
+            />
+            <MetricCard
+              title="Via Appointments"
+              value={patientStats.appointmentAssignments}
+              icon={<Calendar className="h-4 w-4" />}
+              description="Assigned through appointments"
+              variant="compact"
+              status="success"
+            />
+            <MetricCard
+              title="Total Assignments"
+              value={patientStats.totalAssignments}
+              icon={<Stethoscope className="h-4 w-4" />}
+              description="All time assignments"
+              variant="compact"
+            />
           </div>
         )}
 
@@ -179,78 +161,96 @@ export default function PatientsPage() {
           </select>
         </div>
 
-        {/* Patients List */}
-        <div className="grid gap-4">
-          {filteredPatients.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Patients Found</h3>
-                <p className="text-muted-foreground text-center">
-                  {searchTerm || filterBy !== "all"
-                    ? "No patients match your search criteria."
-                    : "You don't have any assigned patients yet. Patients will be assigned when you accept referrals or schedule appointments."}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredPatients.map((relationship) => {
-              const patient = relationship.patient!;
-              return (
-                <Card key={relationship._id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback>
-                            {patient.firstName[0]}{patient.lastName[0]}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-lg">
-                            {patient.firstName} {patient.lastName}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>DOB: {new Date(patient.dateOfBirth).toLocaleDateString()}</span>
-                            <span>Gender: {patient.gender}</span>
-                            {patient.email && <span>Email: {patient.email}</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getAssignmentBadge(relationship.assignedBy)}
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              Assigned {formatDate(relationship.assignedAt)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/doctor/patients/${patient._id}`)}
-                        >
-                          <FileText className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                      </div>
+        {/* Patients Table */}
+        <DataTableCompact
+          title="Patient List"
+          description="Manage patients assigned to your care"
+          data={filteredPatients.map(relationship => ({
+            ...relationship,
+            patient: relationship.patient!,
+            fullName: `${relationship.patient!.firstName} ${relationship.patient!.lastName}`,
+            age: new Date().getFullYear() - new Date(relationship.patient!.dateOfBirth).getFullYear(),
+          }))}
+          columns={[
+            {
+              key: "fullName",
+              label: "Patient",
+              sortable: true,
+              render: (_, item) => (
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8 border border-border">
+                    <AvatarFallback className="text-xs font-medium">
+                      {item.patient.firstName[0]}{item.patient.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-semibold text-sm">
+                      {item.patient.firstName} {item.patient.lastName}
                     </div>
-
-                    {relationship.notes && (
-                      <div className="mt-4 p-3 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Assignment Notes:</strong> {relationship.notes}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })
+                    <div className="text-xs text-muted-foreground">
+                      {item.patient.email}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "age",
+              label: "Age",
+              sortable: true,
+              render: (value, item) => (
+                <div className="text-sm">
+                  <div>{value} years</div>
+                  <div className="text-xs text-muted-foreground">{item.patient.gender}</div>
+                </div>
+              ),
+            },
+            {
+              key: "assignedBy",
+              label: "Assignment",
+              render: (value) => getAssignmentBadge(value),
+            },
+            {
+              key: "assignedAt",
+              label: "Assigned",
+              sortable: true,
+              render: (value) => (
+                <div className="text-sm">
+                  <div>{formatDate(value)}</div>
+                  <StatusIndicator
+                    status="active"
+                    label="Active"
+                    variant="dot"
+                    size="sm"
+                  />
+                </div>
+              ),
+            },
+          ]}
+          actions={(item) => (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/doctor/patients/${item.patient._id}`)}
+            >
+              <FileText className="h-4 w-4 mr-1" />
+              View
+            </Button>
           )}
-        </div>
+          searchable
+          searchPlaceholder="Search patients by name or email..."
+          emptyState={
+            <div className="flex flex-col items-center justify-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Patients Found</h3>
+              <p className="text-muted-foreground text-center">
+                {searchTerm || filterBy !== "all"
+                  ? "No patients match your search criteria."
+                  : "You don't have any assigned patients yet. Patients will be assigned when you accept referrals or schedule appointments."}
+              </p>
+            </div>
+          }
+        />
       </div>
     </DashboardLayout>
   );

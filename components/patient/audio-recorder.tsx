@@ -216,7 +216,7 @@ export function AudioRecorder({
 
   if (hasPermission === false) {
     return (
-      <Card className="border-destructive/50">
+      <Card className="border-destructive/50 shadow-none">
         <CardHeader>
           <CardTitle className="text-destructive">Microphone Access Required</CardTitle>
           <CardDescription>
@@ -257,7 +257,7 @@ export function AudioRecorder({
   }
 
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Volume2 className="h-5 w-5" />

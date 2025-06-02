@@ -12,6 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { SOAPDocumentView } from "@/components/patient/soap-document-view";
 import { DoctorActionModal } from "@/components/doctor/doctor-action-modal";
+import { DataTableCompact } from "@/components/ui/data-table-compact";
+import { MetricCard } from "@/components/ui/metric-card";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import {
   FileText,
   Search,
@@ -20,7 +23,10 @@ import {
   ArrowLeft,
   Mail,
   Filter,
-  Stethoscope
+  Stethoscope,
+  Clock,
+  User,
+  TrendingUp
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
@@ -256,130 +262,158 @@ export default function SharedSOAPPage() {
           </Button>
         </div>
 
-        {/* Stats */}
+        {/* Enhanced Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Shared</p>
-                  <p className="text-2xl font-bold">{sharedSOAPNotes?.length || 0}</p>
-                </div>
-                <FileText className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Unread</p>
-                  <p className="text-2xl font-bold">
-                    {sharedSOAPNotes?.filter(note => !note.isRead).length || 0}
-                  </p>
-                </div>
-                <Mail className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">This Week</p>
-                  <p className="text-2xl font-bold">
-                    {sharedSOAPNotes?.filter(note => 
-                      Date.now() - note.createdAt < 7 * 24 * 60 * 60 * 1000
-                    ).length || 0}
-                  </p>
-                </div>
-                <Calendar className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Total Shared"
+            value={sharedSOAPNotes?.length || 0}
+            icon={<FileText className="h-4 w-4" />}
+            description="SOAP notes shared with you"
+            variant="compact"
+            status="info"
+          />
+          <MetricCard
+            title="Unread Notes"
+            value={sharedSOAPNotes?.filter(note => !note.isRead).length || 0}
+            icon={<Mail className="h-4 w-4" />}
+            description="Require your attention"
+            variant="compact"
+            status={sharedSOAPNotes?.filter(note => !note.isRead).length ? "warning" : "success"}
+          />
+          <MetricCard
+            title="This Week"
+            value={sharedSOAPNotes?.filter(note =>
+              Date.now() - note.createdAt < 7 * 24 * 60 * 60 * 1000
+            ).length || 0}
+            icon={<TrendingUp className="h-4 w-4" />}
+            description="Recently shared notes"
+            variant="compact"
+            status="success"
+          />
         </div>
 
-        {/* Shared Notes List */}
-        {filteredNotes.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No shared SOAP notes found</h3>
-                <p className="text-muted-foreground">
-                  {searchTerm || filterUnread ? "Try adjusting your search or filters" : "Patients haven't shared any SOAP notes with you yet"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {filteredNotes.map((note) => (
-              <Card 
-                key={note._id} 
-                className={cn(
-                  "hover:shadow-md transition-shadow cursor-pointer",
-                  !note.isRead && "border-blue-200 bg-blue-50/30 dark:border-blue-800 dark:bg-blue-950/20"
-                )}
-                onClick={() => handleViewSOAP(note._id, note.soapNote!._id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={note.patient?.profileImageUrl} />
-                        <AvatarFallback>
-                          {note.patient?.firstName[0]}{note.patient?.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          {note.patient?.firstName} {note.patient?.lastName}
-                          {!note.isRead && (
-                            <Badge variant="default" className="text-xs">New</Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          Shared {formatDate(note.createdAt)}
-                        </CardDescription>
-                      </div>
+        {/* Enhanced Shared Notes Table */}
+        <DataTableCompact
+          title="Shared SOAP Notes"
+          description="SOAP notes shared by patients for your review"
+          data={filteredNotes.map(note => ({
+            ...note,
+            patientName: `${note.patient?.firstName} ${note.patient?.lastName}`,
+            formattedDate: formatDate(note.createdAt),
+            preview: note.soapNote?.subjective.substring(0, 80) + '...',
+            assessmentPreview: note.soapNote?.assessment.substring(0, 80) + '...',
+          }))}
+          columns={[
+            {
+              key: "patientName",
+              label: "Patient",
+              sortable: true,
+              render: (value, item) => (
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8 border border-border">
+                    <AvatarImage src={item.patient?.profileImageUrl} />
+                    <AvatarFallback className="text-xs font-medium">
+                      {item.patient?.firstName[0]}{item.patient?.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      {value}
+                      {!item.isRead && (
+                        <Badge variant="default" className="text-xs">New</Badge>
+                      )}
                     </div>
-                    <Button size="sm" variant="outline">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {note.message && (
-                      <div className="p-2 bg-muted rounded-lg">
-                        <p className="text-sm italic">"{note.message}"</p>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <h4 className="font-medium text-blue-700 mb-1">Subjective</h4>
-                        <p className="text-muted-foreground line-clamp-2">
-                          {note.soapNote?.subjective.substring(0, 100)}...
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-green-700 mb-1">Assessment</h4>
-                        <p className="text-muted-foreground line-clamp-2">
-                          {note.soapNote?.assessment.substring(0, 100)}...
-                        </p>
-                      </div>
+                    <div className="text-xs text-muted-foreground">
+                      {item.patient?.gender} • Born {item.patient?.dateOfBirth}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                </div>
+              ),
+            },
+            {
+              key: "formattedDate",
+              label: "Shared Date",
+              sortable: true,
+              render: (value, item) => (
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">{value}</div>
+                  <StatusIndicator
+                    status={item.isRead ? "success" : "warning"}
+                    label={item.isRead ? "Read" : "Unread"}
+                    variant="dot"
+                    size="sm"
+                  />
+                </div>
+              ),
+            },
+            {
+              key: "preview",
+              label: "Content Preview",
+              render: (value, item) => (
+                <div className="space-y-2 max-w-md">
+                  {item.message && (
+                    <div className="text-xs italic text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-1 rounded">
+                      "{item.message}"
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs font-medium text-blue-700 dark:text-blue-400">Subjective</div>
+                    <div className="text-xs text-muted-foreground line-clamp-2">{value}</div>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "soapNote",
+              label: "Quality",
+              render: (value) => (
+                <div className="flex items-center gap-2">
+                  {value?.qualityScore && (
+                    <Badge
+                      variant="outline"
+                      className={
+                        value.qualityScore >= 90
+                          ? "border-green-200 text-green-800 bg-green-50"
+                          : value.qualityScore >= 80
+                          ? "border-blue-200 text-blue-800 bg-blue-50"
+                          : "border-yellow-200 text-yellow-800 bg-yellow-50"
+                      }
+                    >
+                      {value.qualityScore}%
+                    </Badge>
+                  )}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {value?.processingTime || 'N/A'}
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+          actions={(item) => (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleViewSOAP(item._id, item.soapNote!._id)}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Review
+            </Button>
+          )}
+          searchable
+          searchPlaceholder="Search by patient name or content..."
+          emptyState={
+            <div className="flex flex-col items-center justify-center py-8">
+              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Shared SOAP Notes Found</h3>
+              <p className="text-muted-foreground text-center">
+                {searchTerm || filterUnread
+                  ? "Try adjusting your search or filters"
+                  : "Patients haven't shared any SOAP notes with you yet"}
+              </p>
+            </div>
+          }
+        />
       </div>
     </DashboardLayout>
   );

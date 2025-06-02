@@ -314,4 +314,34 @@ export default defineSchema({
     .index("by_is_active", ["isActive"])
     .index("by_doctor_patient", ["doctorId", "patientId"])
     .index("by_assigned_at", ["assignedAt"]),
+
+  // Appointments Schema
+  appointments: defineTable({
+    patientId: v.id("patients"),
+    doctorId: v.id("doctors"),
+    appointmentDate: v.number(), // Timestamp for the appointment date
+    appointmentTime: v.string(), // Time in HH:MM format
+    appointmentType: v.string(), // "consultation", "follow-up", "check-up", etc.
+    appointmentLocation: v.optional(v.string()), // "clinic", "virtual", specific address
+    status: v.union(
+      v.literal("scheduled"),
+      v.literal("confirmed"),
+      v.literal("in_progress"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+      v.literal("no_show")
+    ),
+    notes: v.optional(v.string()),
+    duration: v.optional(v.number()), // Duration in minutes
+    relatedSoapNoteId: v.optional(v.id("soapNotes")), // If appointment was created from SOAP note
+    relatedActionId: v.optional(v.id("doctorActions")), // If appointment was created from doctor action
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_patient_id", ["patientId"])
+    .index("by_doctor_id", ["doctorId"])
+    .index("by_appointment_date", ["appointmentDate"])
+    .index("by_status", ["status"])
+    .index("by_patient_date", ["patientId", "appointmentDate"])
+    .index("by_doctor_date", ["doctorId", "appointmentDate"]),
 });

@@ -58,6 +58,7 @@ export function DoctorActionModal({
 
   // Mutations
   const createAction = useMutation(api.doctorActions.create);
+  const createAppointment = useMutation(api.appointments.create);
 
   // Queries - exclude current doctor from specialists list
   const specialists = useQuery(api.doctors.getAll, { excludeDoctorId: doctorId }) || [];
@@ -116,7 +117,22 @@ export function DoctorActionModal({
           break;
       }
 
-      await createAction(actionData);
+      const actionId = await createAction(actionData);
+
+      // If scheduling an appointment, also create an appointment record
+      if (selectedAction === "appointment") {
+        await createAppointment({
+          patientId,
+          doctorId,
+          appointmentDate: new Date(appointmentDate).getTime(),
+          appointmentTime,
+          appointmentType,
+          appointmentLocation,
+          relatedSoapNoteId: soapNoteId,
+          relatedActionId: actionId,
+        });
+      }
+
       toast.success("Action created successfully!");
       handleClose();
 

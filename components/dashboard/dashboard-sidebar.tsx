@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Stethoscope, UserCheck } from "lucide-react";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarHeader, 
+import { Stethoscope, UserCheck } from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
@@ -14,12 +14,8 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { NavSection } from "@/lib/navigation";
 
@@ -32,9 +28,9 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ navigation, userRole, currentPath }: DashboardSidebarProps) {
   return (
     <Sidebar variant="inset">
-      <SidebarHeader className="border-b border-border">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+      <SidebarHeader className="border-b border-border/40 bg-sidebar-accent/30">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
             {userRole === "doctor" ? (
               <Stethoscope className="h-4 w-4 text-primary-foreground" />
             ) : (
@@ -42,8 +38,8 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
             )}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">MedScribe</span>
-            <span className="text-xs text-muted-foreground capitalize">
+            <span className="text-sm font-semibold text-sidebar-foreground">MedScribe</span>
+            <span className="text-xs text-muted-foreground capitalize font-medium">
               {userRole} Portal
             </span>
           </div>
@@ -60,67 +56,13 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
               <SidebarMenu>
                 {section.items.map((item) => {
                   const isActive = currentPath === item.href;
-                  const hasSubItems = item.items && item.items.length > 0;
-                  const hasActiveSubItem = item.items?.some(subItem => currentPath === subItem.href);
-                  const shouldExpand = hasActiveSubItem || isActive;
-
-                  if (hasSubItems) {
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <Collapsible defaultOpen={shouldExpand}>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              className={cn(
-                                "w-full justify-between",
-                                (isActive || hasActiveSubItem) && "bg-accent text-accent-foreground"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <item.icon className="h-4 w-4" />
-                                <span>{item.title}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {item.badge && (
-                                  <SidebarMenuBadge className="bg-primary text-primary-foreground">
-                                    {item.badge}
-                                  </SidebarMenuBadge>
-                                )}
-                                <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
-                              </div>
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {item?.items?.map((subItem) => {
-                                const isSubActive = currentPath === subItem.href;
-                                return (
-                                  <SidebarMenuSubItem key={subItem.href}>
-                                    <SidebarMenuSubButton
-                                      asChild
-                                      className={cn(
-                                        isSubActive && "bg-accent text-accent-foreground font-medium"
-                                      )}
-                                    >
-                                      <Link href={subItem.href}>
-                                        <subItem.icon className="h-3 w-3" />
-                                        <span>{subItem.title}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                );
-                              })}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </SidebarMenuItem>
-                    );
-                  }
 
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         asChild
                         className={cn(
+                          "transition-colors hover:bg-accent hover:text-accent-foreground",
                           isActive && "bg-accent text-accent-foreground font-medium"
                         )}
                       >
@@ -143,9 +85,9 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border">
+      <SidebarFooter className="border-t border-border/40 bg-sidebar-accent/50">
         <div className="p-3">
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground font-medium">
             MedScribe v2.0
           </div>
         </div>

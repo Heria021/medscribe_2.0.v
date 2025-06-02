@@ -13,12 +13,14 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as appointments from "../appointments.js";
 import type * as audioRecordings from "../audioRecordings.js";
 import type * as doctorActions from "../doctorActions.js";
 import type * as doctorPatients from "../doctorPatients.js";
 import type * as doctors from "../doctors.js";
 import type * as notifications from "../notifications.js";
 import type * as patients from "../patients.js";
+import type * as seedAppointments from "../seedAppointments.js";
 import type * as sharedSoapNotes from "../sharedSoapNotes.js";
 import type * as soapNotes from "../soapNotes.js";
 import type * as users from "../users.js";
@@ -32,12 +34,14 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  appointments: typeof appointments;
   audioRecordings: typeof audioRecordings;
   doctorActions: typeof doctorActions;
   doctorPatients: typeof doctorPatients;
   doctors: typeof doctors;
   notifications: typeof notifications;
   patients: typeof patients;
+  seedAppointments: typeof seedAppointments;
   sharedSoapNotes: typeof sharedSoapNotes;
   soapNotes: typeof soapNotes;
   users: typeof users;
