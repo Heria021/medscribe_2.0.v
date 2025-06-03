@@ -48,7 +48,7 @@ export interface RAGSearchResponse {
   generated_at?: string;
 }
 
-const BASE_URL = 'http://localhost:8002/api/v1/rag';
+const BASE_URL = 'http://localhost:8000/api/v1/rag';
 
 export async function embedToRAG(data: EmbedData): Promise<RAGResponse> {
   try {
