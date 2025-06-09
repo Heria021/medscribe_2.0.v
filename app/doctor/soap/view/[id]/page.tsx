@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { SOAPDocumentView } from "@/components/patient/soap-document-view";
-import { ArrowLeft } from "lucide-react";
+import { DoctorActionModal } from "@/components/doctor/doctor-action-modal";
+import { ArrowLeft, Stethoscope, Download } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 
 export default function DoctorSOAPViewPage() {
@@ -15,10 +17,11 @@ export default function DoctorSOAPViewPage() {
   const router = useRouter();
   const params = useParams();
   const soapId = params.id as string;
+  const [showActionModal, setShowActionModal] = useState(false);
 
-  // Get patient profile
-  const patientProfile = useQuery(
-    api.patients.getPatientByUserId,
+  // Get doctor profile
+  const doctorProfile = useQuery(
+    api.doctors.getDoctorProfile,
     session?.user?.id ? { userId: session.user.id as any } : "skip"
   );
 
@@ -33,7 +36,7 @@ export default function DoctorSOAPViewPage() {
 
   // Get patient info from SOAP note
   const patient = useQuery(
-    api.patients.getById,
+    api.patients.getPatientById,
     soapNote?.patientId ? { patientId: soapNote.patientId } : "skip"
   );
 
@@ -96,23 +99,100 @@ export default function DoctorSOAPViewPage() {
     );
   }
 
+  const handleDownload = () => {
+    if (!soapNote) return;
+
+    const content = `SOAP Note - ${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'}
+Generated: ${new Date(soapNote.createdAt).toLocaleDateString()}
+
+SUBJECTIVE:
+${soapNote.subjective}
+
+OBJECTIVE:
+${soapNote.objective}
+
+ASSESSMENT:
+${soapNote.assessment}
+
+PLAN:
+${soapNote.plan}
+
+${soapNote.recommendations ? `RECOMMENDATIONS:\n${soapNote.recommendations.join('\n')}` : ''}
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `soap-note-${soapNote._id.slice(-8)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 h-full flex flex-col">
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex-shrink-0">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         </div>
 
-        {/* SOAP Note Display */}
-        <SOAPDocumentView
-          soapNote={soapNote}
-          patientName={patient ? `${patient.firstName} ${patient.lastName}` : undefined}
-          showActions={false}
-        />
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0">
+          <SOAPDocumentView
+            soapNote={soapNote}
+            patientName={patient ? `${patient.firstName} ${patient.lastName}` : undefined}
+            showActions={false}
+          />
+        </div>
+
+        {/* Enhanced Doctor Actions */}
+        <Card className="border border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="font-semibold text-lg text-foreground">Clinical Actions</h3>
+                <p className="text-sm text-muted-foreground">
+                  Provide assistance, schedule appointments, or refer to specialists
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
+                <Button
+                  onClick={() => setShowActionModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Stethoscope className="h-4 w-4" />
+                  Take Action
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Doctor Action Modal */}
+        {showActionModal && soapNote && patient && doctorProfile && (
+          <DoctorActionModal
+            isOpen={showActionModal}
+            onClose={() => setShowActionModal(false)}
+            soapNoteId={soapNote._id}
+            patientId={patient._id}
+            doctorId={doctorProfile._id}
+            patientName={`${patient.firstName} ${patient.lastName}`}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

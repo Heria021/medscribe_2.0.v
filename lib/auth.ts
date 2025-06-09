@@ -39,10 +39,15 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          // Update last login time
+          await convex.mutation(api.users.updateUser, {
+            userId: user._id,
+            lastLoginAt: Date.now(),
+          });
+
           return {
             id: user._id,
             email: user.email,
-            name: user.name,
             role: user.role,
           };
         } catch (error) {

@@ -2,10 +2,11 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, Clock, MapPin, User, Phone, Video, FileText } from "lucide-react";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
@@ -15,32 +16,27 @@ interface ScheduledAppointmentsProps {
 }
 
 export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) {
-  const todayAppointments = useQuery(api.appointments.getDoctorTodayAppointments, {
+  const weekAppointments = useQuery(api.appointments.getWeekByDoctor, {
     doctorId,
   });
 
-  if (todayAppointments === undefined) {
+  if (weekAppointments === undefined) {
     return (
-      <Card className="border shadow-none">
-        <CardHeader className="pb-4">
+      <Card className="flex flex-col h-full">
+        <CardHeader className="pb-2 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">Today's Schedule</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                Your appointments and tasks for today
-              </CardDescription>
-            </div>
-            <Link href="/doctor/appointments/today">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Clock className="h-4 w-4" />
+            <CardTitle className="text-base">This Week's Schedule</CardTitle>
+            <Link href="/doctor/appointments">
+              <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                <Clock className="h-3 w-3 mr-1" />
                 View All
               </Button>
             </Link>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 min-h-0 p-0">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -64,163 +60,217 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
     }
   };
 
-  const getLocationIcon = (location?: string) => {
-    if (!location) return <MapPin className="h-4 w-4" />;
-    if (location.toLowerCase().includes("virtual") || location.toLowerCase().includes("online")) {
-      return <Video className="h-4 w-4" />;
-    }
-    return <MapPin className="h-4 w-4" />;
-  };
 
-  const getAppointmentStatus = (appointmentTime: string) => {
+
+  const getAppointmentStatus = (appointmentDateTime: number) => {
     const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    if (appointmentTime < currentTime) {
-      return "past";
-    } else if (appointmentTime === currentTime) {
+    const appointmentDate = new Date(appointmentDateTime);
+
+    // Check if it's today
+    const isToday = appointmentDate.toDateString() === now.toDateString();
+
+    if (!isToday) {
+      return appointmentDate < now ? "past" : "upcoming";
+    }
+
+    // For today's appointments, check time
+    const currentTime = now.getTime();
+    const appointmentTime = appointmentDate.getTime();
+    const timeDiff = Math.abs(appointmentTime - currentTime);
+
+    if (timeDiff <= 30 * 60 * 1000) { // Within 30 minutes
       return "current";
+    } else if (appointmentTime < currentTime) {
+      return "past";
     } else {
       return "upcoming";
     }
   };
 
+  // Group appointments by day
+  const groupAppointmentsByDay = (appointments: any[]) => {
+    const grouped: { [key: string]: any[] } = {};
+
+    appointments.forEach(appointment => {
+      const date = new Date(appointment.appointmentDateTime);
+      const dayKey = date.toDateString();
+
+      if (!grouped[dayKey]) {
+        grouped[dayKey] = [];
+      }
+      grouped[dayKey].push(appointment);
+    });
+
+    // Sort appointments within each day by time
+    Object.keys(grouped).forEach(day => {
+      grouped[day].sort((a, b) =>
+        new Date(a.appointmentDateTime).getTime() - new Date(b.appointmentDateTime).getTime()
+      );
+    });
+
+    return grouped;
+  };
+
+  const groupedAppointments = weekAppointments ? groupAppointmentsByDay(weekAppointments) : {};
+  const sortedDays = Object.keys(groupedAppointments).sort((a, b) =>
+    new Date(a).getTime() - new Date(b).getTime()
+  );
+
   return (
-    <Card className="border shadow-none">
-      <CardHeader className="pb-4">
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-2 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold">Today's Schedule</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Your appointments and tasks for today
-            </CardDescription>
-          </div>
-          <Link href="/doctor/appointments/today">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Clock className="h-4 w-4" />
+          <CardTitle className="text-base">This Week's Schedule</CardTitle>
+          <Link href="/doctor/appointments">
+            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              <Clock className="h-3 w-3 mr-1" />
               View All
             </Button>
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {todayAppointments.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-center">
-            <div className="space-y-2">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-              <p className="text-sm text-muted-foreground">No appointments scheduled for today</p>
-              <Link href="/doctor/appointments">
-                <Button variant="outline" size="sm">
-                  Schedule Appointment
-                </Button>
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {todayAppointments.slice(0, 4).map((appointment) => {
-              const timeStatus = getAppointmentStatus(appointment.appointmentTime);
-              return (
-                <div
-                  key={appointment._id}
-                  className={`relative flex items-center gap-4 p-4 rounded-lg border transition-colors ${
-                    timeStatus === "current"
-                      ? "border-primary bg-primary/5"
-                      : timeStatus === "past"
-                      ? "border-green-500/20 bg-green-500/5"
-                      : "border-border hover:bg-muted/50"
-                  }`}
-                >
-                  {/* Timeline indicator */}
-                  <div className="flex flex-col items-center">
-                    <div className={`w-3 h-3 rounded-full ${
-                      timeStatus === "current"
-                        ? "bg-primary animate-pulse"
-                        : timeStatus === "past"
-                        ? "bg-green-500"
-                        : "bg-muted-foreground"
-                    }`} />
-                    {appointment !== todayAppointments[todayAppointments.length - 1] && (
-                      <div className="w-px h-8 bg-border mt-2" />
-                    )}
-                  </div>
-
-                  {/* Patient Avatar */}
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={`/avatars/patient-${appointment.patient?.firstName?.toLowerCase()}.jpg`} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {appointment.patient?.firstName?.[0]}{appointment.patient?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Appointment Details */}
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-medium">
-                        {appointment.patient?.firstName} {appointment.patient?.lastName}
-                      </h4>
-                      <Badge variant="secondary" className={getStatusColor(appointment.status)}>
-                        {appointment.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {appointment.appointmentTime}
-                      </div>
-                      {appointment.appointmentLocation && (
-                        <div className="flex items-center gap-1">
-                          {getLocationIcon(appointment.appointmentLocation)}
-                          {appointment.appointmentLocation}
-                        </div>
-                      )}
-                      {appointment.duration && (
-                        <div className="text-xs">
-                          {appointment.duration} min
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      {appointment.appointmentType}
-                      {appointment.notes && ` • ${appointment.notes}`}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    {appointment.appointmentLocation?.toLowerCase().includes("virtual") ? (
-                      <Button size="sm" variant="outline" className="gap-2">
-                        <Video className="h-3 w-3" />
-                        Join
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="outline" className="gap-2">
-                        <Phone className="h-3 w-3" />
-                        Call
-                      </Button>
-                    )}
-                    <Button size="sm" variant="ghost" className="gap-2">
-                      <FileText className="h-3 w-3" />
-                      Notes
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {todayAppointments.length > 4 && (
-              <div className="pt-2 border-t">
-                <Link href="/doctor/appointments/today">
-                  <Button variant="ghost" size="sm" className="w-full">
-                    View {todayAppointments.length - 4} more appointments
+      <CardContent className="flex-1 min-h-0 p-0">
+        <ScrollArea className="h-full">
+          {sortedDays.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-center">
+              <div className="space-y-2">
+                <Calendar className="h-8 w-8 text-muted-foreground mx-auto" />
+                <p className="text-sm text-muted-foreground">No appointments this week</p>
+                <Link href="/doctor/appointments">
+                  <Button variant="outline" size="sm" className="h-6 px-3 text-xs">
+                    Schedule Appointment
                   </Button>
                 </Link>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="p-3 space-y-3">
+              {sortedDays.map((dayKey) => {
+                const dayDate = new Date(dayKey);
+                const isToday = dayDate.toDateString() === new Date().toDateString();
+                const dayAppointments = groupedAppointments[dayKey];
+
+                return (
+                  <div key={dayKey} className="space-y-2">
+                    {/* Day Header */}
+                    <div className="flex items-center gap-2 px-1">
+                      <div className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {isToday ? 'Today' : dayDate.toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </div>
+                      <div className="flex-1 h-px bg-border"></div>
+                      <div className="text-xs text-muted-foreground">
+                        {dayAppointments.length} appointment{dayAppointments.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+
+                    {/* Day's Appointments */}
+                    <div className="space-y-1">
+                      {dayAppointments.slice(0, 8).map((appointment) => {
+                        const appointmentTime = new Date(appointment.appointmentDateTime);
+                        const timeStatus = getAppointmentStatus(appointment.appointmentDateTime);
+
+                        return (
+                          <div
+                            key={appointment._id}
+                            className={`relative flex items-center gap-2 p-2 rounded transition-colors ${
+                              timeStatus === "current"
+                                ? "bg-primary/5 border border-primary/20"
+                                : timeStatus === "past"
+                                ? "bg-green-500/5"
+                                : "hover:bg-muted/50"
+                            }`}
+                          >
+                            {/* Timeline indicator */}
+                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                              timeStatus === "current"
+                                ? "bg-primary animate-pulse"
+                                : timeStatus === "past"
+                                ? "bg-green-500"
+                                : "bg-muted-foreground"
+                            }`} />
+
+                            {/* Patient Avatar */}
+                            <Avatar className="h-6 w-6 flex-shrink-0">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {appointment.patient?.firstName?.[0]}{appointment.patient?.lastName?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            {/* Appointment Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <h4 className="text-xs font-medium truncate">
+                                  {appointment.patient?.firstName} {appointment.patient?.lastName}
+                                </h4>
+                                <Badge variant="secondary" className={`${getStatusColor(appointment.status)} text-xs h-4 px-1`}>
+                                  {appointment.status.replace('_', ' ')}
+                                </Badge>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {appointmentTime.toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })}
+                                </div>
+                                {appointment.location && (
+                                  <div className="flex items-center gap-1">
+                                    {appointment.location.type === "telemedicine" ? (
+                                      <Video className="h-3 w-3" />
+                                    ) : (
+                                      <MapPin className="h-3 w-3" />
+                                    )}
+                                    <span className="text-xs">
+                                      {appointment.location.type === "telemedicine" ? "Virtual" : "In-person"}
+                                    </span>
+                                  </div>
+                                )}
+                                <span>{appointment.duration}min</span>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {appointment.location?.type === "telemedicine" ? (
+                                <Button size="sm" variant="outline" className="h-6 px-1.5 text-xs">
+                                  <Video className="h-3 w-3" />
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="outline" className="h-6 px-1.5 text-xs">
+                                  <Phone className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs">
+                                <FileText className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {weekAppointments && weekAppointments.length > 20 && (
+                <div className="pt-2 border-t">
+                  <Link href="/doctor/appointments">
+                    <Button variant="ghost" size="sm" className="w-full h-6 text-xs">
+                      View all {weekAppointments.length} appointments this week
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
       </CardContent>
     </Card>
   );

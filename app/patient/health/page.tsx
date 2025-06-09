@@ -57,23 +57,29 @@ export default function HealthTrackerPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 h-full flex flex-col">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Health Tracker</h2>
-            <p className="text-muted-foreground">
+        <div className="flex-shrink-0">
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold tracking-tight">
+              Health Tracker
+            </h1>
+            <p className="text-muted-foreground text-sm">
               Monitor your health metrics and track your wellness journey
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Reading
-          </Button>
+          <div className="mt-4">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Reading
+            </Button>
+          </div>
         </div>
 
-        {/* Health Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0 space-y-6">
+          {/* Health Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Heart Rate"
             value={`${healthData.heartRate} BPM`}
@@ -142,8 +148,8 @@ export default function HealthTrackerPage() {
           />
         </div>
 
-        {/* Detailed Health Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Detailed Health Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Vital Signs */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
@@ -232,8 +238,8 @@ export default function HealthTrackerPage() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <ActionCardGrid columns={4}>
+          {/* Quick Actions */}
+          <ActionCardGrid columns={4}>
           <ActionCard
             title="Log Vitals"
             description="Record your health measurements"
@@ -262,7 +268,8 @@ export default function HealthTrackerPage() {
             href="/patient/health/reports"
             color="purple"
           />
-        </ActionCardGrid>
+          </ActionCardGrid>
+        </div>
       </div>
     </DashboardLayout>
   );

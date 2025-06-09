@@ -4,40 +4,39 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
-import { SOAPDocumentView } from "@/components/patient/soap-document-view";
 import { DoctorActionModal } from "@/components/doctor/doctor-action-modal";
-import { DataTableCompact } from "@/components/ui/data-table-compact";
-import { MetricCard } from "@/components/ui/metric-card";
-import { StatusIndicator } from "@/components/ui/status-indicator";
+
 import {
   FileText,
   Search,
-  Calendar,
   Eye,
-  ArrowLeft,
   Mail,
-  Filter,
-  Stethoscope,
-  Clock,
   User,
-  TrendingUp
+  Stethoscope,
+  Download
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
 
 export default function SharedSOAPPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSOAP, setSelectedSOAP] = useState<string | null>(null);
   const [filterUnread, setFilterUnread] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
+  const [filterShareType, setFilterShareType] = useState<string>("all");
+  const [filterDateRange, setFilterDateRange] = useState<string>("all");
+
+  // Action modal state
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<any>(null);
 
   // Get doctor profile
   const doctorProfile = useQuery(
@@ -79,35 +78,73 @@ export default function SharedSOAPPage() {
   };
 
   const handleViewSOAP = async (sharedSOAPId: string, soapNoteId: string) => {
-    setSelectedSOAP(soapNoteId);
-    
     // Mark as read
     try {
       await markAsRead({ sharedSoapNoteId: sharedSOAPId as any });
     } catch (error) {
       console.error("Error marking as read:", error);
     }
+
+    // Navigate to SOAP view route
+    router.push(`/doctor/soap/view/${soapNoteId}`);
   };
 
-  // Filter shared notes
+
+
+  const handleTakeAction = async (note: any) => {
+    // Mark as read
+    try {
+      await markAsRead({ sharedSoapNoteId: note._id as any });
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
+
+    setSelectedNote(note);
+    setActionModalOpen(true);
+  };
+
+  // Enhanced filtering logic
   const filteredNotes = sharedSOAPNotes?.filter(note => {
-    const matchesSearch = !searchTerm || 
+    // Search filter
+    const matchesSearch = !searchTerm ||
       note.patient?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       note.patient?.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.patient?.mrn?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       note.soapNote?.subjective.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.soapNote?.assessment.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = !filterUnread || !note.isRead;
-    
-    return matchesSearch && matchesFilter;
-  }) || [];
+      note.soapNote?.assessment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.soapNote?.plan.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const selectedNote = sharedSOAPNotes?.find(note => note.soapNote?._id === selectedSOAP);
+    // Read status filter
+    const matchesReadFilter = !filterUnread || !note.isRead;
+
+    // Share type filter
+    const matchesShareType = filterShareType === "all" || note.shareType === filterShareType;
+
+    // Date range filter
+    const matchesDateRange = (() => {
+      if (filterDateRange === "all") return true;
+      const now = Date.now();
+      const noteDate = note.createdAt;
+
+      switch (filterDateRange) {
+        case "today":
+          return now - noteDate < 24 * 60 * 60 * 1000;
+        case "week":
+          return now - noteDate < 7 * 24 * 60 * 60 * 1000;
+        case "month":
+          return now - noteDate < 30 * 24 * 60 * 60 * 1000;
+        default:
+          return true;
+      }
+    })();
+
+    return matchesSearch && matchesReadFilter && matchesShareType && matchesDateRange;
+  }) || [];
 
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+        <div className="animate-pulse text-sm text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -119,112 +156,23 @@ export default function SharedSOAPPage() {
   if (!doctorProfile) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Complete Your Profile</h2>
-            <p className="text-muted-foreground mb-4">
-              Please complete your doctor profile to view shared SOAP notes.
-            </p>
-            <Button onClick={() => router.push("/doctor/settings/profile")}>
-              Complete Profile
-            </Button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // If viewing a specific SOAP note
-  if (selectedNote && selectedNote.soapNote) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedSOAP(null)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Shared Notes
-            </Button>
-            <div className="flex items-center gap-2">
-              <Badge variant={selectedNote.isRead ? "secondary" : "default"}>
-                {selectedNote.isRead ? "Read" : "New"}
-              </Badge>
-              <Badge variant="outline">
-                Shared {formatDate(selectedNote.createdAt)}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Patient Info */}
-          <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={selectedNote.patient?.profileImageUrl} />
-                  <AvatarFallback>
-                    {selectedNote.patient?.firstName[0]}{selectedNote.patient?.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-semibold text-blue-800 dark:text-blue-200">
-                    {selectedNote.patient?.firstName} {selectedNote.patient?.lastName}
-                  </h3>
-                  <p className="text-sm text-blue-600 dark:text-blue-300">
-                    Patient • {selectedNote.patient?.gender} • Born {selectedNote.patient?.dateOfBirth}
-                  </p>
-                  {selectedNote.message && (
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1 italic">
-                      "{selectedNote.message}"
-                    </p>
-                  )}
-                </div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6 text-center space-y-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
+                <User className="h-6 w-6 text-primary" />
               </div>
+              <div>
+                <h3 className="font-semibold">Complete Your Profile</h3>
+                <p className="text-sm text-muted-foreground">
+                  Complete your doctor profile to view shared SOAP notes.
+                </p>
+              </div>
+              <Button onClick={() => router.push("/doctor/settings/profile")} size="sm">
+                Complete Profile
+              </Button>
             </CardContent>
           </Card>
-
-          {/* SOAP Document View */}
-          <SOAPDocumentView
-            soapNote={selectedNote.soapNote}
-            patientName={`${selectedNote.patient?.firstName} ${selectedNote.patient?.lastName}`}
-            showActions={false}
-          />
-
-          {/* Doctor Action Button */}
-          <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-lg">Take Action</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Provide assistance, schedule appointments, or refer to specialists
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setShowActionModal(true)}
-                  className="flex items-center gap-2"
-                  size="lg"
-                >
-                  <Stethoscope className="h-4 w-4" />
-                  Take Action
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-
-          {/* Doctor Action Modal */}
-          {showActionModal && selectedNote && doctorProfile && (
-            <DoctorActionModal
-              isOpen={showActionModal}
-              onClose={() => setShowActionModal(false)}
-              soapNoteId={selectedNote.soapNote._id}
-              patientId={selectedNote.patientId}
-              doctorId={doctorProfile._id}
-              patientName={`${selectedNote.patient?.firstName} ${selectedNote.patient?.lastName}`}
-            />
-          )}
         </div>
       </DashboardLayout>
     );
@@ -232,12 +180,12 @@ export default function SharedSOAPPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Shared SOAP Notes</h1>
-          <p className="text-muted-foreground">
-            Review SOAP notes shared by your patients
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold tracking-tight">Shared SOAP Notes</h1>
+          <p className="text-muted-foreground text-sm">
+            Review and take action on notes shared by patients
           </p>
         </div>
 
@@ -246,175 +194,221 @@ export default function SharedSOAPPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by patient name or content..."
+              placeholder="Search patients, MRN, or content..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          <Button
-            variant={filterUnread ? "default" : "outline"}
-            onClick={() => setFilterUnread(!filterUnread)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            {filterUnread ? "Show All" : "Unread Only"}
-          </Button>
-        </div>
-
-        {/* Enhanced Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <MetricCard
-            title="Total Shared"
-            value={sharedSOAPNotes?.length || 0}
-            icon={<FileText className="h-4 w-4" />}
-            description="SOAP notes shared with you"
-            variant="compact"
-            status="info"
-          />
-          <MetricCard
-            title="Unread Notes"
-            value={sharedSOAPNotes?.filter(note => !note.isRead).length || 0}
-            icon={<Mail className="h-4 w-4" />}
-            description="Require your attention"
-            variant="compact"
-            status={sharedSOAPNotes?.filter(note => !note.isRead).length ? "warning" : "success"}
-          />
-          <MetricCard
-            title="This Week"
-            value={sharedSOAPNotes?.filter(note =>
-              Date.now() - note.createdAt < 7 * 24 * 60 * 60 * 1000
-            ).length || 0}
-            icon={<TrendingUp className="h-4 w-4" />}
-            description="Recently shared notes"
-            variant="compact"
-            status="success"
-          />
-        </div>
-
-        {/* Enhanced Shared Notes Table */}
-        <DataTableCompact
-          title="Shared SOAP Notes"
-          description="SOAP notes shared by patients for your review"
-          data={filteredNotes.map(note => ({
-            ...note,
-            patientName: `${note.patient?.firstName} ${note.patient?.lastName}`,
-            formattedDate: formatDate(note.createdAt),
-            preview: note.soapNote?.subjective.substring(0, 80) + '...',
-            assessmentPreview: note.soapNote?.assessment.substring(0, 80) + '...',
-          }))}
-          columns={[
-            {
-              key: "patientName",
-              label: "Patient",
-              sortable: true,
-              render: (value, item) => (
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8 border border-border">
-                    <AvatarImage src={item.patient?.profileImageUrl} />
-                    <AvatarFallback className="text-xs font-medium">
-                      {item.patient?.firstName[0]}{item.patient?.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-semibold text-sm flex items-center gap-2">
-                      {value}
-                      {!item.isRead && (
-                        <Badge variant="default" className="text-xs">New</Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.patient?.gender} • Born {item.patient?.dateOfBirth}
-                    </div>
-                  </div>
-                </div>
-              ),
-            },
-            {
-              key: "formattedDate",
-              label: "Shared Date",
-              sortable: true,
-              render: (value, item) => (
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">{value}</div>
-                  <StatusIndicator
-                    status={item.isRead ? "success" : "warning"}
-                    label={item.isRead ? "Read" : "Unread"}
-                    variant="dot"
-                    size="sm"
-                  />
-                </div>
-              ),
-            },
-            {
-              key: "preview",
-              label: "Content Preview",
-              render: (value, item) => (
-                <div className="space-y-2 max-w-md">
-                  {item.message && (
-                    <div className="text-xs italic text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-1 rounded">
-                      "{item.message}"
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-xs font-medium text-blue-700 dark:text-blue-400">Subjective</div>
-                    <div className="text-xs text-muted-foreground line-clamp-2">{value}</div>
-                  </div>
-                </div>
-              ),
-            },
-            {
-              key: "soapNote",
-              label: "Quality",
-              render: (value) => (
-                <div className="flex items-center gap-2">
-                  {value?.qualityScore && (
-                    <Badge
-                      variant="outline"
-                      className={
-                        value.qualityScore >= 90
-                          ? "border-green-200 text-green-800 bg-green-50"
-                          : value.qualityScore >= 80
-                          ? "border-blue-200 text-blue-800 bg-blue-50"
-                          : "border-yellow-200 text-yellow-800 bg-yellow-50"
-                      }
-                    >
-                      {value.qualityScore}%
-                    </Badge>
-                  )}
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {value?.processingTime || 'N/A'}
-                  </div>
-                </div>
-              ),
-            },
-          ]}
-          actions={(item) => (
+          <div className="flex gap-3">
             <Button
-              variant="outline"
+              variant={filterUnread ? "default" : "outline"}
+              onClick={() => setFilterUnread(!filterUnread)}
               size="sm"
-              onClick={() => handleViewSOAP(item._id, item.soapNote!._id)}
             >
-              <Eye className="h-4 w-4 mr-1" />
-              Review
+              <Mail className="h-4 w-4 mr-1" />
+              {filterUnread ? "All" : "Unread"}
             </Button>
-          )}
-          searchable
-          searchPlaceholder="Search by patient name or content..."
-          emptyState={
-            <div className="flex flex-col items-center justify-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Shared SOAP Notes Found</h3>
-              <p className="text-muted-foreground text-center">
-                {searchTerm || filterUnread
-                  ? "Try adjusting your search or filters"
-                  : "Patients haven't shared any SOAP notes with you yet"}
-              </p>
+            <Select value={filterShareType} onValueChange={setFilterShareType}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="direct_share">Direct</SelectItem>
+                <SelectItem value="referral_share">Referral</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterDateRange} onValueChange={setFilterDateRange}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">Week</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Notes List */}
+        <Card>
+          <CardHeader className="py-0">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Shared Notes</CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {filteredNotes.length} notes
+              </Badge>
             </div>
-          }
-        />
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[600px]">
+              {filteredNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 px-4">
+                  <div className="w-10 h-10 bg-muted/50 rounded-full flex items-center justify-center mb-3">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium mb-1">No notes found</h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-sm">
+                    {searchTerm || filterUnread || filterShareType !== "all" || filterDateRange !== "all"
+                      ? "Try adjusting your filters to see more results"
+                      : "Shared SOAP notes will appear here when patients share them with you"}
+                  </p>
+                  {(searchTerm || filterUnread || filterShareType !== "all" || filterDateRange !== "all") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setFilterUnread(false);
+                        setFilterShareType("all");
+                        setFilterDateRange("all");
+                      }}
+                      className="mt-3"
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filteredNotes.map((note) => (
+                    <div key={note._id} className="p-3 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-start gap-3">
+                        {/* Avatar & Status */}
+                        <div className="relative">
+                          <Avatar className="h-9 w-9">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {note.patient?.firstName[0]}{note.patient?.lastName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          {!note.isRead && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 space-y-2">
+                          {/* Header Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-sm">
+                                {note.patient?.firstName} {note.patient?.lastName}
+                              </h4>
+                              <Badge
+                                variant={note.shareType === "direct_share" ? "default" : "secondary"}
+                                className="text-xs h-5"
+                              >
+                                {note.shareType === "direct_share" ? "Direct" : "Referral"}
+                              </Badge>
+                              {note.soapNote?.qualityScore && (
+                                <Badge variant="outline" className="text-xs h-5 border-green-200 text-green-700">
+                                  {note.soapNote.qualityScore}%
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{formatDate(note.createdAt)}</span>
+                          </div>
+
+                          {/* Info Row */}
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>MRN: <span className="font-medium">{note.patient?.mrn || 'N/A'}</span></span>
+                            <span>Gender: <span className="font-medium capitalize">{note.patient?.gender}</span></span>
+                            <span>DOB: <span className="font-medium">{note.patient?.dateOfBirth}</span></span>
+                          </div>
+
+                          {/* Message */}
+                          {note.message && (
+                            <div className="bg-blue-50/80 border-l-3 border-blue-400 pl-2 py-1">
+                              <p className="text-xs text-blue-800 italic">"{note.message}"</p>
+                            </div>
+                          )}
+
+                          {/* SOAP Preview */}
+                          <div className="bg-muted/50 rounded p-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="font-medium text-blue-700">Subjective:</span>
+                                <p className="text-muted-foreground mt-0.5 leading-tight">
+                                  {note.soapNote?.subjective.substring(0, 80)}...
+                                </p>
+                              </div>
+                              {note.soapNote?.assessment && (
+                                <div>
+                                  <span className="font-medium text-green-700">Assessment:</span>
+                                  <p className="text-muted-foreground mt-0.5 leading-tight">
+                                    {note.soapNote.assessment.substring(0, 80)}...
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center justify-between pt-1">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleViewSOAP(note._id, note.soapNote!._id)}
+                                className="h-7 px-3 text-xs"
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleTakeAction(note)}
+                                className="h-7 px-3 text-xs"
+                              >
+                                <Stethoscope className="h-3 w-3 mr-1" />
+                                Take Action
+                              </Button>
+                            </div>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const content = `SOAP Note - ${note.patient?.firstName} ${note.patient?.lastName}\n\nDate: ${new Date(note.createdAt).toLocaleDateString()}\n\nSubjective:\n${note.soapNote?.subjective}\n\nObjective:\n${note.soapNote?.objective}\n\nAssessment:\n${note.soapNote?.assessment}\n\nPlan:\n${note.soapNote?.plan}`;
+                                const blob = new Blob([content], { type: 'text/plain' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `soap-note-${note.patient?.firstName}-${note.patient?.lastName}-${new Date().toISOString().split('T')[0]}.txt`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Action Modal */}
+      {selectedNote && doctorProfile && (
+        <DoctorActionModal
+          isOpen={actionModalOpen}
+          onClose={() => setActionModalOpen(false)}
+          soapNoteId={selectedNote.soapNote._id}
+          patientId={selectedNote.patient._id}
+          doctorId={doctorProfile._id}
+          patientName={`${selectedNote.patient.firstName} ${selectedNote.patient.lastName}`}
+          sharedSoapNoteId={selectedNote._id}
+        />
+      )}
     </DashboardLayout>
   );
 }

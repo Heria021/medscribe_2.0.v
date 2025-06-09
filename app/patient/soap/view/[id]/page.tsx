@@ -72,7 +72,7 @@ export default function ViewSOAPPage() {
   if (!soapNote) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="flex flex-col h-full space-y-6">
           <div className="flex items-center gap-4">
             <Link href="/patient/soap/history">
               <Button variant="outline">
@@ -97,44 +97,48 @@ export default function ViewSOAPPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 h-full flex flex-col">
         {/* Enhanced Navigation */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/patient/soap/history">
-              <Button variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to History
-              </Button>
-            </Link>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-              <FileText className="h-4 w-4" />
-              <span>SOAP Note</span>
-              <span>•</span>
-              <Calendar className="h-4 w-4" />
-              <span>{new Date(soapNote.createdAt).toLocaleDateString()}</span>
+        <div className="flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/patient/soap/history">
+                <Button variant="outline">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to History
+                </Button>
+              </Link>
+              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                <span>SOAP Note</span>
+                <span>•</span>
+                <Calendar className="h-4 w-4" />
+                <span>{new Date(soapNote.createdAt).toLocaleDateString()}</span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/patient/soap/generate">
-              <Button variant="outline" size="sm">
-                Generate New
-              </Button>
-            </Link>
-            <Link href="/patient/soap/history">
-              <Button variant="outline" size="sm">
-                View All Notes
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/patient/soap/generate">
+                <Button variant="outline" size="sm">
+                  Generate New
+                </Button>
+              </Link>
+              <Link href="/patient/soap/history">
+                <Button variant="outline" size="sm">
+                  View All Notes
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Enhanced SOAP Note Display */}
-        <SOAPDocumentView
-          soapNote={soapNote}
-          patientName={patientProfile ? `${patientProfile.firstName} ${patientProfile.lastName}` : undefined}
-          showActions={true}
-        />
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0">
+          <SOAPDocumentView
+            soapNote={soapNote}
+            patientName={patientProfile ? `${patientProfile.firstName} ${patientProfile.lastName}` : undefined}
+            showActions={true}
+          />
+        </div>
       </div>
     </DashboardLayout>
   );

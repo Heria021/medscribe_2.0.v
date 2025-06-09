@@ -19,59 +19,147 @@ export const seedSampleAppointments = mutation({
     const nextWeek = new Date(today);
     nextWeek.setDate(today.getDate() + 7);
 
-    // Sample appointments
+    // Get user IDs for createdBy field
+    const doctor1User = await ctx.db.get(doctors[0].userId);
+    const doctor2User = await ctx.db.get(doctors[1].userId);
+
+    if (!doctor1User || !doctor2User) {
+      throw new Error("Doctor user records not found");
+    }
+
+    // Create or find doctorPatient relationships
+    const doctorPatientRelationships = [];
+
+    // Doctor 1 with Patient 1 and 2
+    let dp1 = await ctx.db
+      .query("doctorPatients")
+      .withIndex("by_doctor_patient", (q) => q.eq("doctorId", doctors[0]._id).eq("patientId", patients[0]._id))
+      .first();
+
+    if (!dp1) {
+      const dp1Id = await ctx.db.insert("doctorPatients", {
+        doctorId: doctors[0]._id,
+        patientId: patients[0]._id,
+        assignedBy: "direct_assignment",
+        assignedAt: now,
+        isActive: true,
+      });
+      dp1 = await ctx.db.get(dp1Id);
+    }
+    doctorPatientRelationships.push(dp1!);
+
+    let dp2 = await ctx.db
+      .query("doctorPatients")
+      .withIndex("by_doctor_patient", (q) => q.eq("doctorId", doctors[0]._id).eq("patientId", patients[1]._id))
+      .first();
+
+    if (!dp2) {
+      const dp2Id = await ctx.db.insert("doctorPatients", {
+        doctorId: doctors[0]._id,
+        patientId: patients[1]._id,
+        assignedBy: "direct_assignment",
+        assignedAt: now,
+        isActive: true,
+      });
+      dp2 = await ctx.db.get(dp2Id);
+    }
+    doctorPatientRelationships.push(dp2!);
+
+    // Doctor 2 with Patient 3
+    let dp3 = await ctx.db
+      .query("doctorPatients")
+      .withIndex("by_doctor_patient", (q) => q.eq("doctorId", doctors[1]._id).eq("patientId", patients[2]._id))
+      .first();
+
+    if (!dp3) {
+      const dp3Id = await ctx.db.insert("doctorPatients", {
+        doctorId: doctors[1]._id,
+        patientId: patients[2]._id,
+        assignedBy: "direct_assignment",
+        assignedAt: now,
+        isActive: true,
+      });
+      dp3 = await ctx.db.get(dp3Id);
+    }
+    doctorPatientRelationships.push(dp3!);
+
+    // Sample appointments using new schema
     const sampleAppointments = [
       {
-        patientId: patients[0]._id,
-        doctorId: doctors[0]._id,
-        appointmentDate: today.getTime(),
-        appointmentTime: "09:00",
-        appointmentType: "consultation",
-        appointmentLocation: "Clinic Room 101",
+        doctorPatientId: doctorPatientRelationships[0]._id,
+        appointmentDateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0).getTime(),
+        duration: 30,
+        timeZone: "America/New_York",
+        appointmentType: "consultation" as const,
+        visitReason: "Initial consultation for new patient",
+        location: {
+          type: "in_person" as const,
+          address: "123 Medical Center Dr",
+          room: "Room 101",
+        },
         status: "scheduled" as const,
         notes: "Initial consultation",
-        duration: 30,
+        scheduledAt: now,
         createdAt: now,
         updatedAt: now,
+        createdBy: doctor1User._id,
       },
       {
-        patientId: patients[0]._id,
-        doctorId: doctors[0]._id,
-        appointmentDate: today.getTime(),
-        appointmentTime: "14:30",
-        appointmentType: "follow-up",
-        appointmentLocation: "Virtual Meeting",
+        doctorPatientId: doctorPatientRelationships[0]._id,
+        appointmentDateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 30).getTime(),
+        duration: 20,
+        timeZone: "America/New_York",
+        appointmentType: "follow_up" as const,
+        visitReason: "Follow-up appointment for treatment progress",
+        location: {
+          type: "telemedicine" as const,
+          meetingLink: "https://meet.example.com/room123",
+        },
         status: "confirmed" as const,
         notes: "Follow-up appointment",
-        duration: 20,
+        scheduledAt: now,
+        confirmedAt: now,
         createdAt: now,
         updatedAt: now,
+        createdBy: doctor1User._id,
       },
       {
-        patientId: patients[1]._id,
-        doctorId: doctors[0]._id,
-        appointmentDate: tomorrow.getTime(),
-        appointmentTime: "10:15",
-        appointmentType: "check-up",
-        appointmentLocation: "Clinic Room 102",
+        doctorPatientId: doctorPatientRelationships[1]._id,
+        appointmentDateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 10, 15).getTime(),
+        duration: 25,
+        timeZone: "America/New_York",
+        appointmentType: "consultation" as const,
+        visitReason: "Regular check-up and health assessment",
+        location: {
+          type: "in_person" as const,
+          address: "123 Medical Center Dr",
+          room: "Room 102",
+        },
         status: "scheduled" as const,
         notes: "Regular check-up",
-        duration: 25,
+        scheduledAt: now,
         createdAt: now,
         updatedAt: now,
+        createdBy: doctor1User._id,
       },
       {
-        patientId: patients[2]._id,
-        doctorId: doctors[1]._id,
-        appointmentDate: nextWeek.getTime(),
-        appointmentTime: "11:00",
-        appointmentType: "consultation",
-        appointmentLocation: "Clinic Room 103",
+        doctorPatientId: doctorPatientRelationships[2]._id,
+        appointmentDateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 11, 0).getTime(),
+        duration: 45,
+        timeZone: "America/New_York",
+        appointmentType: "new_patient" as const,
+        visitReason: "New patient consultation and initial assessment",
+        location: {
+          type: "in_person" as const,
+          address: "123 Medical Center Dr",
+          room: "Room 103",
+        },
         status: "scheduled" as const,
         notes: "New patient consultation",
-        duration: 45,
+        scheduledAt: now,
         createdAt: now,
         updatedAt: now,
+        createdBy: doctor2User._id,
       },
     ];
 

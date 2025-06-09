@@ -25,7 +25,7 @@ export default function TodaySchedulePage() {
 
   // Get today's appointments
   const todayAppointments = useQuery(
-    api.appointments.getDoctorTodayAppointments,
+    api.appointments.getTodayByDoctor,
     doctorProfile ? { doctorId: doctorProfile._id } : "skip"
   );
 
@@ -73,22 +73,26 @@ export default function TodaySchedulePage() {
     }
   };
 
-  const formatTime = (time: string) => {
-    // Convert 24-hour format to 12-hour format
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+  const formatTime = (dateTime: number) => {
+    return new Date(dateTime).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
-  const getAppointmentStatus = (appointmentTime: string) => {
-    const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  const getAppointmentStatus = (appointmentDateTime: number) => {
+    const now = Date.now();
+    const appointmentTime = new Date(appointmentDateTime);
+    const currentTime = new Date();
 
-    if (appointmentTime < currentTime) {
+    // Check if appointment is within 15 minutes of current time
+    const timeDiff = appointmentDateTime - now;
+    const fifteenMinutes = 15 * 60 * 1000;
+
+    if (timeDiff < -fifteenMinutes) {
       return "completed";
-    } else if (appointmentTime === currentTime) {
+    } else if (Math.abs(timeDiff) <= fifteenMinutes) {
       return "current";
     } else {
       return "upcoming";
@@ -108,30 +112,36 @@ export default function TodaySchedulePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link href="/doctor/appointments">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              All Appointments
-            </Button>
-          </Link>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Today's Schedule</h2>
-            <p className="text-muted-foreground">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
+        <div className="flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <Link href="/doctor/appointments">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                All Appointments
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">
+                Today's Schedule
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Schedule Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0 space-y-6">
+          {/* Schedule Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="border-0 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -150,7 +160,7 @@ export default function TodaySchedulePage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Completed</p>
                   <p className="text-2xl font-bold">
-                    {todayAppointments.filter(apt => getAppointmentStatus(apt.appointmentTime) === "completed").length}
+                    {todayAppointments.filter(apt => getAppointmentStatus(apt.appointmentDateTime) === "completed").length}
                   </p>
                 </div>
                 <Calendar className="h-8 w-8 text-green-600" />
@@ -164,7 +174,7 @@ export default function TodaySchedulePage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Upcoming</p>
                   <p className="text-2xl font-bold">
-                    {todayAppointments.filter(apt => getAppointmentStatus(apt.appointmentTime) === "upcoming").length}
+                    {todayAppointments.filter(apt => getAppointmentStatus(apt.appointmentDateTime) === "upcoming").length}
                   </p>
                 </div>
                 <Clock className="h-8 w-8 text-orange-600" />
@@ -187,8 +197,8 @@ export default function TodaySchedulePage() {
           </Card>
         </div>
 
-        {/* Appointments Timeline */}
-        <Card className="border-0 shadow-md">
+          {/* Appointments Timeline */}
+          <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle>Appointment Timeline</CardTitle>
             <CardDescription>
@@ -206,7 +216,7 @@ export default function TodaySchedulePage() {
             ) : (
               <div className="space-y-4">
                 {todayAppointments.map((appointment, index) => {
-                  const status = getAppointmentStatus(appointment.appointmentTime);
+                  const status = getAppointmentStatus(appointment.appointmentDateTime);
                   return (
                     <div
                       key={appointment._id}
@@ -234,9 +244,9 @@ export default function TodaySchedulePage() {
 
                       {/* Time */}
                       <div className="flex flex-col items-center min-w-[80px]">
-                        <span className="text-sm font-medium">{formatTime(appointment.appointmentTime)}</span>
+                        <span className="text-sm font-medium">{formatTime(appointment.appointmentDateTime)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {appointment.duration ? `${appointment.duration} min` : '30 min'}
+                          {appointment.duration} min
                         </span>
                       </div>
 
@@ -252,9 +262,14 @@ export default function TodaySchedulePage() {
                           <h4 className="font-medium">
                             {appointment.patient?.firstName} {appointment.patient?.lastName}
                           </h4>
-                          <p className="text-sm text-muted-foreground">{appointment.appointmentType}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {appointment.appointmentType.replace('_', ' ')}
+                          </p>
+                          {appointment.visitReason && (
+                            <p className="text-xs text-muted-foreground mt-1">{appointment.visitReason}</p>
+                          )}
                           {appointment.notes && (
-                            <p className="text-xs text-muted-foreground mt-1">{appointment.notes}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Note: {appointment.notes}</p>
                           )}
                         </div>
                       </div>
@@ -262,19 +277,24 @@ export default function TodaySchedulePage() {
                       {/* Location & Status */}
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          {appointment.appointmentLocation?.toLowerCase().includes("virtual") ||
-                           appointment.appointmentLocation?.toLowerCase().includes("online") ? (
+                          {appointment.location?.type === "telemedicine" ? (
                             <Video className="h-4 w-4 text-blue-600" />
                           ) : (
                             <MapPin className="h-4 w-4 text-green-600" />
                           )}
                           <span className="text-sm text-muted-foreground">
-                            {appointment.appointmentLocation || "TBD"}
+                            {appointment.location?.type === "telemedicine"
+                              ? "Virtual"
+                              : appointment.location?.address || "In-person"
+                            }
                           </span>
+                          {appointment.location?.room && (
+                            <span className="text-xs text-muted-foreground">• {appointment.location.room}</span>
+                          )}
                         </div>
 
                         <Badge variant="secondary" className={getStatusColor(appointment.status)}>
-                          {appointment.status}
+                          {appointment.status.replace('_', ' ')}
                         </Badge>
                       </div>
 
@@ -307,7 +327,8 @@ export default function TodaySchedulePage() {
               </div>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

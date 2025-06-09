@@ -20,16 +20,17 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 interface DashboardHeaderProps {
   user: {
     id: string;
-    name: string;
     email: string;
     role: string;
   };
+  displayName?: string;
 }
 
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader({ user, displayName }: DashboardHeaderProps) {
   const router = useRouter();
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return user.email.charAt(0).toUpperCase();
     return name
       .split(" ")
       .map((n) => n[0])
@@ -70,14 +71,14 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             className="flex items-center gap-2 h-10 px-2 py-1 hover:bg-accent rounded-lg transition-colors"
           >
             <Avatar className="h-8 w-8 border border-border">
-              <AvatarImage src="" alt={user.name} />
+              <AvatarImage src="" alt={displayName || user.email} />
               <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-                {getInitials(user.name)}
+                {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
             <div className="hidden lg:flex flex-col items-start min-w-0">
               <span className="text-sm font-medium leading-tight truncate max-w-[100px]">
-                {user.name}
+                {displayName || user.email}
               </span>
               <span className="text-xs text-muted-foreground leading-tight truncate max-w-[100px]">
                 {user.role}
@@ -90,13 +91,13 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           <DropdownMenuLabel className="font-normal p-3">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border-2 border-border">
-                <AvatarImage src="" alt={user.name} />
+                <AvatarImage src="" alt={displayName || user.email} />
                 <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
-                  {getInitials(user.name)}
+                  {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col space-y-1 min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-none truncate">{user.name}</p>
+                <p className="text-sm font-semibold leading-none truncate">{displayName || user.email}</p>
                 <p className="text-xs leading-none text-muted-foreground truncate">
                   {user.email}
                 </p>

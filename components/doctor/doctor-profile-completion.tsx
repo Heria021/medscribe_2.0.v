@@ -1,179 +1,129 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle,
-  AlertCircle,
-  User,
-  Stethoscope,
-  Clock,
-  DollarSign,
-  ArrowRight
-} from "lucide-react";
+import { User, Stethoscope, AlertCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-interface ProfileCompletionStep {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  completed: boolean;
-  required: boolean;
-}
-
 export function DoctorProfileCompletion({ doctorProfile }: { doctorProfile: any }) {
-  const [profileSteps, setProfileSteps] = useState<ProfileCompletionStep[]>([]);
-  const [completionPercentage, setCompletionPercentage] = useState(0);
-
-  useEffect(() => {
-    if (doctorProfile) {
-      const steps: ProfileCompletionStep[] = [
-        {
-          id: "personal",
-          title: "Personal Information",
-          description: "Complete your basic personal details",
-          icon: User,
-          completed: doctorProfile.personalInfoCompleted,
-          required: true,
-        },
-        {
-          id: "professional",
-          title: "Professional Credentials",
-          description: "Add your medical license and specialization",
-          icon: Stethoscope,
-          completed: doctorProfile.professionalInfoCompleted,
-          required: true,
-        },
-        {
-          id: "availability",
-          title: "Availability Schedule",
-          description: "Set your working hours and availability",
-          icon: Clock,
-          completed: doctorProfile.availabilityInfoCompleted,
-          required: false,
-        },
-        {
-          id: "billing",
-          title: "Billing Information",
-          description: "Configure your consultation fees",
-          icon: DollarSign,
-          completed: doctorProfile.billingInfoCompleted,
-          required: false,
-        },
-      ];
-
-      setProfileSteps(steps);
-      setCompletionPercentage(doctorProfile.completionPercentage);
-    }
-  }, [doctorProfile]);
-
-  const requiredSteps = profileSteps.filter(step => step.required);
-  const completedRequiredSteps = requiredSteps.filter(step => step.completed);
-  const isProfileComplete = completedRequiredSteps.length === requiredSteps.length;
-
-  if (isProfileComplete) {
+  // Show setup prompt if profile does not exist
+  if (!doctorProfile) {
     return (
-      <Card className="bg-muted/50 border shadow-none">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
-              <CheckCircle className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Profile Complete!</h3>
-              <p className="text-sm text-muted-foreground">
-                Your doctor profile is fully set up and ready for patients.
-              </p>
-            </div>
+      <Card className="border bg-muted/50">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
+            <AlertCircle className="h-4 w-4 text-destructive" />
           </div>
+          <div className="flex-1">
+            <h4 className="font-medium text-sm">Set Up Your Doctor Profile</h4>
+            <p className="text-xs text-muted-foreground">
+              Create your professional profile to start accepting patients.
+            </p>
+          </div>
+          <Link href="/doctor/settings/profile">
+            <Button size="sm" className="flex items-center gap-1">
+              Get Started
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     );
   }
 
+  // Define required and optional fields for logical completion
+  const requiredFields = [
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'phone', label: 'Phone Number' },
+    { key: 'email', label: 'Email' },
+    { key: 'primarySpecialty', label: 'Primary Specialty' },
+    { key: 'licenseNumber', label: 'License Number' },
+  ];
+
+  const professionalFields = [
+    { key: 'npiNumber', label: 'NPI Number' },
+    { key: 'deaNumber', label: 'DEA Number' },
+    { key: 'boardCertifications', label: 'Board Certifications' },
+    { key: 'medicalSchool', label: 'Medical School' },
+    { key: 'yearsOfExperience', label: 'Years of Experience' },
+  ];
+
+  const practiceFields = [
+    { key: 'practiceName', label: 'Practice Name' },
+    { key: 'consultationFee', label: 'Consultation Fee' },
+    { key: 'availabilitySchedule', label: 'Availability Schedule' },
+    { key: 'languagesSpoken', label: 'Languages Spoken' },
+    { key: 'bio', label: 'Professional Bio' },
+  ];
+
+  // Calculate completion based on required fields
+  const completedRequired = requiredFields.filter(field => {
+    const value = doctorProfile[field.key];
+    return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
+  });
+
+  const completedProfessional = professionalFields.filter(field => {
+    const value = doctorProfile[field.key];
+    return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
+  });
+
+  const completedPractice = practiceFields.filter(field => {
+    const value = doctorProfile[field.key];
+    return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
+  });
+
+  const requiredCompletion = (completedRequired.length / requiredFields.length) * 100;
+
+  // Profile is considered complete when all required fields are filled
+  const isComplete = completedRequired.length === requiredFields.length;
+
+  // Don't show if profile is complete
+  if (isComplete) return null;
+
+  const missingRequired = requiredFields.length - completedRequired.length;
+
   return (
-    <Card className="bg-muted/40 border shadow-none">
-      <CardHeader className="pb-4">
+    <Card className="border bg-muted/50">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-              <AlertCircle className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Stethoscope className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-foreground">
-                Complete Your Doctor Profile
-              </CardTitle>
-              <CardDescription>
-                {completedRequiredSteps.length} of {requiredSteps.length} required steps completed
-              </CardDescription>
+              <CardTitle className="text-sm font-semibold">Complete Your Doctor Profile</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {missingRequired} required field{missingRequired !== 1 ? 's' : ''} remaining
+              </p>
             </div>
           </div>
-          <Badge variant="secondary">
-            {Math.round(completionPercentage)}% Complete
+          <Badge variant="secondary" className="text-xs">
+            {Math.round(requiredCompletion)}%
           </Badge>
         </div>
-        <Progress value={completionPercentage} />
       </CardHeader>
-
       <CardContent className="space-y-4">
-        <div className="grid gap-3">
-          {profileSteps.map((step) => (
-            <div
-              key={step.id}
-              className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
-                step.completed
-                  ? "bg-green-500/10 border-green-500/20"
-                  : "bg-background border-border hover:bg-muted/30"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                  step.completed ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-muted text-muted-foreground"
-                }`}>
-                  {step.completed ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <step.icon className="h-4 w-4" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-sm text-foreground">{step.title}</h4>
-                    {step.required && (
-                      <Badge variant="outline" className="text-xs">
-                        Required
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
-                </div>
-              </div>
-              {!step.completed && (
-                <Button asChild variant="ghost" size="sm" className="h-8 px-3">
-                  <Link href="/doctor/settings/profile" className="flex items-center gap-1">
-                    Complete
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </Button>
-              )}
-            </div>
-          ))}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Required Fields</span>
+            <span className="font-medium">{completedRequired.length}/{requiredFields.length}</span>
+          </div>
+          <Progress value={requiredCompletion} className="h-2" />
         </div>
 
-        <div className="flex justify-between items-center pt-2 border-t border-border">
-          <p className="text-sm text-muted-foreground">
-            Complete your profile to start accepting patients
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Complete all required fields to start accepting patients and unlock full platform features.
           </p>
-          <Button asChild className="flex items-center gap-2">
-            <Link href="/doctor/settings/profile">
-              Continue Setup
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link href="/doctor/settings/profile">
+            <Button size="sm" variant="outline" className="w-full text-sm flex items-center gap-1">
+              Complete Profile
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

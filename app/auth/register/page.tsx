@@ -32,7 +32,8 @@ export default function RegisterPage() {
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -60,7 +61,6 @@ export default function RegisterPage() {
 
       // Create user in Convex
       const userId = await createUser({
-        name: data.name,
         email: data.email,
         passwordHash,
         role: data.role,
@@ -68,10 +68,6 @@ export default function RegisterPage() {
 
       // If user is a patient, create a basic patient profile
       if (data.role === "patient") {
-        const nameParts = data.name.split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-
         // Create basic patient profile with default values
         await fetch("/api/patient/create-profile", {
           method: "POST",
@@ -80,12 +76,21 @@ export default function RegisterPage() {
           },
           body: JSON.stringify({
             userId,
-            firstName,
-            lastName,
+            firstName: data.firstName,
+            lastName: data.lastName,
             email: data.email,
             // Default values - user can update these later
-            dateOfBirth: "",
-            gender: "Male",
+            dateOfBirth: "1990-01-01",
+            gender: "M",
+            primaryPhone: "000-000-0000",
+            addressLine1: "To be updated",
+            city: "To be updated",
+            state: "To be updated",
+            zipCode: "00000",
+            country: "USA",
+            emergencyContactName: "To be updated",
+            emergencyContactPhone: "000-000-0000",
+            emergencyContactRelation: "To be updated",
           }),
         });
       }
@@ -116,180 +121,207 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md shadow-lg border-0 bg-card">
-        <CardHeader className="text-center space-y-3 pb-6">
-          <div className="flex items-center justify-center gap-2">
-            {selectedRole === "doctor" ? (
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950">
-                <Stethoscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 dark:bg-green-950">
-                <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-            )}
-            <Badge variant="secondary" className="text-xs font-medium capitalize">
-              {selectedRole}
-            </Badge>
-          </div>
-          <CardTitle className="text-2xl font-semibold tracking-tight">Create Account</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Enter your details to create your {selectedRole} account
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">Full Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your full name"
-                        className="h-10 text-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        className="h-10 text-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Create a password"
-                          className="h-10 text-sm pr-10"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-10 w-10 p-0 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">Confirm Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm your password"
-                          className="h-10 text-sm pr-10"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-10 w-10 p-0 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                className="w-full h-10 text-sm font-medium"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Account...
-                  </>
+      <div className="w-full max-w-md">
+        <Card className="border-border/40 bg-card/95 backdrop-blur-sm">
+          <CardHeader className="text-center space-y-4 pb-8">
+            <div className="flex items-center justify-center gap-3">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ${
+                selectedRole === "doctor" 
+                  ? "bg-blue-50 dark:bg-blue-950/50 ring-blue-200 dark:ring-blue-800" 
+                  : "bg-emerald-50 dark:bg-emerald-950/50 ring-emerald-200 dark:ring-emerald-800"
+              }`}>
+                {selectedRole === "doctor" ? (
+                  <Stethoscope className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  "Create Account"
+                  <UserCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                 )}
-              </Button>
-            </form>
-          </Form>
-
-          <div className="space-y-4 pt-4 border-t border-border">
-            <div className="text-center">
-              <Link
-                href="/auth/login"
-                className="text-sm text-primary hover:text-primary/80 transition-colors"
-              >
-                Already have an account? Sign in
-              </Link>
+              </div>
+              <Badge variant="secondary" className="text-xs font-medium capitalize px-3 py-1">
+                {selectedRole}
+              </Badge>
             </div>
-
-            <div className="text-center">
-              <Link
-                href="/auth/select-role"
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="h-3 w-3" />
-                Change role
-              </Link>
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-semibold tracking-tight">Create account</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Enter your details to create your {selectedRole} account
+              </CardDescription>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel className="text-sm font-medium text-foreground">First Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="First name"
+                            className="h-11 bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/20"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel className="text-sm font-medium text-foreground">Last Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Last name"
+                            className="h-11 bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/20"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-foreground">Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Enter your email"
+                          className="h-11 bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-foreground">Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Create a password"
+                            className="h-11 bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/20 pr-11"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-11 w-11 p-0 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-foreground">Confirm Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm your password"
+                            className="h-11 bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/20 pr-11"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-11 w-11 p-0 hover:bg-transparent"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full h-11 font-medium"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create account"
+                  )}
+                </Button>
+              </form>
+            </Form>
+
+            <div className="space-y-4 pt-4 border-t border-border/40">
+              <div className="text-center">
+                <Link
+                  href="/auth/login"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Already have an account?{" "}
+                  <span className="text-primary hover:text-primary/80 font-medium">Sign in</span>
+                </Link>
+              </div>
+
+              <div className="text-center">
+                <Link
+                  href="/auth/select-role"
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                  Change role
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

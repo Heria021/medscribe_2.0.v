@@ -4,13 +4,17 @@ import {
   Calendar,
   FileText,
   Settings,
-  MessageSquare,
   Bell,
   Mic,
   History,
   Share,
   UserPlus,
-  Bot
+  Bot,
+  User,
+  Shield,
+  Activity,
+  Stethoscope,
+  ChevronRight
 } from "lucide-react";
 
 export interface NavItem {
@@ -35,6 +39,16 @@ export const doctorNavigation: NavSection[] = [
         title: "Overview",
         href: "/doctor/dashboard",
         icon: LayoutDashboard,
+      },
+    ],
+  },
+  {
+    title: "AI Assistant",
+    items: [
+      {
+        title: "Medical Assistant",
+        href: "/doctor/assistant",
+        icon: Bot,
       },
     ],
   },
@@ -78,8 +92,18 @@ export const doctorNavigation: NavSection[] = [
     items: [
       {
         title: "Profile",
-        href: "/doctor/settings",
-        icon: Settings,
+        href: "/doctor/settings/profile",
+        icon: User,
+      },
+      {
+        title: "Practice",
+        href: "/doctor/settings/practice",
+        icon: Stethoscope,
+      },
+      {
+        title: "Security",
+        href: "/doctor/settings/security",
+        icon: Shield,
       },
     ],
   },
@@ -123,18 +147,18 @@ export const patientNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Appointments",
+    title: "Health Management",
     items: [
       {
         title: "My Appointments",
         href: "/patient/appointments",
         icon: Calendar,
       },
-    ],
-  },
-  {
-    title: "Medical Records",
-    items: [
+      {
+        title: "My Treatments",
+        href: "/patient/treatments",
+        icon: Activity,
+      },
       {
         title: "My Records",
         href: "/patient/records",
@@ -153,12 +177,17 @@ export const patientNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Account",
+    title: "Settings",
     items: [
       {
         title: "Profile",
-        href: "/patient/settings",
-        icon: Settings,
+        href: "/patient/settings/profile",
+        icon: User,
+      },
+      {
+        title: "Security",
+        href: "/patient/settings/security",
+        icon: Shield,
       },
     ],
   },

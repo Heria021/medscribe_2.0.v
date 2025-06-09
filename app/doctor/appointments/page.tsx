@@ -2,19 +2,36 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Clock, Plus, Video, Phone, MapPin } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import {
+  Calendar,
+  Clock,
+  Plus,
+  Video,
+  Phone,
+  MapPin,
+  Search,
+  User,
+  Mail,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  PlayCircle
+} from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { api } from "@/convex/_generated/api";
 
 export default function AppointmentsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   // Get doctor profile
   const doctorProfile = useQuery(
@@ -24,13 +41,7 @@ export default function AppointmentsPage() {
 
   // Get doctor's appointments
   const allAppointments = useQuery(
-    api.appointments.getDoctorAppointments,
-    doctorProfile ? { doctorId: doctorProfile._id } : "skip"
-  );
-
-  // Get today's appointments
-  const todayAppointments = useQuery(
-    api.appointments.getDoctorTodayAppointments,
+    api.appointments.getByDoctor,
     doctorProfile ? { doctorId: doctorProfile._id } : "skip"
   );
 
@@ -78,193 +89,297 @@ export default function AppointmentsPage() {
     }
   };
 
-  const getLocationIcon = (location?: string) => {
-    if (!location) return <MapPin className="h-4 w-4" />;
-    if (location.toLowerCase().includes("virtual") || location.toLowerCase().includes("online")) {
-      return <Video className="h-4 w-4 text-blue-600" />;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "scheduled":
+        return <Clock className="h-3 w-3" />;
+      case "confirmed":
+        return <CheckCircle className="h-3 w-3" />;
+      case "in_progress":
+        return <PlayCircle className="h-3 w-3" />;
+      case "completed":
+        return <CheckCircle className="h-3 w-3" />;
+      case "cancelled":
+        return <XCircle className="h-3 w-3" />;
+      default:
+        return <AlertCircle className="h-3 w-3" />;
     }
-    return <Phone className="h-4 w-4 text-green-600" />;
   };
 
-  const formatTime = (time: string) => {
-    // Convert 24-hour format to 12-hour format
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+  const formatTime = (dateTime: number) => {
+    return new Date(dateTime).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
-  // Calculate stats
-  const todayCount = todayAppointments?.length || 0;
-  const weekCount = allAppointments?.filter(apt => {
-    const aptDate = new Date(apt.appointmentDate);
+  const formatDate = (dateTime: number) => {
+    return new Date(dateTime).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Categorize appointments
+  const categorizeAppointments = () => {
+    if (!allAppointments) return {};
+
     const today = new Date();
-    const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    return aptDate >= today && aptDate <= weekFromNow;
-  }).length || 0;
-  const pendingCount = allAppointments?.filter(apt => apt.status === "scheduled").length || 0;
-  const completedCount = allAppointments?.filter(apt => apt.status === "completed").length || 0;
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+    return {
+      today: allAppointments.filter(apt => {
+        const aptDate = new Date(apt.appointmentDateTime);
+        aptDate.setHours(0, 0, 0, 0);
+        return aptDate.getTime() === today.getTime();
+      }),
+      tomorrow: allAppointments.filter(apt => {
+        const aptDate = new Date(apt.appointmentDateTime);
+        aptDate.setHours(0, 0, 0, 0);
+        return aptDate.getTime() === tomorrow.getTime();
+      }),
+      thisWeek: allAppointments.filter(apt => {
+        const aptDate = new Date(apt.appointmentDateTime);
+        return aptDate > tomorrow && aptDate <= weekFromNow;
+      }),
+      upcoming: allAppointments.filter(apt => {
+        const aptDate = new Date(apt.appointmentDateTime);
+        return aptDate > weekFromNow;
+      }),
+      past: allAppointments.filter(apt => {
+        const aptDate = new Date(apt.appointmentDateTime);
+        return aptDate < today;
+      })
+    };
+  };
+
+  const categories = categorizeAppointments();
+
+  // Filter appointments based on search and category
+  const getFilteredAppointments = () => {
+    let appointments = [];
+
+    switch (selectedCategory) {
+      case "today":
+        appointments = categories.today || [];
+        break;
+      case "tomorrow":
+        appointments = categories.tomorrow || [];
+        break;
+      case "thisWeek":
+        appointments = categories.thisWeek || [];
+        break;
+      case "upcoming":
+        appointments = categories.upcoming || [];
+        break;
+      case "past":
+        appointments = categories.past || [];
+        break;
+      default:
+        appointments = allAppointments || [];
+    }
+
+    if (searchTerm) {
+      appointments = appointments.filter(apt =>
+        apt.patient?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        apt.patient?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        apt.visitReason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        apt.appointmentType?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return appointments;
+  };
+
+  const filteredAppointments = getFilteredAppointments();
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Appointments</h2>
-            <p className="text-muted-foreground">
-              Manage your schedule and upcoming appointments
-            </p>
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold tracking-tight">Appointments</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage your schedule and upcoming appointments
+          </p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search appointments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-xl"
+            />
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Schedule Appointment
+          <Button className="rounded-lg">
+            <Plus className="h-4 w-4 mr-1" />
+            Schedule
           </Button>
         </div>
 
-        {/* Today's Schedule */}
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Today's Schedule
-            </CardTitle>
-            <CardDescription>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {todayAppointments === undefined ? (
-              <div className="flex items-center justify-center py-8">
+        {/* Category Tabs */}
+        <div className="flex items-center gap-1 border-b">
+          {[
+            { key: "all", label: "All", count: allAppointments?.length || 0 },
+            { key: "today", label: "Today", count: categories.today?.length || 0 },
+            { key: "tomorrow", label: "Tomorrow", count: categories.tomorrow?.length || 0 },
+            { key: "thisWeek", label: "This Week", count: categories.thisWeek?.length || 0 },
+            { key: "upcoming", label: "Upcoming", count: categories.upcoming?.length || 0 },
+            { key: "past", label: "Past", count: categories.past?.length || 0 },
+          ].map((category) => (
+            <button
+              key={category.key}
+              onClick={() => setSelectedCategory(category.key)}
+              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                selectedCategory === category.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {category.label} ({category.count})
+            </button>
+          ))}
+        </div>
+
+        {/* Appointments List */}
+        <div className="border rounded-xl">
+          <ScrollArea className="h-[600px]">
+            {allAppointments === undefined ? (
+              <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : todayAppointments.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-center">
-                <div className="space-y-2">
+            ) : filteredAppointments.length === 0 ? (
+              <div className="flex items-center justify-center py-12 text-center">
+                <div className="space-y-4">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-                  <p className="text-sm text-muted-foreground">No appointments scheduled for today</p>
-                  <Button variant="outline" size="sm">
+                  <h3 className="font-medium">No appointments found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {searchTerm ? "Try adjusting your search terms" : "No appointments in this category"}
+                  </p>
+                  <Button variant="outline" size="sm" className="rounded-lg">
+                    <Plus className="h-4 w-4 mr-1" />
                     Schedule Appointment
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {todayAppointments.map((appointment) => (
+              <div className="divide-y">
+                {filteredAppointments.map((appointment: any) => (
                   <div
                     key={appointment._id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    className="p-4 hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center gap-1">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{formatTime(appointment.appointmentTime)}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {appointment.duration ? `${appointment.duration} min` : '30 min'}
-                        </span>
-                      </div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        {/* Time and Date */}
+                        <div className="flex flex-col items-center gap-1 min-w-[80px]">
+                          <div className="text-lg font-bold">
+                            {formatTime(appointment.appointmentDateTime)}
+                          </div>
+                          <div className="text-xs text-muted-foreground text-center">
+                            {formatDate(appointment.appointmentDateTime)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {appointment.duration} min
+                          </div>
+                        </div>
 
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={`/avatars/patient-${appointment.patient?.firstName?.toLowerCase()}.jpg`} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {appointment.patient?.firstName?.[0]}{appointment.patient?.lastName?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-medium">
-                            {appointment.patient?.firstName} {appointment.patient?.lastName}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">{appointment.appointmentType}</p>
+                        {/* Patient Info */}
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-12 w-12">
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {appointment.patient?.firstName?.[0]}{appointment.patient?.lastName?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <h4 className="font-medium">
+                              {appointment.patient?.firstName} {appointment.patient?.lastName}
+                            </h4>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <User className="h-3 w-3" />
+                              <span>{appointment.patient?.gender}, {appointment.patient?.dateOfBirth ? new Date().getFullYear() - new Date(appointment.patient.dateOfBirth).getFullYear() : 'N/A'} years</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <span>{appointment.patient?.primaryPhone}</span>
+                            </div>
+                            {appointment.patient?.email && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Mail className="h-3 w-3" />
+                                <span>{appointment.patient.email}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Appointment Details */}
+                        <div className="space-y-2">
+                          <div>
+                            <p className="font-medium text-sm capitalize">
+                              {appointment.appointmentType.replace('_', ' ')}
+                            </p>
+                            {appointment.visitReason && (
+                              <p className="text-sm text-muted-foreground">
+                                {appointment.visitReason}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {appointment.location?.type === "telemedicine" ? (
+                              <Video className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <MapPin className="h-4 w-4 text-green-600" />
+                            )}
+                            <span className="text-sm text-muted-foreground">
+                              {appointment.location?.type === "telemedicine" ? "Virtual Meeting" : "In-person"}
+                            </span>
+                            {appointment.location?.room && (
+                              <span className="text-sm text-muted-foreground">
+                                • Room {appointment.location.room}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        {getLocationIcon(appointment.appointmentLocation)}
-                        <span className="text-sm text-muted-foreground">
-                          {appointment.appointmentLocation?.toLowerCase().includes("virtual") ||
-                           appointment.appointmentLocation?.toLowerCase().includes("online")
-                            ? "Virtual" : "In-person"}
-                        </span>
-                      </div>
+                      {/* Status and Actions */}
+                      <div className="flex flex-col items-end gap-3">
+                        <Badge variant="secondary" className={`${getStatusColor(appointment.status)} flex items-center gap-1`}>
+                          {getStatusIcon(appointment.status)}
+                          {appointment.status.replace('_', ' ')}
+                        </Badge>
 
-                      <Badge variant="secondary" className={getStatusColor(appointment.status)}>
-                        {appointment.status}
-                      </Badge>
-
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          Reschedule
-                        </Button>
-                        <Button size="sm">
-                          {appointment.appointmentLocation?.toLowerCase().includes("virtual") ? "Join" : "Start"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="rounded-lg">
+                            Reschedule
+                          </Button>
+                          <Button size="sm" variant="outline" className="rounded-lg">
+                            Cancel
+                          </Button>
+                          <Button size="sm" className="rounded-lg">
+                            {appointment.location?.type === "telemedicine" ? "Join Meeting" : "Start Appointment"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Today</p>
-                  <p className="text-2xl font-bold">{todayCount}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">This Week</p>
-                  <p className="text-2xl font-bold">{weekCount}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold">{pendingCount}</p>
-                </div>
-                <Clock className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{completedCount}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
+          </ScrollArea>
         </div>
       </div>
     </DashboardLayout>

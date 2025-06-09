@@ -4,10 +4,9 @@ import { mutation, query } from "./_generated/server";
 // Create a new user
 export const createUser = mutation({
   args: {
-    name: v.string(),
     email: v.string(),
     passwordHash: v.string(),
-    role: v.union(v.literal("doctor"), v.literal("patient")),
+    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin")),
   },
   handler: async (ctx, args) => {
     // Check if user already exists
@@ -22,10 +21,11 @@ export const createUser = mutation({
 
     const now = Date.now();
     const userId = await ctx.db.insert("users", {
-      name: args.name,
       email: args.email,
       passwordHash: args.passwordHash,
       role: args.role,
+      isActive: true,
+      twoFactorEnabled: false,
       createdAt: now,
       updatedAt: now,
     });
@@ -57,13 +57,16 @@ export const getUserById = query({
 export const updateUser = mutation({
   args: {
     userId: v.id("users"),
-    name: v.optional(v.string()),
     email: v.optional(v.string()),
     passwordHash: v.optional(v.string()),
+    isActive: v.optional(v.boolean()),
+    lastLoginAt: v.optional(v.number()),
+    emailVerifiedAt: v.optional(v.number()),
+    twoFactorEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { userId, ...updates } = args;
-    
+
     // If email is being updated, check if it's already taken
     if (updates.email) {
       const existingUser = await ctx.db

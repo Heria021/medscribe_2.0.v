@@ -26,15 +26,16 @@ interface DashboardSidebarProps {
 }
 
 export function DashboardSidebar({ navigation, userRole, currentPath }: DashboardSidebarProps) {
+
   return (
     <Sidebar variant="inset">
-      <SidebarHeader className="border-b border-border/40 bg-sidebar-accent/30">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
+      <SidebarHeader>
+        <div className="flex items-center gap-3 px-4 py-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-sm">
             {userRole === "doctor" ? (
-              <Stethoscope className="h-4 w-4 text-primary-foreground" />
+              <Stethoscope className="h-5 w-5 text-primary-foreground" />
             ) : (
-              <UserCheck className="h-4 w-4 text-primary-foreground" />
+              <UserCheck className="h-5 w-5 text-primary-foreground" />
             )}
           </div>
           <div className="flex flex-col">
@@ -49,7 +50,7 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
       <SidebarContent>
         {navigation.map((section) => (
           <SidebarGroup key={section.title}>
-            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
+            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {section.title}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -61,14 +62,13 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         asChild
-                        className={cn(
-                          "transition-colors hover:bg-accent hover:text-accent-foreground",
-                          isActive && "bg-accent text-accent-foreground font-medium"
-                        )}
+                        isActive={isActive}
+                        tooltip={item.title}
+                        className="transition-all duration-200"
                       >
-                        <Link href={item.href}>
+                        <Link href={item.href} className="flex items-center gap-3">
                           <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
+                          <span className="font-medium">{item.title}</span>
                           {item.badge && (
                             <SidebarMenuBadge className="ml-auto bg-primary text-primary-foreground">
                               {item.badge}
@@ -85,10 +85,13 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/40 bg-sidebar-accent/50">
-        <div className="p-3">
-          <div className="text-xs text-muted-foreground font-medium">
-            MedScribe v2.0
+      <SidebarFooter className="border-t border-border/40">
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-muted-foreground font-medium">
+              MedScribe v2.0
+            </div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="System Online" />
           </div>
         </div>
       </SidebarFooter>

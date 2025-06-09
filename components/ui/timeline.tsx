@@ -18,7 +18,7 @@ import {
 
 interface TimelineItem {
   id: string;
-  type: "patient_share" | "doctor_referral" | "specialist_accept" | "specialist_decline";
+  type: "patient_share" | "doctor_referral" | "specialist_accept" | "specialist_decline" | "doctor_action";
   timestamp: number;
   actor: {
     name: string;
@@ -35,6 +35,7 @@ interface TimelineItem {
   status: "completed" | "pending" | "declined";
   message?: string;
   isRead?: boolean;
+  actionType?: "assistance_provided" | "appointment_scheduled" | "referral_sent" | "treatment_initiated";
 }
 
 interface TimelineProps {
@@ -82,6 +83,13 @@ export function Timeline({ items, className }: TimelineProps) {
           bg: "bg-red-500/10",
           label: "Referral declined"
         };
+      case "doctor_action":
+        return {
+          icon: CheckCircle,
+          color: "text-green-600 dark:text-green-400",
+          bg: "bg-green-500/10",
+          label: "Action taken"
+        };
     }
   };
 
@@ -118,7 +126,7 @@ export function Timeline({ items, className }: TimelineProps) {
         <div className="p-1 bg-muted rounded-md">
           <ArrowRight className="h-3 w-3 text-muted-foreground" />
         </div>
-        <span className="text-xs font-medium text-muted-foreground">Referral Timeline</span>
+        <span className="text-xs font-medium text-muted-foreground">Activity Timeline</span>
       </div>
 
       <div className="relative">
@@ -147,7 +155,19 @@ export function Timeline({ items, className }: TimelineProps) {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-xs font-medium">{config.label}</span>
+                      <span className="text-xs font-medium">
+                        {item.type === "doctor_action" && item.actionType ?
+                          (() => {
+                            switch (item.actionType) {
+                              case "assistance_provided": return "Medical assistance provided";
+                              case "appointment_scheduled": return "Appointment scheduled";
+                              case "referral_sent": return "Referred to specialist";
+                              case "treatment_initiated": return "Treatment plan initiated";
+                              default: return config.label;
+                            }
+                          })() : config.label
+                        }
+                      </span>
                       {getStatusBadge(item.status, item.isRead)}
                     </div>
 
@@ -202,8 +222,8 @@ export function Timeline({ items, className }: TimelineProps) {
   );
 }
 
-// Helper function to create timeline items from shared SOAP data and doctor actions
-export function createTimelineFromSharedNotes(sharedNotes: any[], doctorActions: any[] = [], soapNoteId: string): TimelineItem[] {
+// Helper function to create timeline items from shared SOAP data and referrals
+export function createTimelineFromSharedNotes(sharedNotes: any[], referrals: any[] = [], soapNoteId: string): TimelineItem[] {
   const timelineItems: TimelineItem[] = [];
 
   // Add shared notes to timeline
@@ -220,13 +240,38 @@ export function createTimelineFromSharedNotes(sharedNotes: any[], doctorActions:
         target: {
           name: `${shared.doctor?.firstName || 'Unknown'} ${shared.doctor?.lastName || 'Doctor'}`,
           role: "doctor",
-          specialization: shared.doctor?.specialization,
+          specialization: shared.doctor?.primarySpecialty,
           avatar: shared.doctor?.profileImageUrl
         },
         status: shared.isRead ? "completed" : "pending",
         message: shared.message,
         isRead: shared.isRead
       });
+
+      // Add doctor action if available
+      if (shared.actionStatus && shared.actionTakenAt) {
+        const actionLabels = {
+          assistance_provided: "Medical assistance provided",
+          appointment_scheduled: "Appointment scheduled",
+          referral_sent: "Referred to specialist",
+          treatment_initiated: "Treatment plan initiated"
+        };
+
+        timelineItems.push({
+          id: `${shared._id}_action`,
+          type: "doctor_action",
+          timestamp: shared.actionTakenAt,
+          actor: {
+            name: `${shared.doctor?.firstName || 'Unknown'} ${shared.doctor?.lastName || 'Doctor'}`,
+            role: "doctor",
+            specialization: shared.doctor?.primarySpecialty,
+            avatar: shared.doctor?.profileImageUrl
+          },
+          status: "completed",
+          message: shared.actionDetails || actionLabels[shared.actionStatus],
+          actionType: shared.actionStatus
+        });
+      }
     } else if (shared.shareType === "referral_share") {
       // This would be a specialist acceptance
       timelineItems.push({
@@ -236,7 +281,7 @@ export function createTimelineFromSharedNotes(sharedNotes: any[], doctorActions:
         actor: {
           name: `${shared.doctor?.firstName || 'Unknown'} ${shared.doctor?.lastName || 'Doctor'}`,
           role: "doctor",
-          specialization: shared.doctor?.specialization,
+          specialization: shared.doctor?.primarySpecialty,
           avatar: shared.doctor?.profileImageUrl
         },
         status: shared.isRead ? "completed" : "pending",
@@ -246,46 +291,46 @@ export function createTimelineFromSharedNotes(sharedNotes: any[], doctorActions:
     }
   });
 
-  // Add doctor actions (referrals) to timeline
-  doctorActions
-    .filter((action) => action.soapNote?._id === soapNoteId && action.actionType === "refer_to_specialist")
-    .forEach((action) => {
+  // Add referrals to timeline
+  referrals
+    .filter((referral) => referral.soapNoteId === soapNoteId)
+    .forEach((referral) => {
       // Add the referral action
       timelineItems.push({
-        id: action._id,
+        id: referral._id,
         type: "doctor_referral",
-        timestamp: action.createdAt,
+        timestamp: referral.createdAt,
         actor: {
-          name: `${action.doctor?.firstName || 'Unknown'} ${action.doctor?.lastName || 'Doctor'}`,
+          name: `${referral.fromDoctor?.firstName || 'Unknown'} ${referral.fromDoctor?.lastName || 'Doctor'}`,
           role: "doctor",
-          specialization: action.doctor?.specialization,
-          avatar: action.doctor?.profileImageUrl
+          specialization: referral.fromDoctor?.primarySpecialty,
+          avatar: referral.fromDoctor?.profileImageUrl
         },
-        target: action.specialist ? {
-          name: `${action.specialist?.firstName || 'Unknown'} ${action.specialist?.lastName || 'Specialist'}`,
+        target: referral.toDoctor ? {
+          name: `${referral.toDoctor?.firstName || 'Unknown'} ${referral.toDoctor?.lastName || 'Specialist'}`,
           role: "doctor",
-          specialization: action.specialist?.specialization,
-          avatar: action.specialist?.profileImageUrl
+          specialization: referral.toDoctor?.primarySpecialty,
+          avatar: referral.toDoctor?.profileImageUrl
         } : undefined,
-        status: action.status === "accepted" ? "completed" :
-               action.status === "declined" ? "declined" : "pending",
-        message: action.notes
+        status: referral.status === "accepted" ? "completed" :
+               referral.status === "declined" ? "declined" : "pending",
+        message: referral.clinicalNotes
       });
 
       // Add specialist response if available
-      if (action.status === "declined" && action.specialistResponse) {
+      if (referral.status === "declined" && referral.declineReason) {
         timelineItems.push({
-          id: `${action._id}_decline`,
+          id: `${referral._id}_decline`,
           type: "specialist_decline",
-          timestamp: action.declinedAt || action.updatedAt,
+          timestamp: referral.respondedAt || referral.updatedAt,
           actor: {
-            name: `${action.specialist?.firstName || 'Unknown'} ${action.specialist?.lastName || 'Specialist'}`,
+            name: `${referral.toDoctor?.firstName || 'Unknown'} ${referral.toDoctor?.lastName || 'Specialist'}`,
             role: "doctor",
-            specialization: action.specialist?.specialization,
-            avatar: action.specialist?.profileImageUrl
+            specialization: referral.toDoctor?.primarySpecialty,
+            avatar: referral.toDoctor?.profileImageUrl
           },
           status: "completed",
-          message: action.specialistResponse
+          message: referral.declineReason
         });
       }
     });

@@ -81,13 +81,12 @@ export function ActionCard({
       "bg-card text-card-foreground transition-all duration-200 group",
       // Default styling that can be overridden
       !className?.includes("border") && "border border-border/50 hover:border-border",
-      !className?.includes("shadow") && "shadow-sm hover:shadow-md",
       disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-[1.02]",
       className
     )}>
       <CardContent className={cn(
-        "p-4",
-        variant === "compact" && "p-4",
+        "p-1",
+        variant === "compact" && "p-1",
         variant === "featured" && "p-8"
       )}>
         {variant === "compact" ? (
@@ -101,7 +100,7 @@ export function ActionCard({
               {icon}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-sm truncate text-foreground">{title}</h3>
+              <h3 className="font-medium text-xs truncate text-foreground">{title}</h3>
               {description && (
                 <p className="text-xs text-muted-foreground truncate">{description}</p>
               )}
@@ -125,7 +124,7 @@ export function ActionCard({
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-center gap-2">
-                <h3 className="font-semibold text-lg text-foreground">{title}</h3>
+                <h3 className="font-semibold text-base text-foreground">{title}</h3>
                 {badge && (
                   <Badge variant="secondary" className="text-xs">
                     {badge}
@@ -151,7 +150,7 @@ export function ActionCard({
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-2">
-                <h3 className="font-medium text-sm text-foreground">{title}</h3>
+                <h3 className="font-medium text-xs text-foreground">{title}</h3>
                 {badge && (
                   <Badge variant="secondary" className="text-xs">
                     {badge}

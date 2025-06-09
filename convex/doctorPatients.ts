@@ -11,7 +11,7 @@ export const assignPatient = mutation({
       v.literal("appointment_scheduling"),
       v.literal("direct_assignment")
     ),
-    relatedActionId: v.optional(v.id("doctorActions")),
+    relatedActionId: v.optional(v.union(v.id("appointments"), v.id("referrals"))),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -158,7 +158,22 @@ export const deactivateRelationship = mutation({
   },
 });
 
-// Get relationship statistics for a doctor
+export const getDoctorPatientRelationship = query({
+  args: {
+    doctorId: v.id("doctors"),
+    patientId: v.id("patients"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("doctorPatients")
+      .withIndex("by_doctor_patient", (q) =>
+        q.eq("doctorId", args.doctorId).eq("patientId", args.patientId)
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+  },
+});
+
 export const getDoctorPatientStats = query({
   args: { doctorId: v.id("doctors") },
   handler: async (ctx, args) => {

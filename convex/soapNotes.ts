@@ -122,7 +122,7 @@ export const getStatsByPatientId = query({
 
 // Search SOAP notes by content
 export const searchByContent = query({
-  args: { 
+  args: {
     patientId: v.id("patients"),
     searchTerm: v.string(),
   },
@@ -133,12 +133,63 @@ export const searchByContent = query({
       .collect();
 
     const searchTermLower = args.searchTerm.toLowerCase();
-    
-    return allNotes.filter(note => 
+
+    return allNotes.filter(note =>
       note.subjective.toLowerCase().includes(searchTermLower) ||
       note.objective.toLowerCase().includes(searchTermLower) ||
       note.assessment.toLowerCase().includes(searchTermLower) ||
       note.plan.toLowerCase().includes(searchTermLower)
     );
+  },
+});
+
+// Add assistance to a SOAP note
+export const addAssistance = mutation({
+  args: {
+    soapNoteId: v.id("soapNotes"),
+    assistanceText: v.string(),
+    doctorId: v.id("doctors"),
+  },
+  handler: async (ctx, args) => {
+    const soapNote = await ctx.db.get(args.soapNoteId);
+    if (!soapNote) {
+      throw new Error("SOAP note not found");
+    }
+
+    const doctor = await ctx.db.get(args.doctorId);
+    const patient = await ctx.db.get(soapNote.patientId);
+    const now = Date.now();
+
+    // Add assistance to the SOAP note's plan section
+    const assistanceNote = `\n\n--- Doctor Assistance (${new Date().toLocaleDateString()}) ---\nDr. ${doctor?.firstName} ${doctor?.lastName}: ${args.assistanceText}`;
+
+    await ctx.db.patch(args.soapNoteId, {
+      plan: soapNote.plan + assistanceNote,
+      updatedAt: now,
+    });
+
+    // Create notification for patient
+    if (patient && doctor) {
+      await ctx.db.insert("notifications", {
+        recipientId: patient.userId,
+        recipientType: "patient",
+        category: "clinical",
+        type: "assistance_provided",
+        priority: "medium",
+        title: "Medical Assistance Provided",
+        message: `Dr. ${doctor.firstName} ${doctor.lastName} has provided assistance regarding your SOAP note.`,
+        actionUrl: `/patient/soap-notes`,
+        relatedRecords: {
+          soapNoteId: args.soapNoteId,
+          patientId: soapNote.patientId,
+          doctorId: args.doctorId,
+        },
+        channels: ["in_app", "email"],
+        isRead: false,
+        createdAt: now,
+      });
+    }
+
+    return args.soapNoteId;
   },
 });

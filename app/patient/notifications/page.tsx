@@ -41,9 +41,9 @@ export default function PatientNotificationsPage() {
     session?.user?.id ? { userId: session.user.id as any } : "skip"
   );
 
-  // Get doctor actions for this patient
-  const doctorActions = useQuery(
-    api.doctorActions.getByPatient,
+  // Get referrals for this patient
+  const referrals = useQuery(
+    api.referrals.getByPatient,
     patientProfile ? { patientId: patientProfile._id } : "skip"
   );
 
@@ -142,12 +142,12 @@ export default function PatientNotificationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex-shrink-0">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Bell className="h-6 w-6" />
+            <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+              <Bell className="h-5 w-5" />
               Notifications
               {unreadCount > 0 && (
                 <Badge variant="destructive" className="ml-2">
@@ -155,35 +155,39 @@ export default function PatientNotificationsPage() {
                 </Badge>
               )}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Stay updated on your medical care and appointments
             </p>
           </div>
-          {unreadCount > 0 && (
-            <Button onClick={handleMarkAllAsRead} variant="outline">
-              Mark All as Read
+          <div className="mt-4">
+            {unreadCount > 0 && (
+              <Button onClick={handleMarkAllAsRead} variant="outline">
+                Mark All as Read
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0 space-y-6">
+          {/* Filter Tabs */}
+          <div className="flex gap-2">
+            <Button
+              variant={filter === "all" ? "default" : "outline"}
+              onClick={() => setFilter("all")}
+            >
+              All Notifications
             </Button>
-          )}
-        </div>
+            <Button
+              variant={filter === "unread" ? "default" : "outline"}
+              onClick={() => setFilter("unread")}
+            >
+              Unread ({unreadCount})
+            </Button>
+          </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2">
-          <Button
-            variant={filter === "all" ? "default" : "outline"}
-            onClick={() => setFilter("all")}
-          >
-            All Notifications
-          </Button>
-          <Button
-            variant={filter === "unread" ? "default" : "outline"}
-            onClick={() => setFilter("unread")}
-          >
-            Unread ({unreadCount})
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -202,7 +206,7 @@ export default function PatientNotificationsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Assistance</p>
                   <p className="text-2xl font-bold">
-                    {doctorActions?.filter(a => a.actionType === "immediate_assistance").length || 0}
+                    {referrals?.filter(r => r.referralType === "consultation").length || 0}
                   </p>
                 </div>
                 <Stethoscope className="h-8 w-8 text-blue-600" />
@@ -216,7 +220,7 @@ export default function PatientNotificationsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Appointments</p>
                   <p className="text-2xl font-bold">
-                    {doctorActions?.filter(a => a.actionType === "schedule_appointment").length || 0}
+                    {referrals?.filter(r => r.status === "accepted").length || 0}
                   </p>
                 </div>
                 <CalendarPlus className="h-8 w-8 text-green-600" />
@@ -230,7 +234,7 @@ export default function PatientNotificationsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Referrals</p>
                   <p className="text-2xl font-bold">
-                    {doctorActions?.filter(a => a.actionType === "refer_to_specialist").length || 0}
+                    {referrals?.length || 0}
                   </p>
                 </div>
                 <UserPlus className="h-8 w-8 text-purple-600" />
@@ -239,20 +243,20 @@ export default function PatientNotificationsPage() {
           </Card>
         </div>
 
-        {/* Notifications List */}
-        {filteredNotifications.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No notifications found</h3>
-                <p className="text-muted-foreground">
-                  {filter === "unread" ? "You're all caught up!" : "You don't have any notifications yet"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
+          {/* Notifications List */}
+          {filteredNotifications.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No notifications found</h3>
+                  <p className="text-muted-foreground">
+                    {filter === "unread" ? "You're all caught up!" : "You don't have any notifications yet"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="space-y-4">
             {filteredNotifications.map((notification) => (
               <Card 
@@ -317,42 +321,43 @@ export default function PatientNotificationsPage() {
           </div>
         )}
 
-        {/* Doctor Actions Section */}
-        {doctorActions && doctorActions.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Medical Actions</CardTitle>
-              <CardDescription>
-                Track the status of assistance, appointments, and referrals from your doctors
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {doctorActions.slice(0, 5).map((action) => (
-                  <div key={action._id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {getNotificationIcon(action.actionType)}
-                      <div>
-                        <p className="font-medium">
-                          {action.actionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Dr. {action.doctor?.firstName} {action.doctor?.lastName}
+          {/* Doctor Actions Section */}
+          {doctorActions && doctorActions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Medical Actions</CardTitle>
+                <CardDescription>
+                  Track the status of assistance, appointments, and referrals from your doctors
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {doctorActions.slice(0, 5).map((action) => (
+                    <div key={action._id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {getNotificationIcon(action.actionType)}
+                        <div>
+                          <p className="font-medium">
+                            {action.actionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Dr. {action.doctor?.firstName} {action.doctor?.lastName}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {getActionStatusBadge(action.status)}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(action.createdAt)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      {getActionStatusBadge(action.status)}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDate(action.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

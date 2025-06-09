@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-// Patient Profile Schema
+// Patient Profile Schema - Updated to match new Convex schema
 export const patientProfileSchema = z.object({
+  // Core Demographics
   firstName: z
     .string()
     .min(2, "First name must be at least 2 characters")
@@ -19,74 +20,94 @@ export const patientProfileSchema = z.object({
       const age = today.getFullYear() - birthDate.getFullYear();
       return age >= 0 && age <= 150;
     }, "Please enter a valid date of birth"),
-  gender: z.enum(["Male", "Female", "Other"], {
+  gender: z.enum(["M", "F", "O", "U"], {
     required_error: "Please select a gender",
   }),
-  phone: z
+
+  // Contact Information
+  primaryPhone: z
+    .string()
+    .min(10, "Primary phone is required")
+    .refine((phone) => {
+      return /^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/[\s\-\(\)]/g, ""));
+    }, "Please enter a valid phone number"),
+  secondaryPhone: z
     .string()
     .optional()
     .refine((phone) => {
       if (!phone) return true;
       return /^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/[\s\-\(\)]/g, ""));
-    }, "Please enter a valid phone number"),
+    }, "Please enter a valid secondary phone number"),
   email: z
     .string()
-    .email("Please enter a valid email address")
-    .optional()
-    .or(z.literal("")),
-  address: z
+    .email("Please enter a valid email address"),
+
+  // Address Information
+  addressLine1: z
     .string()
-    .max(500, "Address must be less than 500 characters")
-    .optional(),
-  nationality: z
+    .min(5, "Address line 1 is required")
+    .max(200, "Address line 1 must be less than 200 characters"),
+  addressLine2: z
     .string()
-    .max(50, "Nationality must be less than 50 characters")
+    .max(200, "Address line 2 must be less than 200 characters")
     .optional(),
-  ethnicity: z
+  city: z
     .string()
-    .max(50, "Ethnicity must be less than 50 characters")
-    .optional(),
-  maritalStatus: z
-    .enum(["Single", "Married", "Divorced", "Widowed"])
-    .optional(),
-  occupation: z
+    .min(2, "City is required")
+    .max(100, "City must be less than 100 characters"),
+  state: z
     .string()
-    .max(100, "Occupation must be less than 100 characters")
-    .optional(),
-  employerName: z
+    .min(2, "State is required")
+    .max(100, "State must be less than 100 characters"),
+  zipCode: z
     .string()
-    .max(100, "Employer name must be less than 100 characters")
-    .optional(),
-  employerContact: z
+    .min(5, "ZIP code is required")
+    .max(10, "ZIP code must be less than 10 characters"),
+  country: z
     .string()
-    .max(50, "Employer contact must be less than 50 characters")
-    .optional(),
-  governmentId: z
+    .min(2, "Country is required")
+    .max(100, "Country must be less than 100 characters"),
+
+  // Medical Identifiers
+  nationalId: z
     .string()
-    .max(50, "Government ID must be less than 50 characters")
+    .max(50, "National ID must be less than 50 characters")
     .optional(),
+
+  // Clinical Information
+  bloodType: z
+    .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])
+    .optional(),
+
+  // Emergency Contact
+  emergencyContactName: z
+    .string()
+    .min(2, "Emergency contact name is required")
+    .max(100, "Emergency contact name must be less than 100 characters"),
+  emergencyContactPhone: z
+    .string()
+    .min(10, "Emergency contact phone is required")
+    .refine((phone) => {
+      return /^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/[\s\-\(\)]/g, ""));
+    }, "Please enter a valid emergency contact phone number"),
+  emergencyContactRelation: z
+    .string()
+    .min(2, "Emergency contact relation is required")
+    .max(50, "Emergency contact relation must be less than 50 characters"),
+
+  // Care Management
   preferredLanguage: z
     .string()
     .max(50, "Preferred language must be less than 50 characters")
     .optional(),
-  emergencyContactName: z
+
+  // Consent & Legal
+  consentForTreatment: z.boolean().default(true),
+  consentForDataSharing: z.boolean().default(false),
+  advanceDirectives: z
     .string()
-    .max(100, "Emergency contact name must be less than 100 characters")
+    .max(1000, "Advance directives must be less than 1000 characters")
     .optional(),
-  emergencyContactPhone: z
-    .string()
-    .optional()
-    .refine((phone) => {
-      if (!phone) return true;
-      return /^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/[\s\-\(\)]/g, ""));
-    }, "Please enter a valid emergency contact phone number"),
-  bloodGroup: z
-    .string()
-    .max(5, "Blood group must be less than 5 characters")
-    .optional(),
-  consentToContact: z.boolean().default(false),
-  consentToDataShare: z.boolean().default(false),
-  accountType: z.enum(["Patient", "Guardian"]).default("Patient"),
 });
 
 // Medical History Schema
@@ -163,32 +184,108 @@ export const insuranceSchema = z.object({
   path: ["validUntil"],
 });
 
+// Password Change Schema
+export const passwordChangeSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(1, "Current password is required"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+// Privacy Settings Schema
+export const privacySettingsSchema = z.object({
+  dataSharing: z.object({
+    allowResearch: z.boolean(),
+    allowMarketing: z.boolean(),
+    shareWithPartners: z.boolean(),
+    anonymousAnalytics: z.boolean(),
+  }),
+  visibility: z.object({
+    profileVisible: z.boolean(),
+    appointmentHistory: z.boolean(),
+    medicalHistory: z.boolean(),
+    contactInfo: z.boolean(),
+  }),
+  security: z.object({
+    twoFactorAuth: z.boolean(),
+    sessionTimeout: z.boolean(),
+    loginNotifications: z.boolean(),
+    deviceTracking: z.boolean(),
+  }),
+});
+
+// Email Update Schema
+export const emailUpdateSchema = z.object({
+  newEmail: z
+    .string()
+    .email("Please enter a valid email address")
+    .toLowerCase(),
+  password: z
+    .string()
+    .min(1, "Password is required for email changes"),
+});
+
 // Type exports
 export type PatientProfileFormData = z.infer<typeof patientProfileSchema>;
 export type MedicalHistoryFormData = z.infer<typeof medicalHistorySchema>;
 export type AllergyFormData = z.infer<typeof allergySchema>;
 export type InsuranceFormData = z.infer<typeof insuranceSchema>;
+export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
+export type PrivacySettingsFormData = z.infer<typeof privacySettingsSchema>;
+export type EmailUpdateFormData = z.infer<typeof emailUpdateSchema>;
 
-// Blood group options
-export const bloodGroupOptions = [
+// Blood type options (updated to match schema)
+export const bloodTypeOptions = [
   "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"
+];
+
+// Gender options (updated to match schema)
+export const genderOptions = [
+  { value: "M", label: "Male" },
+  { value: "F", label: "Female" },
+  { value: "O", label: "Other" },
+  { value: "U", label: "Prefer not to say" }
 ];
 
 // Language options
 export const languageOptions = [
-  "English", "Spanish", "French", "German", "Italian", "Portuguese", 
+  "English", "Spanish", "French", "German", "Italian", "Portuguese",
   "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Russian", "Other"
 ];
 
-// Nationality options (common ones)
-export const nationalityOptions = [
-  "American", "British", "Canadian", "Australian", "German", "French", 
-  "Italian", "Spanish", "Chinese", "Japanese", "Indian", "Brazilian", 
-  "Mexican", "Russian", "Other"
+// Emergency contact relation options
+export const emergencyContactRelationOptions = [
+  "Spouse", "Parent", "Child", "Sibling", "Friend", "Guardian",
+  "Grandparent", "Aunt/Uncle", "Cousin", "Partner", "Other"
 ];
 
-// Ethnicity options (common ones)
-export const ethnicityOptions = [
-  "White", "Black or African American", "Asian", "Hispanic or Latino", 
-  "Native American", "Pacific Islander", "Mixed Race", "Other", "Prefer not to say"
+// Country options (common ones)
+export const countryOptions = [
+  "United States", "Canada", "United Kingdom", "Australia", "Germany",
+  "France", "Italy", "Spain", "China", "Japan", "India", "Brazil",
+  "Mexico", "Russia", "Other"
+];
+
+// US States options
+export const usStatesOptions = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+  "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+  "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
+  "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
+  "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+  "New Hampshire", "New Jersey", "New Mexico", "New York",
+  "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+  "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
+  "West Virginia", "Wisconsin", "Wyoming"
 ];

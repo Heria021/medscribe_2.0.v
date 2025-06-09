@@ -10,19 +10,26 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Stethoscope,
   Calendar,
   UserPlus,
-  Clock,
   MapPin,
   AlertTriangle,
+  Send,
+  Search,
+  CheckCircle,
+  Loader2,
   X,
-  Send
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
+
 
 interface DoctorActionModalProps {
   isOpen: boolean;
@@ -31,6 +38,7 @@ interface DoctorActionModalProps {
   patientId: Id<"patients">;
   doctorId: Id<"doctors">;
   patientName: string;
+  sharedSoapNoteId?: Id<"sharedSoapNotes">;
 }
 
 export function DoctorActionModal({
@@ -40,6 +48,7 @@ export function DoctorActionModal({
   patientId,
   doctorId,
   patientName,
+  sharedSoapNoteId,
 }: DoctorActionModalProps) {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,92 +59,148 @@ export function DoctorActionModal({
   const [appointmentDate, setAppointmentDate] = useState("");
   const [appointmentTime, setAppointmentTime] = useState("");
   const [appointmentType, setAppointmentType] = useState("");
-  const [appointmentLocation, setAppointmentLocation] = useState("");
+  const [visitReason, setVisitReason] = useState("");
+  const [duration, setDuration] = useState<number>(30);
+  const [locationType, setLocationType] = useState<"in_person" | "telemedicine">("in_person");
+  const [address, setAddress] = useState("");
+  const [room, setRoom] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
 
   const [selectedSpecialist, setSelectedSpecialist] = useState("");
   const [referralReason, setReferralReason] = useState("");
   const [urgencyLevel, setUrgencyLevel] = useState<"low" | "medium" | "high" | "urgent">("medium");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Enhanced doctor search with better filtering
+  const specialists = useQuery(
+    api.doctors.searchDoctors,
+    {
+      searchTerm: searchTerm || undefined,
+      excludeDoctorId: doctorId,
+      acceptingNewPatients: true, // Only show doctors accepting new patients for referrals
+      limit: 50,
+    }
+  ) || [];
 
   // Mutations
-  const createAction = useMutation(api.doctorActions.create);
+  const createAssistance = useMutation(api.soapNotes.addAssistance);
   const createAppointment = useMutation(api.appointments.create);
-
-  // Queries - exclude current doctor from specialists list
-  const specialists = useQuery(api.doctors.getAll, { excludeDoctorId: doctorId }) || [];
+  const createReferral = useMutation(api.referrals.create);
+  const assignPatient = useMutation(api.doctorPatients.assignPatient);
+  const updateActionStatus = useMutation(api.sharedSoapNotes.updateActionStatus);
 
   const handleSubmit = async () => {
     if (!selectedAction) return;
 
     setIsSubmitting(true);
     try {
-      let actionData: any = {
-        soapNoteId,
-        patientId,
-        doctorId,
-      };
+      if (selectedAction === "assistance") {
+        if (!assistanceText.trim()) {
+          toast.error("Please provide assistance details");
+          setIsSubmitting(false);
+          return;
+        }
 
-      switch (selectedAction) {
-        case "assistance":
-          if (!assistanceText.trim()) {
-            toast.error("Please provide assistance details");
-            return;
-          }
-          actionData = {
-            ...actionData,
-            actionType: "immediate_assistance" as const,
-            assistanceProvided: assistanceText,
-          };
-          break;
-
-        case "appointment":
-          if (!appointmentDate || !appointmentTime || !appointmentType) {
-            toast.error("Please fill in all appointment details");
-            return;
-          }
-          actionData = {
-            ...actionData,
-            actionType: "schedule_appointment" as const,
-            appointmentDate: new Date(appointmentDate).getTime(),
-            appointmentTime,
-            appointmentType,
-            appointmentLocation,
-          };
-          break;
-
-        case "referral":
-          if (!selectedSpecialist || !referralReason.trim()) {
-            toast.error("Please select a specialist and provide referral reason");
-            return;
-          }
-          actionData = {
-            ...actionData,
-            actionType: "refer_to_specialist" as const,
-            specialistId: selectedSpecialist as Id<"doctors">,
-            referralReason,
-            urgencyLevel,
-          };
-          break;
-      }
-
-      const actionId = await createAction(actionData);
-
-      // If scheduling an appointment, also create an appointment record
-      if (selectedAction === "appointment") {
-        await createAppointment({
-          patientId,
+        await createAssistance({
+          soapNoteId,
+          assistanceText: assistanceText.trim(),
           doctorId,
-          appointmentDate: new Date(appointmentDate).getTime(),
-          appointmentTime,
-          appointmentType,
-          appointmentLocation,
-          relatedSoapNoteId: soapNoteId,
-          relatedActionId: actionId,
         });
+
+        // Update action status if this is from a shared SOAP note
+        if (sharedSoapNoteId) {
+          await updateActionStatus({
+            sharedSoapNoteId,
+            actionStatus: "assistance_provided",
+            actionDetails: `Medical assistance provided: ${assistanceText.trim().substring(0, 100)}...`,
+          });
+        }
+
+        toast.success("Assistance provided successfully!");
+      } else if (selectedAction === "appointment") {
+        if (!appointmentDate || !appointmentTime || !appointmentType || !visitReason.trim()) {
+          toast.error("Please fill in all required appointment fields");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const appointmentDateTime = new Date(`${appointmentDate}T${appointmentTime}`).getTime();
+
+        // Check if appointment is in the future
+        if (appointmentDateTime <= Date.now()) {
+          toast.error("Appointment must be scheduled for a future date and time");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // First, ensure doctor-patient relationship exists
+        const doctorPatientId = await assignPatient({
+          doctorId,
+          patientId,
+          assignedBy: "appointment_scheduling",
+        });
+
+        const appointmentId = await createAppointment({
+          doctorPatientId,
+          appointmentDateTime,
+          duration,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          appointmentType: appointmentType as any,
+          visitReason: visitReason.trim(),
+          location: {
+            type: locationType,
+            address: locationType === "in_person" ? address : undefined,
+            room: locationType === "in_person" ? room : undefined,
+            meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
+          },
+          notes: `Scheduled from SOAP note review`,
+        });
+
+        // Update action status if this is from a shared SOAP note
+        if (sharedSoapNoteId) {
+          await updateActionStatus({
+            sharedSoapNoteId,
+            actionStatus: "appointment_scheduled",
+            actionDetails: `Appointment scheduled for ${new Date(appointmentDateTime).toLocaleDateString()} - ${visitReason}`,
+            relatedActionId: appointmentId,
+          });
+        }
+
+        toast.success("Appointment scheduled successfully!");
+      } else if (selectedAction === "referral") {
+        if (!selectedSpecialist || !referralReason.trim()) {
+          toast.error("Please select a specialist and provide referral reason");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Get specialist info for specialty
+        const specialist = specialists.find(s => s._id === selectedSpecialist);
+
+        const referralId = await createReferral({
+          fromDoctorId: doctorId,
+          toDoctorId: selectedSpecialist as any,
+          patientId,
+          soapNoteId,
+          specialtyRequired: specialist?.primarySpecialty || "General Medicine",
+          urgency: urgencyLevel === "urgent" ? "urgent" : "routine",
+          reasonForReferral: referralReason.trim(),
+        });
+
+        // Update action status if this is from a shared SOAP note
+        if (sharedSoapNoteId) {
+          await updateActionStatus({
+            sharedSoapNoteId,
+            actionStatus: "referral_sent",
+            actionDetails: `Referred to ${specialist?.firstName} ${specialist?.lastName} (${specialist?.primarySpecialty}) - ${referralReason.trim().substring(0, 100)}...`,
+            relatedActionId: referralId,
+          });
+        }
+
+        toast.success("Referral sent successfully!");
       }
 
-      toast.success("Action created successfully!");
       handleClose();
-
     } catch (error) {
       console.error("Error creating action:", error);
       toast.error("Failed to create action");
@@ -150,23 +215,24 @@ export function DoctorActionModal({
     setAppointmentDate("");
     setAppointmentTime("");
     setAppointmentType("");
-    setAppointmentLocation("");
+    setVisitReason("");
+    setDuration(30);
+    setLocationType("in_person");
+    setAddress("");
+    setRoom("");
+    setMeetingLink("");
     setSelectedSpecialist("");
     setReferralReason("");
     setUrgencyLevel("medium");
+    setSearchTerm("");
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-3">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">Take Action</DialogTitle>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-xl">Take Action</DialogTitle>
           <div className="text-sm text-muted-foreground">
             Patient: <span className="font-medium text-foreground">{patientName}</span>
           </div>
@@ -288,6 +354,19 @@ export function DoctorActionModal({
             {/* Appointment Form */}
             {selectedAction === "appointment" && (
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="visit-reason" className="text-sm font-medium">
+                    Visit Reason *
+                  </Label>
+                  <Input
+                    id="visit-reason"
+                    placeholder="Reason for the appointment"
+                    value={visitReason}
+                    onChange={(e) => setVisitReason(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="appointment-date" className="text-sm font-medium">
@@ -316,37 +395,99 @@ export function DoctorActionModal({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="appointment-type" className="text-sm font-medium">
+                      Appointment Type *
+                    </Label>
+                    <Select value={appointmentType} onValueChange={setAppointmentType}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new_patient">New Patient</SelectItem>
+                        <SelectItem value="follow_up">Follow-up</SelectItem>
+                        <SelectItem value="consultation">Consultation</SelectItem>
+                        <SelectItem value="procedure">Procedure</SelectItem>
+                        <SelectItem value="telemedicine">Telemedicine</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="duration" className="text-sm font-medium">
+                      Duration (minutes)
+                    </Label>
+                    <Select value={duration.toString()} onValueChange={(value) => setDuration(parseInt(value))}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 minutes</SelectItem>
+                        <SelectItem value="30">30 minutes</SelectItem>
+                        <SelectItem value="45">45 minutes</SelectItem>
+                        <SelectItem value="60">1 hour</SelectItem>
+                        <SelectItem value="90">1.5 hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="appointment-type" className="text-sm font-medium">
-                    Appointment Type *
-                  </Label>
-                  <Select value={appointmentType} onValueChange={setAppointmentType}>
+                  <Label className="text-sm font-medium">Location Type</Label>
+                  <Select value={locationType} onValueChange={(value: "in_person" | "telemedicine") => setLocationType(value)}>
                     <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select appointment type" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="consultation">Consultation</SelectItem>
-                      <SelectItem value="follow-up">Follow-up</SelectItem>
-                      <SelectItem value="check-up">Check-up</SelectItem>
-                      <SelectItem value="procedure">Procedure</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
+                      <SelectItem value="in_person">In Person</SelectItem>
+                      <SelectItem value="telemedicine">Telemedicine</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="appointment-location" className="text-sm font-medium">
-                    <MapPin className="h-4 w-4 inline mr-1" />
-                    Location
-                  </Label>
-                  <Input
-                    id="appointment-location"
-                    placeholder="Clinic address or online meeting link"
-                    value={appointmentLocation}
-                    onChange={(e) => setAppointmentLocation(e.target.value)}
-                    className="mt-2"
-                  />
-                </div>
+                {locationType === "in_person" ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="address" className="text-sm font-medium">
+                        <MapPin className="h-4 w-4 inline mr-1" />
+                        Address
+                      </Label>
+                      <Input
+                        id="address"
+                        placeholder="Clinic address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="room" className="text-sm font-medium">
+                        Room
+                      </Label>
+                      <Input
+                        id="room"
+                        placeholder="Room number"
+                        value={room}
+                        onChange={(e) => setRoom(e.target.value)}
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <Label htmlFor="meeting-link" className="text-sm font-medium">
+                      Meeting Link
+                    </Label>
+                    <Input
+                      id="meeting-link"
+                      placeholder="Video meeting link"
+                      value={meetingLink}
+                      onChange={(e) => setMeetingLink(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -354,29 +495,140 @@ export function DoctorActionModal({
             {selectedAction === "referral" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="specialist" className="text-sm font-medium">
-                    Select Specialist *
+                  <Label className="text-sm font-medium">
+                    Select Doctor for Referral *
                   </Label>
-                  <Select value={selectedSpecialist} onValueChange={setSelectedSpecialist}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Choose a specialist" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {specialists.map((specialist) => (
-                        <SelectItem key={specialist._id} value={specialist._id}>
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">
-                              Dr. {specialist.firstName} {specialist.lastName}
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {specialist.specialization}
-                            </Badge>
+
+                  {/* Enhanced Search Input */}
+                  <div className="relative mt-2">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name, specialty, or hospital..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-10 bg-background/50 border-muted-foreground/20 focus:border-primary/50 transition-all"
+                    />
+                    {searchTerm && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 rounded-full hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Enhanced Specialists List */}
+                  <ScrollArea className="h-64 mt-3 rounded-xl border border-muted-foreground/10 bg-muted/20">
+                    <div className="p-2 space-y-1">
+                      {specialists.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-center p-6">
+                          <div>
+                            <Stethoscope className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                              {searchTerm ? "No doctors found matching your search" : "No doctors available for referral"}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Try searching by name or specialty
+                            </p>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </div>
+                      ) : (
+                        specialists.map((specialist) => (
+                          <Card
+                            key={specialist._id}
+                            className={cn(
+                              "cursor-pointer transition-all duration-200 border-0 shadow-none hover:shadow-sm",
+                              selectedSpecialist === specialist._id
+                                ? "bg-primary/5 ring-1 ring-primary/30"
+                                : "hover:bg-muted/50"
+                            )}
+                            onClick={() => setSelectedSpecialist(specialist._id)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10 ring-1 ring-border">
+                                  <AvatarImage src={specialist.profileImageUrl} />
+                                  <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground text-sm font-medium">
+                                    {specialist.firstName[0]}{specialist.lastName[0]}
+                                  </AvatarFallback>
+                                </Avatar>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-medium text-sm truncate">
+                                      Dr. {specialist.firstName} {specialist.lastName}
+                                    </h4>
+                                    {selectedSpecialist === specialist._id && (
+                                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="secondary" className="text-xs h-5 px-2 bg-primary/10 text-primary">
+                                      <Stethoscope className="h-3 w-3 mr-1" />
+                                      {specialist.primarySpecialty}
+                                    </Badge>
+                                    {specialist.yearsOfExperience && (
+                                      <Badge variant="outline" className="text-xs h-5 px-2 border-muted-foreground/30">
+                                        {specialist.yearsOfExperience}y exp
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {specialist.secondarySpecialties && specialist.secondarySpecialties.length > 0 && (
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      Also: {specialist.secondarySpecialties.slice(0, 2).join(", ")}
+                                    </p>
+                                  )}
+
+                                  <div className="flex items-center gap-1 mt-1">
+                                    {specialist.isAcceptingNewPatients && (
+                                      <Badge variant="secondary" className="text-xs h-4 px-1.5">
+                                        Available
+                                      </Badge>
+                                    )}
+                                    {specialist.hospitalAffiliations && specialist.hospitalAffiliations.length > 0 && (
+                                      <Badge variant="outline" className="text-xs h-4 px-1.5 border-muted-foreground/30">
+                                        {specialist.hospitalAffiliations[0]}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
                 </div>
+
+                {/* Selected Doctor Confirmation */}
+                {selectedSpecialist && (
+                  <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={specialists.find(s => s._id === selectedSpecialist)?.profileImageUrl} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {specialists.find(s => s._id === selectedSpecialist)?.firstName[0]}
+                          {specialists.find(s => s._id === selectedSpecialist)?.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          Dr. {specialists.find(s => s._id === selectedSpecialist)?.firstName} {specialists.find(s => s._id === selectedSpecialist)?.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {specialists.find(s => s._id === selectedSpecialist)?.primarySpecialty}
+                        </p>
+                      </div>
+                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="urgency" className="text-sm font-medium">

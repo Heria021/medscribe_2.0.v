@@ -257,81 +257,100 @@ export function AudioRecorder({
   }
 
   return (
-    <Card className="shadow-none">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Volume2 className="h-5 w-5" />
-          Audio Recording
-        </CardTitle>
-        <CardDescription>
-          Record your voice or upload an audio file for SOAP note generation
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4 w-full">
+      <CardContent className="space-y-4 w-full p-0">
         {/* Recording Controls */}
         {!audioBlob && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-2">
+          <div className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
               {!isRecording ? (
-                <Button 
-                  onClick={startRecording}
-                  disabled={disabled}
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <Mic className="h-5 w-5" />
-                  Start Recording
-                </Button>
+                <div className="text-center space-y-4">
+                  <Button
+                    onClick={startRecording}
+                    disabled={disabled}
+                    size="lg"
+                    className="flex items-center gap-2 px-8 py-3"
+                  >
+                    <Mic className="h-5 w-5" />
+                    Start Recording
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Click to start recording your voice
+                  </p>
+                </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    onClick={pauseRecording}
-                    variant="outline"
-                    size="lg"
-                  >
-                    {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                    {isPaused ? 'Resume' : 'Pause'}
-                  </Button>
-                  <Button 
-                    onClick={stopRecording}
-                    variant="destructive"
-                    size="lg"
-                  >
-                    <Square className="h-4 w-4" />
-                    Stop
-                  </Button>
+                <div className="text-center space-y-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <Button
+                      onClick={pauseRecording}
+                      variant="outline"
+                      size="lg"
+                      className="flex items-center gap-2"
+                    >
+                      {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                      {isPaused ? 'Resume' : 'Pause'}
+                    </Button>
+                    <Button
+                      onClick={stopRecording}
+                      variant="destructive"
+                      size="lg"
+                      className="flex items-center gap-2"
+                    >
+                      <Square className="h-4 w-4" />
+                      Stop
+                    </Button>
+                  </div>
+                  {isPaused && (
+                    <p className="text-sm text-orange-600">Recording paused</p>
+                  )}
                 </div>
               )}
             </div>
 
             {isRecording && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Recording time</span>
-                  <Badge variant={isPaused ? "secondary" : "default"}>
-                    {formatTime(recordingTime)} / {formatTime(maxDuration)}
-                  </Badge>
-                </div>
-                <Progress 
-                  value={(recordingTime / maxDuration) * 100} 
-                  className="h-2"
-                />
-                {isPaused && (
-                  <p className="text-sm text-orange-600 text-center">Recording paused</p>
-                )}
-              </div>
+              <Card className="border bg-red-50 dark:bg-red-950/20">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium text-red-800 dark:text-red-200">Recording</span>
+                      </div>
+                      <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                        {formatTime(recordingTime)} / {formatTime(maxDuration)}
+                      </Badge>
+                    </div>
+                    <Progress
+                      value={(recordingTime / maxDuration) * 100}
+                      className="h-2"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">or</div>
-              <Button 
+              <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
                 disabled={disabled}
+                className="flex items-center gap-2"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4" />
                 Upload Audio File
               </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Supports MP3, WAV, M4A, WebM (max 50MB)
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -345,50 +364,60 @@ export function AudioRecorder({
 
         {/* Audio Playback */}
         {audioBlob && audioUrl && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button 
-                  onClick={playAudio}
-                  variant="outline"
-                  size="sm"
-                >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isPlaying ? 'Pause' : 'Play'}
-                </Button>
-                <Badge variant="secondary">
-                  {formatTime(recordingTime)}
-                </Badge>
+          <Card className="border bg-blue-50 dark:bg-blue-950/20">
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={playAudio}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      {isPlaying ? 'Pause' : 'Play'}
+                    </Button>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      {formatTime(recordingTime)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={downloadAudio}
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={removeAudio}
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  onEnded={() => setIsPlaying(false)}
+                  className="w-full"
+                  controls
+                />
+
+                <p className="text-xs text-blue-600 dark:text-blue-400 text-center">
+                  Audio ready for SOAP note generation
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  onClick={downloadAudio}
-                  variant="ghost"
-                  size="sm"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button 
-                  onClick={removeAudio}
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <audio
-              ref={audioRef}
-              src={audioUrl}
-              onEnded={() => setIsPlaying(false)}
-              className="w-full"
-              controls
-            />
-          </div>
+            </CardContent>
+          </Card>
         )}
       </CardContent>
-    </Card>
+    </div>
   );
 }
