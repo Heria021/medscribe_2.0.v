@@ -14,7 +14,8 @@ import {
   Shield,
   Activity,
   Stethoscope,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from "lucide-react";
 
 export interface NavItem {
@@ -68,17 +69,22 @@ export const doctorNavigation: NavSection[] = [
     ],
   },
   {
+    title: "Communication",
+    items: [
+      {
+        title: "Patient Chat",
+        href: "/doctor/chat",
+        icon: MessageCircle,
+      },
+    ],
+  },
+  {
     title: "Medical Records",
     items: [
       {
         title: "Shared SOAP Notes",
         href: "/doctor/shared-soap",
         icon: Share,
-      },
-      {
-        title: "SOAP Notes",
-        href: "/doctor/soap",
-        icon: FileText,
       },
       {
         title: "Referrals",
@@ -169,6 +175,11 @@ export const patientNavigation: NavSection[] = [
   {
     title: "Communication",
     items: [
+      {
+        title: "Chat with Doctors",
+        href: "/patient/chat",
+        icon: MessageCircle,
+      },
       {
         title: "Notifications",
         href: "/patient/notifications",

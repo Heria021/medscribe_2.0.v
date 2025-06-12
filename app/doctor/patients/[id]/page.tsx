@@ -7,6 +7,8 @@ import { useState, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft,
   Plus,
@@ -16,17 +18,20 @@ import {
   Phone,
   Mail,
   User,
-  Clock,
   Target,
   CheckCircle,
-  Eye
+  Eye,
+  FileText,
+  MessageCircle
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { AddTreatmentForm } from "@/components/treatments/add-treatment-form";
 import { AddMedicationForm } from "@/components/medications/add-medication-form";
+import { DoctorPatientChat } from "@/components/doctor/doctor-patient-chat";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface PatientDetailPageProps {
   params: Promise<{
@@ -52,7 +57,8 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<"overview" | "treatment-form" | "medication-form">("overview");
+  const [activeView, setActiveView] = useState<"overview" | "treatment-form" | "medication-form" | "chat">("overview");
+  const [showChat, setShowChat] = useState(false);
 
   const updateTreatment = useMutation(api.treatmentPlans.update);
   const updateMedication = useMutation(api.medications.update);
@@ -149,319 +155,412 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
 
   return (
     <DashboardLayout>
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-xl font-bold tracking-tight">
-            {patient.firstName} {patient.lastName}
-          </h1>
-        </div>
+      <div className="h-full flex flex-col space-y-4">
+        {/* Compact Header */}
+        <div className="flex-shrink-0 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.back()}
+                className="h-8 w-8 p-0"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
 
-        {/* Patient Info Bar */}
-        <div className="flex items-center justify-between p-3 border rounded-xl mb-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="text-sm font-bold bg-primary text-primary-foreground">
-                {patient.firstName[0]}{patient.lastName[0]}
-              </AvatarFallback>
-            </Avatar>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-xs font-bold bg-primary text-primary-foreground">
+                    {patient.firstName[0]}{patient.lastName[0]}
+                  </AvatarFallback>
+                </Avatar>
 
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {calculateAge(patient.dateOfBirth)} years
-              </span>
-              <span className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                {patient.gender}
-              </span>
-              <span className="flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                {patient.primaryPhone}
-              </span>
-              <span className="flex items-center gap-1">
-                <Mail className="h-3 w-3" />
-                {patient.email}
-              </span>
+                <div>
+                  <h1 className="text-lg font-semibold">
+                    {patient.firstName} {patient.lastName}
+                  </h1>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {calculateAge(patient.dateOfBirth)} years
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {patient.gender}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {patient.primaryPhone}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {patient.email}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="text-right">
+                  <div className="text-lg font-bold text-foreground">{activeTreatments.length}</div>
+                  <div className="text-xs text-muted-foreground">Active Plans</div>
+                </div>
+                <div className="w-px h-6 bg-border" />
+                <div className="text-right">
+                  <div className="text-lg font-bold text-foreground">{activeMedications.length}</div>
+                  <div className="text-xs text-muted-foreground">Medications</div>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowChat(!showChat)}
+                className="h-8 px-3 text-xs"
+              >
+                <MessageCircle className="h-3 w-3 mr-1" />
+                Chat
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => setActiveView("treatment-form")}
+                className="h-8 px-3 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add Treatment
+              </Button>
             </div>
           </div>
-
-          <Button
-            size="sm"
-            onClick={() => setActiveView("treatment-form")}
-            className="rounded-lg"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Treatment
-          </Button>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 min-h-0">
           {activeView === "treatment-form" ? (
-            <div className="border rounded-xl h-full flex flex-col">
-              <div className="flex items-center justify-between p-3 border-b">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium">Add Treatment Plan</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setActiveView("overview")} className="rounded-lg">
-                  Cancel
-                </Button>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <AddTreatmentForm
-                  doctorPatientId={currentDoctorPatient._id}
-                  patientId={patientId}
-                  onSuccess={() => setActiveView("overview")}
-                  onCancel={() => setActiveView("overview")}
-                />
-              </div>
-            </div>
-          ) : activeView === "medication-form" ? (
-            <div className="border rounded-xl h-full flex flex-col">
-              <div className="flex items-center justify-between p-3 border-b">
-                <div className="flex items-center gap-2">
-                  <Pill className="h-4 w-4 text-purple-600" />
-                  <span className="font-medium">Add Medication</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setActiveView("overview")} className="rounded-lg">
-                  Cancel
-                </Button>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <AddMedicationForm
-                  treatmentPlanId={selectedTreatmentId as any}
-                  onSuccess={() => setActiveView("overview")}
-                  onCancel={() => setActiveView("overview")}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-              {/* Left Column - Treatment List */}
-              <div className="lg:col-span-2">
-                <div className="border rounded-xl h-full flex flex-col">
-                  <div className="flex items-center gap-2 p-3 border-b">
+            <Card className="h-full flex flex-col">
+              <CardHeader className="pb-3 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
                     <Activity className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">Treatment Plans ({activeTreatments.length})</span>
-                  </div>
-                  <div className="flex-1 overflow-auto">
-                    {activeTreatments.length === 0 ? (
-                      <div className="text-center py-6 px-3">
-                        <div className="mx-auto w-8 h-8 bg-muted rounded-full flex items-center justify-center mb-2">
-                          <Activity className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <h3 className="font-medium mb-1">No Active Treatments</h3>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Start by adding a treatment plan for this patient
-                        </p>
-                        <Button size="sm" onClick={() => setActiveView("treatment-form")}>
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add First Treatment
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {activeTreatments.map((treatment) => (
-                          <div
-                            key={treatment._id}
-                            className={`p-2 cursor-pointer hover:bg-muted/50 transition-colors ${
-                              selectedTreatmentId === treatment._id ? 'bg-muted' : ''
-                            }`}
-                            onClick={() => setSelectedTreatmentId(treatment._id)}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm">{treatment.title}</h4>
-                                <p className="text-xs text-muted-foreground">
-                                  {treatment.diagnosis}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {new Date(treatment.startDate).toLocaleDateString()}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Pill className="h-3 w-3" />
-                                    {activeMedications.filter(med => med.treatmentPlan?._id === treatment._id).length} meds
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  {treatment.status}
-                                </Badge>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-1 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTreatmentStatusUpdate(treatment._id, "completed");
-                                  }}
-                                >
-                                  <CheckCircle className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    Add Treatment Plan
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setActiveView("overview")}>
+                    Cancel
+                  </Button>
                 </div>
-              </div>
-
-              {/* Right Column - Selected Treatment Details */}
-              <div className="space-y-4">
-                {selectedTreatment ? (
-                  <>
-                    {/* Treatment Details */}
-                    <div className="border rounded-xl flex flex-col h-[300px]">
-                      <div className="flex items-center gap-2 p-3 border-b">
-                        <Target className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-sm">Treatment Details</span>
-                      </div>
-                      <div className="flex-1 overflow-auto p-3 space-y-3">
-                        <div>
-                          <h4 className="font-medium text-sm">{selectedTreatment.title}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            <span className="font-medium">Diagnosis:</span> {selectedTreatment.diagnosis}
-                          </p>
-                        </div>
-
-                        <div className="p-2 rounded bg-muted/30 border-l-2 border-blue-500">
-                          <p className="text-xs font-medium mb-1 text-blue-700 dark:text-blue-300">Treatment Plan:</p>
-                          <p className="text-xs text-muted-foreground">{selectedTreatment.plan}</p>
-                        </div>
-
-                        {selectedTreatment.goals && selectedTreatment.goals.length > 0 && (
-                          <div className="p-2 rounded bg-emerald-50/50 dark:bg-emerald-900/10 border-l-2 border-emerald-500">
-                            <p className="text-xs font-medium mb-1 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                              <Target className="h-3 w-3" />
-                              Goals:
-                            </p>
-                            <ul className="space-y-1">
-                              {selectedTreatment.goals.map((goal: string, goalIndex: number) => (
-                                <li key={goalIndex} className="flex items-start gap-1 text-xs">
-                                  <div className="w-1 h-1 rounded-full bg-emerald-500 mt-1 flex-shrink-0"></div>
-                                  <span className="text-muted-foreground">{goal}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(selectedTreatment.startDate).toLocaleDateString()}
-                          </span>
-                          {selectedTreatment.endDate && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {new Date(selectedTreatment.endDate).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+              </CardHeader>
+              <CardContent className="flex-1 min-h-0 p-0">
+                <ScrollArea className="h-full">
+                  <div className="p-4">
+                    <AddTreatmentForm
+                      doctorPatientId={currentDoctorPatient._id}
+                      patientId={patientId}
+                      onSuccess={() => setActiveView("overview")}
+                      onCancel={() => setActiveView("overview")}
+                    />
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          ) : activeView === "medication-form" ? (
+            <Card className="h-full flex flex-col">
+              <CardHeader className="pb-3 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Pill className="h-4 w-4 text-purple-600" />
+                    Add Medication
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setActiveView("overview")}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 min-h-0 p-0">
+                <ScrollArea className="h-full">
+                  <div className="p-4">
+                    <AddMedicationForm
+                      treatmentPlanId={selectedTreatmentId as any}
+                      onSuccess={() => setActiveView("overview")}
+                      onCancel={() => setActiveView("overview")}
+                    />
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className={cn(
+              "h-full grid gap-4",
+              showChat
+                ? "grid-cols-1 lg:grid-cols-6"
+                : "grid-cols-1 lg:grid-cols-4"
+            )}>
+              {/* Treatment List - Small on large screens */}
+              <div className={cn(
+                "flex flex-col min-h-0",
+                showChat
+                  ? "lg:col-span-1 lg:order-1 order-2"
+                  : "lg:col-span-1 lg:order-1 order-2"
+              )}>
+                <Card className="flex-1 min-h-0 flex flex-col">
+                  <CardHeader className="pb-2 flex-shrink-0">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold">Treatments</CardTitle>
+                      {activeTreatments.length > 0 && (
+                        <Badge variant="outline" className="text-xs h-5">
+                          {activeTreatments.length}
+                        </Badge>
+                      )}
                     </div>
-
-                    {/* Medications for Selected Treatment */}
-                    <div className="border rounded-xl flex flex-col h-[250px]">
-                      <div className="flex items-center justify-between p-3 border-b">
-                        <div className="flex items-center gap-2">
-                          <Pill className="h-4 w-4 text-purple-600" />
-                          <span className="font-medium text-sm">Medications ({selectedTreatmentMedications.length})</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setActiveView("medication-form")}
-                          className="rounded-lg"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </div>
-                      <div className="flex-1 overflow-auto">
-                        {selectedTreatmentMedications.length === 0 ? (
-                          <div className="text-center py-4 px-3">
-                            <div className="mx-auto w-6 h-6 bg-muted rounded-full flex items-center justify-center mb-2">
-                              <Pill className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-2">
-                              No medications for this treatment
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 p-0">
+                    <ScrollArea className="h-full scrollbar-hide">
+                      <div className="p-3">
+                        {activeTreatments.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-6 text-center">
+                            <Activity className="h-6 w-6 text-muted-foreground mb-2" />
+                            <h3 className="font-medium text-sm mb-1">No Active Treatments</h3>
+                            <p className="text-xs text-muted-foreground mb-3">
+                              Start by adding a treatment plan
                             </p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setActiveView("medication-form")}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Medication
+                            <Button size="sm" onClick={() => setActiveView("treatment-form")} className="h-7 px-3 text-xs">
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Treatment
                             </Button>
                           </div>
                         ) : (
-                          <div className="divide-y">
-                            {selectedTreatmentMedications.map((medication) => (
-                              <div key={medication._id} className="p-2">
-                                <div className="flex items-start justify-between mb-1">
-                                  <div className="flex-1">
-                                    <h5 className="font-medium text-xs">{medication.medicationName}</h5>
-                                    <p className="text-xs text-muted-foreground">
-                                      {medication.dosage} • {medication.frequency}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Badge variant="secondary" className="text-xs">
-                                      {medication.status}
-                                    </Badge>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-5 px-1 text-xs"
-                                      onClick={() => handleMedicationStatusUpdate(medication._id, "completed")}
-                                    >
-                                      <CheckCircle className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                {medication.instructions && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    <span className="font-medium">Instructions:</span> {medication.instructions}
-                                  </p>
+                          <div className="space-y-2">
+                            {activeTreatments.map((treatment) => (
+                              <div
+                                key={treatment._id}
+                                className={cn(
+                                  "p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/50",
+                                  selectedTreatmentId === treatment._id
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-border hover:border-primary/50'
                                 )}
-                                <p className="text-xs text-muted-foreground">
-                                  Started: {new Date(medication.startDate).toLocaleDateString()}
-                                </p>
+                                onClick={() => setSelectedTreatmentId(treatment._id)}
+                              >
+                                <div className="space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h4 className="font-medium text-sm truncate flex-1">{treatment.title}</h4>
+                                    <Badge variant="outline" className="text-xs h-5 px-2">
+                                      {treatment.status}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {treatment.diagnosis}
+                                  </p>
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-3">
+                                      <span className="flex items-center gap-1">
+                                        <Pill className="h-3 w-3" />
+                                        {activeMedications.filter(med => med.treatmentPlan?._id === treatment._id).length}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Target className="h-3 w-3" />
+                                        {treatment.goals?.length || 0}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs">
+                                      {new Date(treatment.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 w-full text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleTreatmentStatusUpdate(treatment._id, "completed");
+                                    }}
+                                  >
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Mark Complete
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="border rounded-xl p-6 text-center">
-                    <div className="mx-auto w-10 h-10 bg-muted rounded-xl flex items-center justify-center mb-3">
-                      <Eye className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <h3 className="font-medium text-sm mb-1">Select a Treatment</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Choose a treatment from the list to view its details and medications
-                    </p>
-                  </div>
-                )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
               </div>
+
+              {/* Treatment Details - Adjusts based on chat visibility */}
+              <div className={cn(
+                "flex flex-col min-h-0",
+                showChat
+                  ? "lg:col-span-3 lg:order-2 order-1"
+                  : "lg:col-span-3 lg:order-2 order-1"
+              )}>
+                <Card className="flex-1 min-h-0 flex flex-col">
+                  {selectedTreatment ? (
+                    <>
+                      <CardHeader className="pb-3 flex-shrink-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                              <Activity className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="text-lg mb-1">{selectedTreatment.title}</CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                <span className="font-medium">Diagnosis:</span> {selectedTreatment.diagnosis}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                                <Calendar className="h-3 w-3" />
+                                <span>Started {new Date(selectedTreatment.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                {selectedTreatment.endDate && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Ends {new Date(selectedTreatment.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-sm">
+                            {selectedTreatment.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 min-h-0 p-0">
+                        <ScrollArea className="h-full scrollbar-hide">
+                          <div className="p-4 space-y-5">
+                            {/* Treatment Plan and Goals - Adjacent Layout */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* Treatment Plan */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <h3 className="font-semibold text-base">Treatment Plan</h3>
+                                </div>
+                                <div className="bg-muted/50 rounded-lg p-4">
+                                  <p className="text-sm leading-relaxed">{selectedTreatment.plan}</p>
+                                </div>
+                              </div>
+
+                              {/* Goals */}
+                              {selectedTreatment.goals && selectedTreatment.goals.length > 0 && (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <Target className="h-4 w-4 text-muted-foreground" />
+                                    <h3 className="font-semibold text-base">Treatment Goals</h3>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {selectedTreatment.goals.map((goal: string, index: number) => (
+                                      <div key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                                        <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                                        <span className="text-sm leading-relaxed">{goal}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Medications */}
+                            {selectedTreatmentMedications && selectedTreatmentMedications.length > 0 && (
+                              <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Pill className="h-4 w-4 text-muted-foreground" />
+                                  <h3 className="font-semibold text-base">Medications ({selectedTreatmentMedications.length})</h3>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setActiveView("medication-form")}
+                                    className="ml-auto h-7 px-3 text-xs"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {selectedTreatmentMedications.map((medication) => (
+                                    <div key={medication._id} className="p-3 bg-blue-50/50 dark:bg-blue-950/10 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1 min-w-0">
+                                          <h4 className="font-medium text-sm text-foreground">{medication.medicationName}</h4>
+                                          <p className="text-xs text-muted-foreground">{medication.dosage} • {medication.frequency}</p>
+                                        </div>
+                                        <Badge variant="outline" className="text-xs ml-2">
+                                          {medication.status}
+                                        </Badge>
+                                      </div>
+                                      {medication.instructions && (
+                                        <p className="text-xs text-muted-foreground mt-2">{medication.instructions}</p>
+                                      )}
+                                      <div className="flex items-center justify-between mt-2">
+                                        <span className="text-xs text-muted-foreground">
+                                          Started: {new Date(medication.startDate).toLocaleDateString()}
+                                        </span>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => handleMedicationStatusUpdate(medication._id, "completed")}
+                                        >
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          Complete
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Add Medication Button if no medications */}
+                            {(!selectedTreatmentMedications || selectedTreatmentMedications.length === 0) && (
+                              <div className="text-center py-6">
+                                <Pill className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                                <h3 className="font-medium mb-2">No Medications</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Add medications for this treatment plan
+                                </p>
+                                <Button
+                                  size="sm"
+                                  onClick={() => setActiveView("medication-form")}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Medication
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </CardContent>
+                    </>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="font-semibold mb-2">Select a Treatment</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Choose a treatment from the list to view detailed information
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              </div>
+
+              {/* Chat Interface - Shows when chat is enabled */}
+              {showChat && (
+                <div className="lg:col-span-2 lg:order-3 order-3 flex flex-col min-h-0">
+                  <DoctorPatientChat
+                    doctorId={doctorProfile._id}
+                    patientId={patientId}
+                    patientName={`${patient.firstName} ${patient.lastName}`}
+                    onClose={() => setShowChat(false)}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

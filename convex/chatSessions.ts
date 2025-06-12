@@ -123,7 +123,7 @@ export const getRecentSessions = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 10;
-    
+
     const sessions = await ctx.db
       .query("chatSessions")
       .withIndex("by_user_active", (q) => q.eq("userId", args.userId).eq("isActive", true))
@@ -131,5 +131,70 @@ export const getRecentSessions = query({
       .take(limit);
 
     return sessions;
+  },
+});
+
+// Create or get doctor-patient chat session
+export const createOrGetDoctorPatientSession = mutation({
+  args: {
+    doctorId: v.id("doctors"),
+    patientId: v.id("patients"),
+    doctorUserId: v.id("users"),
+    patientUserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Check if a session already exists between this doctor and patient
+    const existingSession = await ctx.db
+      .query("chatSessions")
+      .withIndex("by_doctor_id", (q) => q.eq("doctorId", args.doctorId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("patientId"), args.patientId),
+          q.eq(q.field("isActive"), true)
+        )
+      )
+      .first();
+
+    if (existingSession) {
+      return existingSession._id;
+    }
+
+    // Create new session for doctor
+    const doctorSessionId = await ctx.db.insert("chatSessions", {
+      userId: args.doctorUserId,
+      userType: "doctor",
+      patientId: args.patientId,
+      doctorId: args.doctorId,
+      title: `Chat with Patient`,
+      messageCount: 0,
+      lastMessageAt: Date.now(),
+      isActive: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return doctorSessionId;
+  },
+});
+
+// Get doctor-patient chat session
+export const getDoctorPatientSession = query({
+  args: {
+    doctorId: v.id("doctors"),
+    patientId: v.id("patients"),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("chatSessions")
+      .withIndex("by_doctor_id", (q) => q.eq("doctorId", args.doctorId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("patientId"), args.patientId),
+          q.eq(q.field("isActive"), true)
+        )
+      )
+      .first();
+
+    return session;
   },
 });

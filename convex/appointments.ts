@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
+import { api } from "./_generated/api";
 
 export const create = mutation({
   args: {
@@ -88,6 +89,24 @@ export const create = mutation({
         isRead: false,
         createdAt: now,
       });
+
+      // Get patient user info for email
+      const patientUser = await ctx.db.get(patient.userId);
+
+      if (patientUser?.email) {
+        // Schedule appointment confirmation email
+        await ctx.scheduler.runAfter(0, api.appointments.sendConfirmationEmail, {
+          appointmentId,
+          patientEmail: patientUser.email,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          doctorName: `${doctor.firstName} ${doctor.lastName}`,
+          appointmentDateTime: args.appointmentDateTime,
+          appointmentType: args.appointmentType,
+          visitReason: args.visitReason,
+          location: args.location,
+          duration: args.duration,
+        });
+      }
     }
 
     return appointmentId;
@@ -627,5 +646,64 @@ export const cancel = mutation({
     }
 
     return args.appointmentId;
+  },
+});
+
+// Action to send appointment confirmation email
+export const sendConfirmationEmail = action({
+  args: {
+    appointmentId: v.id("appointments"),
+    patientEmail: v.string(),
+    patientName: v.string(),
+    doctorName: v.string(),
+    appointmentDateTime: v.number(),
+    appointmentType: v.string(),
+    visitReason: v.string(),
+    location: v.object({
+      type: v.union(v.literal("in_person"), v.literal("telemedicine")),
+      address: v.optional(v.string()),
+      room: v.optional(v.string()),
+      meetingLink: v.optional(v.string())
+    }),
+    duration: v.number(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const appointmentDate = new Date(args.appointmentDateTime);
+      const formattedDate = appointmentDate.toLocaleDateString();
+      const formattedTime = appointmentDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Call the API endpoint to send the email
+      const response = await fetch(`${process.env.SITE_URL}/api/appointments/send-confirmation-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patientEmail: args.patientEmail,
+          patientName: args.patientName,
+          doctorName: args.doctorName,
+          appointmentDetails: {
+            date: formattedDate,
+            time: formattedTime,
+            type: args.appointmentType,
+            visitReason: args.visitReason,
+            location: args.location,
+            duration: args.duration,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send appointment confirmation email:', await response.text());
+      } else {
+        console.log('Appointment confirmation email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending appointment confirmation email:', error);
+    }
   },
 });

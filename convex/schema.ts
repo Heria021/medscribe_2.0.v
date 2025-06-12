@@ -4,19 +4,38 @@ import { v } from "convex/values";
 export default defineSchema({
   users: defineTable({
     email: v.string(),
-    passwordHash: v.string(),
+    passwordHash: v.optional(v.string()), // Optional for OAuth users
     role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin")),
     isActive: v.boolean(),
     lastLoginAt: v.optional(v.number()),
     emailVerifiedAt: v.optional(v.number()),
     twoFactorEnabled: v.boolean(),
+    // OAuth fields
+    provider: v.optional(v.string()), // "credentials", "google", etc.
+    providerId: v.optional(v.string()), // OAuth provider user ID
+    name: v.optional(v.string()), // Full name from OAuth
+    image: v.optional(v.string()), // Profile image from OAuth
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_email", ["email"])
     .index("by_role", ["role"])
     .index("by_active", ["isActive"])
-    .index("by_role_active", ["role", "isActive"]),
+    .index("by_role_active", ["role", "isActive"])
+    .index("by_provider", ["provider"])
+    .index("by_provider_id", ["provider", "providerId"]),
+
+  passwordResetTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    expiresAt: v.number(),
+    isUsed: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_user_id", ["userId"])
+    .index("by_expires", ["expiresAt"])
+    .index("by_user_active", ["userId", "isUsed"]),
 
   patients: defineTable({
     userId: v.id("users"),
@@ -461,6 +480,41 @@ export default defineSchema({
     .index("by_user_id", ["userId"])
     .index("by_sender", ["sender"])
     .index("by_session_created", ["sessionId", "createdAt"])
+    .index("by_created_at", ["createdAt"]),
+
+  // Doctor-Patient Conversations
+  doctorPatientConversations: defineTable({
+    doctorId: v.id("doctors"),
+    patientId: v.id("patients"),
+    doctorUserId: v.id("users"),
+    patientUserId: v.id("users"),
+    lastMessageAt: v.number(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_doctor_patient", ["doctorId", "patientId"])
+    .index("by_doctor_id", ["doctorId"])
+    .index("by_patient_id", ["patientId"])
+    .index("by_doctor_user", ["doctorUserId"])
+    .index("by_patient_user", ["patientUserId"])
+    .index("by_last_message", ["lastMessageAt"])
+    .index("by_active", ["isActive"]),
+
+  // Doctor-Patient Messages
+  doctorPatientMessages: defineTable({
+    conversationId: v.id("doctorPatientConversations"),
+    senderId: v.id("users"),
+    senderType: v.union(v.literal("doctor"), v.literal("patient")),
+    content: v.string(),
+    isRead: v.boolean(),
+    readAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_conversation", ["conversationId"])
+    .index("by_sender", ["senderId"])
+    .index("by_conversation_created", ["conversationId", "createdAt"])
+    .index("by_unread", ["conversationId", "isRead"])
     .index("by_created_at", ["createdAt"]),
 });
 

@@ -17,6 +17,7 @@ import type * as appointments from "../appointments.js";
 import type * as audioRecordings from "../audioRecordings.js";
 import type * as chatMessages from "../chatMessages.js";
 import type * as chatSessions from "../chatSessions.js";
+import type * as doctorPatientConversations from "../doctorPatientConversations.js";
 import type * as doctorPatients from "../doctorPatients.js";
 import type * as doctors from "../doctors.js";
 import type * as medications from "../medications.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   audioRecordings: typeof audioRecordings;
   chatMessages: typeof chatMessages;
   chatSessions: typeof chatSessions;
+  doctorPatientConversations: typeof doctorPatientConversations;
   doctorPatients: typeof doctorPatients;
   doctors: typeof doctors;
   medications: typeof medications;

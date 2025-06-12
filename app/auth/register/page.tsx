@@ -95,6 +95,24 @@ export default function RegisterPage() {
         });
       }
 
+      // Send welcome email
+      try {
+        await fetch("/api/auth/send-welcome-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+            firstName: data.firstName,
+            role: data.role,
+          }),
+        });
+      } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+        // Don't fail registration if email fails
+      }
+
       toast({
         title: "Account created successfully!",
         description: "You can now sign in with your credentials.",

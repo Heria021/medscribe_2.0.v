@@ -21,7 +21,9 @@ import {
   RefreshCw
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
+import { DeleteAccountDialog } from "@/components/delete-account-dialog";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function SecuritySettingsPage() {
   const { data: session, status } = useSession();
@@ -33,6 +35,7 @@ export default function SecuritySettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -56,7 +59,7 @@ export default function SecuritySettingsPage() {
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      alert("New passwords don't match");
+      toast.error("New passwords don't match");
       return;
     }
 
@@ -64,16 +67,36 @@ export default function SecuritySettingsPage() {
     // TODO: Implement password change logic
     setTimeout(() => {
       setIsLoading(false);
-      alert("Password changed successfully");
+      toast.success("Password changed successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }, 2000);
   };
 
-  const handleForgotPassword = () => {
-    // TODO: Implement forgot password logic
-    alert("Password reset email sent to " + session.user.email);
+  const handleForgotPassword = async () => {
+    setIsForgotPasswordLoading(true);
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: session.user.email }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("Password reset email sent to " + session.user.email);
+      } else {
+        toast.error(result.error || "Failed to send reset email. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsForgotPasswordLoading(false);
+    }
   };
 
   const isFormValid = currentPassword && newPassword && confirmPassword && newPassword === confirmPassword;
@@ -217,10 +240,15 @@ export default function SecuritySettingsPage() {
                     <Button
                       variant="outline"
                       onClick={handleForgotPassword}
+                      disabled={isForgotPasswordLoading}
                       className="flex items-center gap-2"
                     >
-                      <RefreshCw className="h-4 w-4" />
-                      Forgot Password
+                      {isForgotPasswordLoading ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      {isForgotPasswordLoading ? "Sending..." : "Forgot Password"}
                     </Button>
                   </div>
                 </CardContent>
@@ -273,6 +301,32 @@ export default function SecuritySettingsPage() {
                       <Badge variant="outline">
                         Original
                       </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Delete Account Section */}
+              <Card className="border-destructive/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    Danger Zone
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-medium text-sm">Delete Account</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Permanently delete your account and all associated data. This action cannot be undone.
+                        </p>
+                      </div>
+                      <DeleteAccountDialog
+                        userEmail={session.user.email}
+                        userRole={session.user.role}
+                      />
                     </div>
                   </div>
                 </CardContent>
