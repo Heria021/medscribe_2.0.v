@@ -1,20 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Mic, 
-  MicOff, 
-  Play, 
-  Pause, 
-  Square, 
-  Upload, 
-  Trash2,
-  Download,
-  Volume2
+import {
+  Mic,
+  MicOff,
+  Square,
+  Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,15 +20,18 @@ interface AudioRecorderProps {
   maxDuration?: number; // in seconds, default 300 (5 minutes)
 }
 
-export function AudioRecorder({ 
-  onAudioReady, 
-  onAudioRemove, 
+export interface AudioRecorderRef {
+  removeAudio: () => void;
+}
+
+export const AudioRecorder = forwardRef<AudioRecorderRef, AudioRecorderProps>(({
+  onAudioReady,
+  onAudioRemove,
   disabled = false,
-  maxDuration = 300 
-}: AudioRecorderProps) {
+  maxDuration = 300
+}, ref) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -152,18 +150,6 @@ export function AudioRecorder({
     }
   };
 
-  const playAudio = () => {
-    if (audioRef.current && audioUrl) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current.play();
-        setIsPlaying(true);
-      }
-    }
-  };
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -193,26 +179,12 @@ export function AudioRecorder({
       setAudioUrl(null);
     }
     setRecordingTime(0);
-    setIsPlaying(false);
     onAudioRemove?.();
   };
 
-  const downloadAudio = () => {
-    if (audioBlob && audioUrl) {
-      const a = document.createElement('a');
-      a.href = audioUrl;
-      a.download = `recording_${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  useImperativeHandle(ref, () => ({
+    removeAudio
+  }));
 
   if (hasPermission === false) {
     return (
@@ -234,15 +206,18 @@ export function AudioRecorder({
               Grant Microphone Access
             </Button>
             <div className="text-center text-sm text-muted-foreground">or</div>
-            <Button 
-              onClick={() => fileInputRef.current?.click()}
-              variant="outline"
-              className="w-full"
-              disabled={disabled}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Audio File
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2 px-8 py-3"
+                disabled={disabled}
+              >
+                <Upload className="h-5 w-5" />
+                Upload Audio File
+              </Button>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -264,7 +239,7 @@ export function AudioRecorder({
           <div className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
               {!isRecording ? (
-                <div className="text-center space-y-4">
+                <div className="flex flex-col items-center space-y-4">
                   <Button
                     onClick={startRecording}
                     disabled={disabled}
@@ -274,18 +249,18 @@ export function AudioRecorder({
                     <Mic className="h-5 w-5" />
                     Start Recording
                   </Button>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground text-center">
                     Click to start recording your voice
                   </p>
                 </div>
               ) : (
-                <div className="text-center space-y-4">
+                <div className="flex flex-col items-center space-y-4">
                   <div className="flex items-center justify-center gap-3">
                     <Button
                       onClick={pauseRecording}
                       variant="outline"
                       size="lg"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 px-6 py-3"
                     >
                       {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                       {isPaused ? 'Resume' : 'Pause'}
@@ -294,7 +269,7 @@ export function AudioRecorder({
                       onClick={stopRecording}
                       variant="destructive"
                       size="lg"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 px-6 py-3"
                     >
                       <Square className="h-4 w-4" />
                       Stop
@@ -338,17 +313,18 @@ export function AudioRecorder({
               </div>
             </div>
 
-            <div className="text-center">
+            <div className="flex flex-col items-center justify-center text-center space-y-3">
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
                 disabled={disabled}
-                className="flex items-center gap-2"
+                size="lg"
+                className="flex items-center gap-2 px-8 py-3"
               >
-                <Upload className="h-4 w-4" />
+                <Upload className="h-5 w-5" />
                 Upload Audio File
               </Button>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground">
                 Supports MP3, WAV, M4A, WebM (max 50MB)
               </p>
               <input
@@ -362,62 +338,22 @@ export function AudioRecorder({
           </div>
         )}
 
-        {/* Audio Playback */}
+        {/* Audio Playback - No Background */}
         {audioBlob && audioUrl && (
-          <Card className="border bg-blue-50 dark:bg-blue-950/20">
-            <CardContent className="p-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={playAudio}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      {isPlaying ? 'Pause' : 'Play'}
-                    </Button>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      {formatTime(recordingTime)}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={downloadAudio}
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      onClick={removeAudio}
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive flex items-center gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+          <div className="space-y-3">
+            <audio
+              ref={audioRef}
+              src={audioUrl}
+              className="w-full"
+              controls
+            />
 
-                <audio
-                  ref={audioRef}
-                  src={audioUrl}
-                  onEnded={() => setIsPlaying(false)}
-                  className="w-full"
-                  controls
-                />
-
-                <p className="text-xs text-blue-600 dark:text-blue-400 text-center">
-                  Audio ready for SOAP note generation
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            <p className="text-xs text-muted-foreground text-center">
+              Audio ready for SOAP note generation
+            </p>
+          </div>
         )}
       </CardContent>
     </div>
   );
-}
+});

@@ -85,13 +85,15 @@ export function TreatmentOverview({ patientId }: TreatmentOverviewProps) {
   const hasAnyActive = hasActiveTreatments || hasStandaloneMedications;
 
   return (
-    <Card className="h-full flex flex-col gap-1">
-      <CardHeader className="pb-3 flex-shrink-0">
+    <Card className="h-full flex flex-col gap-0">
+      <CardHeader className=" flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Current Treatment</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Active Treatments
+          </CardTitle>
           <Link href="/patient/treatments">
             <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
-              <Activity className="h-3 w-3 mr-1" />
               View All
             </Button>
           </Link>
@@ -124,82 +126,50 @@ export function TreatmentOverview({ patientId }: TreatmentOverviewProps) {
                 return (
                   <div
                     key={treatment._id}
-                    className="p-4 rounded-lg border border-border/50 hover:border-border transition-colors"
+                    className="p-3 rounded-lg border border-border/50 hover:border-border transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                            <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-sm">{treatment.title}</h3>
-                            <p className="text-xs text-muted-foreground">
-                              Dr. {treatment.doctor?.firstName} {treatment.doctor?.lastName}
-                            </p>
-                          </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Activity className="h-3 w-3 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium text-sm truncate">{treatment.title}</h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            Dr. {treatment.doctor?.firstName} {treatment.doctor?.lastName}
+                          </p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="text-xs h-5">
+                      <Badge variant="secondary" className="text-xs h-5 flex-shrink-0">
                         Active
                       </Badge>
                     </div>
 
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Started {formatDate(treatment.startDate)}</span>
-                        </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        {treatment.diagnosis}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Started {formatDate(treatment.startDate)}</span>
                         {treatment.endDate && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>Until {formatDate(treatment.endDate)}</span>
-                          </div>
+                          <span>Until {formatDate(treatment.endDate)}</span>
                         )}
                       </div>
-                      {treatment.plan && (
-                        <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                          {treatment.plan}
-                        </p>
-                      )}
                     </div>
 
                     {treatmentMedications.length > 0 && (
-                      <div className="border-t border-border/50 pt-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Pill className="h-3 w-3 text-primary" />
-                          <span className="text-xs font-medium">Medications ({treatmentMedications.length})</span>
-                        </div>
-                        <div className="grid grid-cols-1 gap-2">
-                          {treatmentMedications.slice(0, 3).map((medication: any, medIndex: number) => (
-                            <div
-                              key={medication._id}
-                              className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
-                                  <span className="text-xs font-medium text-primary">
-                                    {medIndex + 1}
-                                  </span>
-                                </div>
-                                <div>
-                                  <div className="font-medium">{medication.medicationName}</div>
-                                  <div className="text-muted-foreground">
-                                    {medication.dosage} • {medication.frequency}
-                                  </div>
-                                </div>
-                              </div>
-                              <Badge variant="outline" className="text-xs h-4">
-                                Active
-                              </Badge>
-                            </div>
-                          ))}
-                          {treatmentMedications.length > 3 && (
-                            <div className="text-xs text-muted-foreground text-center py-1">
-                              +{treatmentMedications.length - 3} more medications
-                            </div>
-                          )}
+                      <div className="border-t border-border/50 pt-2 mt-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            <Pill className="h-3 w-3 text-primary" />
+                            <span className="text-xs text-muted-foreground">
+                              {treatmentMedications.length} medication{treatmentMedications.length > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {treatmentMedications.slice(0, 2).map((med: { medicationName: any; }) => med.medicationName).join(', ')}
+                            {treatmentMedications.length > 2 && ` +${treatmentMedications.length - 2} more`}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -208,34 +178,39 @@ export function TreatmentOverview({ patientId }: TreatmentOverviewProps) {
               })}
 
               {!hasActiveTreatments && hasStandaloneMedications && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
                     <Pill className="h-4 w-4 text-primary" />
                     <h3 className="font-medium text-sm">Current Medications</h3>
                   </div>
-                  {standaloneMedications.map((medication) => (
+                  {standaloneMedications.slice(0, 3).map((medication) => (
                     <div
                       key={medication._id}
-                      className="p-3 rounded-lg border border-border/50 hover:border-border transition-colors"
+                      className="p-2 rounded-lg border border-border/50 hover:border-border transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                            <Pill className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Pill className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <div>
-                            <div className="font-medium text-sm">{medication.medicationName}</div>
-                            <div className="text-xs text-muted-foreground">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm truncate">{medication.medicationName}</div>
+                            <div className="text-xs text-muted-foreground truncate">
                               {medication.dosage} • {medication.frequency}
                             </div>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs h-5">
+                        <Badge variant="secondary" className="text-xs h-5 flex-shrink-0">
                           Active
                         </Badge>
                       </div>
                     </div>
                   ))}
+                  {standaloneMedications.length > 3 && (
+                    <div className="text-xs text-muted-foreground text-center py-1">
+                      +{standaloneMedications.length - 3} more medications
+                    </div>
+                  )}
                 </div>
               )}
             </div>

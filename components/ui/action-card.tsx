@@ -78,7 +78,7 @@ export function ActionCard({
 
   const cardContent = (
     <Card className={cn(
-      "bg-card text-card-foreground transition-all duration-200 group",
+      "bg-card text-card-foreground transition-all duration-200 group gap-0 py-3",
       // Default styling that can be overridden
       !className?.includes("border") && "border border-border/50 hover:border-border",
       disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-[1.02]",

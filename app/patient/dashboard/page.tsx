@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCheck, Calendar, FileText, Mic, History, Bot, Activity, Sparkles, Brain, User, ArrowRight, MessageCircle } from "lucide-react";
+import { UserCheck, Calendar, FileText, Mic, History, Bot, Sparkles, Brain, User, ArrowRight, MessageCircle, Clock } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { ActionCard } from "@/components/ui/action-card";
 import { TreatmentOverview } from "@/components/patient/treatment-overview";
@@ -243,6 +243,12 @@ export default function PatientDashboard() {
     patientProfile?._id ? { patientId: patientProfile._id as any } : "skip"
   );
 
+  // Fetch upcoming appointments
+  const upcomingAppointments = useQuery(
+    api.appointments.getUpcomingByPatient,
+    patientProfile?._id ? { patientId: patientProfile._id as any } : "skip"
+  );
+
   // Check if profile is complete
   const isProfileComplete = useMemo(() => {
     if (!patientProfile) return false;
@@ -365,67 +371,86 @@ export default function PatientDashboard() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-3">
-          {/* Appointments & Treatments - Takes 3 columns */}
-          <div className="lg:col-span-3 flex flex-col space-y-3 min-h-0">
-            {/* Scheduled Appointments */}
-            {/* {patientProfile && (
-              <div className="flex-1 min-h-0">
-                <ScheduledAppointments patientId={patientProfile._id} />
-              </div>
-            )} */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {patientProfile && (
+            <div className="lg:col-span-3">
+              <TreatmentOverview patientId={patientProfile._id} />
+            </div>
+          )}
 
-            {/* Treatment Overview */}
-            {patientProfile && (
-              <div className="flex-1 min-h-0">
-                <TreatmentOverview patientId={patientProfile._id} />
-              </div>
-            )}
-          </div>
-
-          {/* Right Sidebar - Health Overview & Quick Actions */}
-          <div className="flex flex-col space-y-6 min-h-0">
-            {/* Health Overview */}
-            <Card className="flex-shrink-0">
+          {/* Right Sidebar - Upcoming Appointments & Quick Actions - Takes 2 columns */}
+          <div className="lg:col-span-2 flex flex-col space-y-4 min-h-0">
+            {/* Upcoming Appointments */}
+            <Card className="flex-1 min-h-0 flex flex-col gap-0">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Health Overview
+                  <Calendar className="h-4 w-4" />
+                  Upcoming Appointments
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <div className="text-lg font-bold text-green-700 dark:text-green-300">
-                      {activeTreatments?.filter(t => t.status === 'active').length || 0}
+              <CardContent className="flex-1 min-h-0 flex flex-col p-0">
+                <div className="p-4 flex-1 min-h-0">
+                  {!upcomingAppointments || upcomingAppointments.length === 0 ? (
+                    <div className="text-center py-6">
+                      <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground mb-3">No upcoming appointments</p>
+                      <Link href="/patient/appointments/book">
+                        <Button size="sm" className="h-8 px-3 text-xs">
+                          Book Appointment
+                        </Button>
+                      </Link>
                     </div>
-                    <div className="text-xs text-green-600 dark:text-green-400">Active Treatments</div>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                      {activeMedications?.length || 0}
+                  ) : (
+                    <div className="space-y-3 h-full overflow-y-auto">
+                      {upcomingAppointments.slice(0, 3).map((appointment) => (
+                        <div
+                          key={appointment._id}
+                          className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="font-medium text-sm text-blue-900 dark:text-blue-100">
+                              Dr. {appointment.doctor?.firstName} {appointment.doctor?.lastName}
+                            </div>
+                            <Badge variant="outline" className="text-xs h-5 border-blue-300 text-blue-700">
+                              {appointment.status}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(appointment.appointmentDateTime).toLocaleDateString()} at{' '}
+                            {new Date(appointment.appointmentDateTime).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                          <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            {appointment.appointmentType.replace('_', ' ')} • {appointment.duration} min
+                          </div>
+                        </div>
+                      ))}
+                      {upcomingAppointments.length > 3 && (
+                        <div className="pt-2">
+                          <Link href="/patient/appointments">
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Calendar className="h-3 w-3 mr-2" />
+                              View All Appointments
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs text-blue-600 dark:text-blue-400">Medications</div>
-                  </div>
-                </div>
-                <div className="pt-2">
-                  <Link href="/patient/treatments">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Activity className="h-3 w-3 mr-2" />
-                      View All Treatments
-                    </Button>
-                  </Link>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
-            <Card className="flex-1 min-h-0 flex flex-col">
-              <CardHeader className="pb-2 flex-shrink-0">
+            <Card className="flex-shrink-0 gap-1">
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="p-3 pt-0">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2">
                   <ActionCard
                     title="Chat with Doctors"
                     description="Direct messaging"
