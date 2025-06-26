@@ -65,6 +65,8 @@ export default function LoginPage() {
             router.push("/doctor/dashboard");
           } else if (session.user.role === "patient") {
             router.push("/patient/dashboard");
+          } else if (session.user.role === "pharmacy") {
+            router.push("/pharmacy/dashboard");
           } else {
             router.push("/");
           }

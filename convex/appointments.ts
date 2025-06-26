@@ -94,17 +94,87 @@ export const create = mutation({
       const patientUser = await ctx.db.get(patient.userId);
 
       if (patientUser?.email) {
-        // Schedule appointment confirmation email
-        await ctx.scheduler.runAfter(0, api.appointments.sendConfirmationEmail, {
-          appointmentId,
-          patientEmail: patientUser.email,
-          patientName: `${patient.firstName} ${patient.lastName}`,
-          doctorName: `${doctor.firstName} ${doctor.lastName}`,
-          appointmentDateTime: args.appointmentDateTime,
-          appointmentType: args.appointmentType,
-          visitReason: args.visitReason,
-          location: args.location,
-          duration: args.duration,
+        // Schedule appointment reminder emails
+        const appointmentDate = new Date(args.appointmentDateTime);
+        const reminderTime24h = args.appointmentDateTime - (24 * 60 * 60 * 1000); // 24 hours before
+        const reminderTime1h = args.appointmentDateTime - (60 * 60 * 1000); // 1 hour before
+
+        // Only schedule reminders if appointment is more than 24 hours away
+        if (reminderTime24h > now) {
+          await ctx.scheduler.runAfter(0, api.emailAutomation.scheduleEmail, {
+            userId: patient.userId,
+            emailType: "appointment_reminder_24h",
+            scheduledFor: reminderTime24h,
+            relatedRecordId: appointmentId,
+            relatedRecordType: "appointment",
+            emailData: {
+              to: patientUser.email,
+              subject: `Appointment Reminder - ${appointmentDate.toLocaleDateString()} at ${appointmentDate.toLocaleTimeString()}`,
+              templateData: {
+                patientName: `${patient.firstName} ${patient.lastName}`,
+                doctorName: `${doctor.firstName} ${doctor.lastName}`,
+                appointmentDetails: {
+                  date: appointmentDate.toLocaleDateString(),
+                  time: appointmentDate.toLocaleTimeString(),
+                  type: args.appointmentType,
+                  visitReason: args.visitReason,
+                  location: args.location,
+                  duration: args.duration,
+                },
+              },
+            },
+          });
+        }
+
+        // Only schedule 1-hour reminder if appointment is more than 1 hour away
+        if (reminderTime1h > now) {
+          await ctx.scheduler.runAfter(0, api.emailAutomation.scheduleEmail, {
+            userId: patient.userId,
+            emailType: "appointment_reminder_1h",
+            scheduledFor: reminderTime1h,
+            relatedRecordId: appointmentId,
+            relatedRecordType: "appointment",
+            emailData: {
+              to: patientUser.email,
+              subject: `URGENT: Appointment in 1 Hour - ${appointmentDate.toLocaleDateString()} at ${appointmentDate.toLocaleTimeString()}`,
+              templateData: {
+                patientName: `${patient.firstName} ${patient.lastName}`,
+                doctorName: `${doctor.firstName} ${doctor.lastName}`,
+                appointmentDetails: {
+                  date: appointmentDate.toLocaleDateString(),
+                  time: appointmentDate.toLocaleTimeString(),
+                  type: args.appointmentType,
+                  visitReason: args.visitReason,
+                  location: args.location,
+                  duration: args.duration,
+                },
+              },
+            },
+          });
+        }
+
+        // Schedule follow-up email (24 hours after appointment)
+        const followupTime = args.appointmentDateTime + (24 * 60 * 60 * 1000);
+        await ctx.scheduler.runAfter(0, api.emailAutomation.scheduleEmail, {
+          userId: patient.userId,
+          emailType: "appointment_followup",
+          scheduledFor: followupTime,
+          relatedRecordId: appointmentId,
+          relatedRecordType: "appointment",
+          emailData: {
+            to: patientUser.email,
+            subject: "Follow-up: Your Recent Appointment",
+            templateData: {
+              patientName: `${patient.firstName} ${patient.lastName}`,
+              doctorName: `${doctor.firstName} ${doctor.lastName}`,
+              appointmentDetails: {
+                date: appointmentDate.toLocaleDateString(),
+                time: appointmentDate.toLocaleTimeString(),
+                type: args.appointmentType,
+                visitReason: args.visitReason,
+              },
+            },
+          },
         });
       }
     }
@@ -649,61 +719,4 @@ export const cancel = mutation({
   },
 });
 
-// Action to send appointment confirmation email
-export const sendConfirmationEmail = action({
-  args: {
-    appointmentId: v.id("appointments"),
-    patientEmail: v.string(),
-    patientName: v.string(),
-    doctorName: v.string(),
-    appointmentDateTime: v.number(),
-    appointmentType: v.string(),
-    visitReason: v.string(),
-    location: v.object({
-      type: v.union(v.literal("in_person"), v.literal("telemedicine")),
-      address: v.optional(v.string()),
-      room: v.optional(v.string()),
-      meetingLink: v.optional(v.string())
-    }),
-    duration: v.number(),
-  },
-  handler: async (ctx, args) => {
-    try {
-      const appointmentDate = new Date(args.appointmentDateTime);
-      const formattedDate = appointmentDate.toLocaleDateString();
-      const formattedTime = appointmentDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
 
-      // Call the API endpoint to send the email
-      const response = await fetch(`${process.env.SITE_URL}/api/appointments/send-confirmation-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientEmail: args.patientEmail,
-          patientName: args.patientName,
-          doctorName: args.doctorName,
-          appointmentDetails: {
-            date: formattedDate,
-            time: formattedTime,
-            type: args.appointmentType,
-            visitReason: args.visitReason,
-            location: args.location,
-            duration: args.duration,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('Failed to send appointment confirmation email:', await response.text());
-      } else {
-        console.log('Appointment confirmation email sent successfully');
-      }
-    } catch (error) {
-      console.error('Error sending appointment confirmation email:', error);
-    }
-  },
-});

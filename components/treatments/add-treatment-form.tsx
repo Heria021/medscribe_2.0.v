@@ -25,6 +25,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
+import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
 
 interface Medication {
   medicationName: string;
@@ -76,10 +77,20 @@ export function AddTreatmentForm({
     endDate: "",
   });
 
+  // Prescription state
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+  const [createdTreatmentPlanId, setCreatedTreatmentPlanId] = useState<string | null>(null);
+
+  // Get doctor-patient relationship to extract patient ID
+  const doctorPatientRelation = useQuery(
+    api.doctorPatients.getById,
+    { doctorPatientId }
+  );
+
   // Get shared SOAP notes for this patient
   const sharedSoapNotes = useQuery(
     api.sharedSoapNotes.getSharedSOAPNotesByPatient,
-    { patientId }
+    doctorPatientRelation?.patientId ? { patientId: doctorPatientRelation.patientId } : "skip"
   );
 
   const createTreatmentPlan = useMutation(api.treatmentPlans.create);
@@ -154,6 +165,9 @@ export function AddTreatmentForm({
           endDate: medication.endDate || undefined,
         });
       }
+
+      // Store the treatment plan ID for potential prescription creation
+      setCreatedTreatmentPlanId(treatmentPlanId);
 
       toast.success("Treatment plan created successfully");
       onSuccess();
@@ -411,6 +425,49 @@ export function AddTreatmentForm({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* E-Prescribing Section */}
+          {createdTreatmentPlanId && (
+            <div className="border rounded-xl p-4 bg-blue-50 dark:bg-blue-950/20">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Pill className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-900 dark:text-blue-100">E-Prescribing</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPrescriptionForm(!showPrescriptionForm)}
+                  className="h-8"
+                >
+                  {showPrescriptionForm ? "Hide" : "Add Prescription"}
+                </Button>
+              </div>
+
+              {showPrescriptionForm && (
+                <div className="mt-4">
+                  {doctorPatientRelation?.patientId && (
+                    <PrescriptionForm
+                      patientId={doctorPatientRelation.patientId}
+                      treatmentPlanId={createdTreatmentPlanId}
+                      onSuccess={(prescriptionId) => {
+                        toast.success("Prescription created successfully!");
+                        setShowPrescriptionForm(false);
+                      }}
+                      onCancel={() => setShowPrescriptionForm(false)}
+                    />
+                  )}
+                </div>
+              )}
+
+              {!showPrescriptionForm && (
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Create electronic prescriptions for this treatment plan
+                </p>
+              )}
             </div>
           )}
         </div>

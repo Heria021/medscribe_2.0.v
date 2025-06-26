@@ -5,7 +5,7 @@ export default defineSchema({
   users: defineTable({
     email: v.string(),
     passwordHash: v.optional(v.string()), // Optional for OAuth users
-    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin")),
+    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin"), v.literal("pharmacy")),
     isActive: v.boolean(),
     lastLoginAt: v.optional(v.number()),
     emailVerifiedAt: v.optional(v.number()),
@@ -63,6 +63,13 @@ export default defineSchema({
     emergencyContactRelation: v.string(),
     primaryCarePhysicianId: v.optional(v.id("doctors")),
     preferredLanguage: v.optional(v.string()),
+    // Pharmacy preferences
+    preferredPharmacy: v.optional(v.object({
+      ncpdpId: v.string(),
+      name: v.string(),
+      address: v.string(),
+      phone: v.string(),
+    })),
     consentForTreatment: v.boolean(),
     consentForDataSharing: v.boolean(),
     advanceDirectives: v.optional(v.string()),
@@ -458,6 +465,70 @@ export default defineSchema({
     .index("by_last_message", ["lastMessageAt"])
     .index("by_user_active", ["userId", "isActive"]),
 
+  emailAutomation: defineTable({
+    userId: v.id("users"),
+    emailType: v.union(
+      v.literal("welcome"),
+      v.literal("profile_completion_reminder"),
+      v.literal("appointment_reminder_24h"),
+      v.literal("appointment_reminder_1h"),
+      v.literal("appointment_followup"),
+      v.literal("treatment_reminder"),
+      v.literal("medication_reminder"),
+      v.literal("inactive_user_reengagement"),
+      v.literal("security_alert"),
+      v.literal("system_maintenance")
+    ),
+    status: v.union(
+      v.literal("scheduled"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    scheduledFor: v.number(),
+    sentAt: v.optional(v.number()),
+    relatedRecordId: v.optional(v.string()), // appointment ID, treatment ID, etc.
+    relatedRecordType: v.optional(v.string()), // "appointment", "treatment", etc.
+    emailData: v.object({
+      to: v.string(),
+      subject: v.string(),
+      templateData: v.any(), // Dynamic data for email templates
+    }),
+    retryCount: v.number(),
+    lastRetryAt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_email_type", ["emailType"])
+    .index("by_status", ["status"])
+    .index("by_scheduled_for", ["scheduledFor"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_related_record", ["relatedRecordId", "relatedRecordType"]),
+
+  emailPreferences: defineTable({
+    userId: v.id("users"),
+    welcomeEmails: v.boolean(),
+    appointmentReminders: v.boolean(),
+    appointmentConfirmations: v.boolean(),
+    treatmentReminders: v.boolean(),
+    medicationReminders: v.boolean(),
+    securityAlerts: v.boolean(),
+    systemNotifications: v.boolean(),
+    marketingEmails: v.boolean(),
+    profileReminders: v.boolean(),
+    reengagementEmails: v.boolean(),
+    emailFrequency: v.union(
+      v.literal("immediate"),
+      v.literal("daily_digest"),
+      v.literal("weekly_digest")
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_id", ["userId"]),
+
   chatMessages: defineTable({
     sessionId: v.id("chatSessions"),
     userId: v.id("users"),
@@ -481,6 +552,163 @@ export default defineSchema({
     .index("by_sender", ["sender"])
     .index("by_session_created", ["sessionId", "createdAt"])
     .index("by_created_at", ["createdAt"]),
+
+  // E-prescriptions and pharmacy integration
+  prescriptions: defineTable({
+    patientId: v.id("patients"),
+    doctorId: v.id("doctors"),
+    appointmentId: v.optional(v.id("appointments")),
+    treatmentPlanId: v.optional(v.id("treatmentPlans")),
+    externalPrescriptionId: v.optional(v.string()), // Surescripts transaction ID
+    medication: v.object({
+      name: v.string(),
+      genericName: v.optional(v.string()),
+      strength: v.string(),
+      dosageForm: v.string(), // tablet, capsule, liquid, etc.
+      ndc: v.optional(v.string()), // National Drug Code
+      rxcui: v.optional(v.string()), // RxNorm Concept Unique Identifier
+    }),
+    dosage: v.object({
+      quantity: v.string(),
+      frequency: v.string(),
+      duration: v.optional(v.string()),
+      instructions: v.string(),
+      refills: v.number(),
+    }),
+    pharmacy: v.optional(v.object({
+      ncpdpId: v.string(), // NCPDP ID for e-prescribing
+      name: v.string(),
+      address: v.string(),
+      phone: v.string(),
+    })),
+    prescriptionDate: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("received"),
+      v.literal("filled"),
+      v.literal("cancelled"),
+      v.literal("error")
+    ),
+    deliveryMethod: v.union(
+      v.literal("electronic"),
+      v.literal("print"),
+      v.literal("fax"),
+      v.literal("phone")
+    ),
+    priority: v.union(
+      v.literal("routine"),
+      v.literal("urgent"),
+      v.literal("stat")
+    ),
+    safetyChecks: v.optional(v.object({
+      drugInteractions: v.array(v.object({
+        severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("major")),
+        description: v.string(),
+        interactingMedication: v.string(),
+      })),
+      allergyAlerts: v.array(v.object({
+        allergen: v.string(),
+        severity: v.string(),
+        reaction: v.string(),
+      })),
+      contraindications: v.array(v.string()),
+      dosageAlerts: v.array(v.string()),
+    })),
+    notes: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    prescribedBy: v.id("users"),
+  })
+    .index("by_patient", ["patientId"])
+    .index("by_doctor", ["doctorId"])
+    .index("by_appointment", ["appointmentId"])
+    .index("by_status", ["status"])
+    .index("by_prescription_date", ["prescriptionDate"])
+    .index("by_external_id", ["externalPrescriptionId"]),
+
+  // Pharmacy directory
+  pharmacies: defineTable({
+    userId: v.optional(v.id("users")), // Link to user account for pharmacy login
+    ncpdpId: v.string(), // Unique pharmacy identifier
+    name: v.string(),
+    licenseNumber: v.string(), // Pharmacy license
+    deaNumber: v.optional(v.string()), // DEA number for controlled substances
+    npiNumber: v.optional(v.string()), // NPI for billing
+    address: v.object({
+      street: v.string(),
+      city: v.string(),
+      state: v.string(),
+      zipCode: v.string(),
+    }),
+    phone: v.string(),
+    fax: v.optional(v.string()),
+    email: v.optional(v.string()),
+    hours: v.optional(v.object({
+      monday: v.optional(v.string()),
+      tuesday: v.optional(v.string()),
+      wednesday: v.optional(v.string()),
+      thursday: v.optional(v.string()),
+      friday: v.optional(v.string()),
+      saturday: v.optional(v.string()),
+      sunday: v.optional(v.string()),
+    })),
+    services: v.optional(v.array(v.string())), // ["24_hour", "drive_thru", "delivery"]
+    chainName: v.optional(v.string()), // "CVS", "Walgreens", etc.
+    pharmacistInCharge: v.optional(v.string()),
+    isActive: v.boolean(),
+    isVerified: v.boolean(),
+    lastVerified: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_ncpdp_id", ["ncpdpId"])
+    .index("by_zip_code", ["address.zipCode"])
+    .index("by_chain", ["chainName"])
+    .index("by_active", ["isActive"])
+    .index("by_license", ["licenseNumber"])
+    .index("by_active_verified", ["isActive", "isVerified"]),
+
+  // Pharmacy staff for larger pharmacies
+  pharmacyStaff: defineTable({
+    pharmacyId: v.id("pharmacies"),
+    userId: v.id("users"),
+    firstName: v.string(),
+    lastName: v.string(),
+    role: v.union(
+      v.literal("pharmacist"),
+      v.literal("pharmacy_technician"),
+      v.literal("pharmacy_manager")
+    ),
+    licenseNumber: v.optional(v.string()),
+    isActive: v.boolean(),
+    hireDate: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_pharmacy", ["pharmacyId"])
+    .index("by_user", ["userId"])
+    .index("by_role", ["role"])
+    .index("by_pharmacy_active", ["pharmacyId", "isActive"]),
+
+  // Drug interaction database
+  drugInteractions: defineTable({
+    drug1: v.string(), // RxCUI or drug name
+    drug2: v.string(), // RxCUI or drug name
+    severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("major")),
+    description: v.string(),
+    mechanism: v.optional(v.string()),
+    clinicalEffects: v.optional(v.string()),
+    management: v.optional(v.string()),
+    source: v.string(), // "FDA", "DrugBank", etc.
+    lastUpdated: v.number(),
+  })
+    .index("by_drug1", ["drug1"])
+    .index("by_drug2", ["drug2"])
+    .index("by_severity", ["severity"])
+    .index("by_drug_pair", ["drug1", "drug2"]),
 
   // Doctor-Patient Conversations
   doctorPatientConversations: defineTable({

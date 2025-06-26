@@ -50,7 +50,7 @@ export const authOptions: NextAuthOptions = {
             lastLoginAt: Date.now(),
           });
 
-          // Send login notification email (async, don't wait for it)
+          // Send login notification email directly (async, don't wait for it)
           try {
             fetch(`${process.env.NEXTAUTH_URL}/api/auth/send-login-notification`, {
               method: 'POST',

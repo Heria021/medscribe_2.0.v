@@ -195,3 +195,29 @@ export const getDoctorPatientStats = query({
     };
   },
 });
+
+// Get doctor-patient relationship by ID
+export const getById = query({
+  args: { doctorPatientId: v.id("doctorPatients") },
+  handler: async (ctx, args) => {
+    const relationship = await ctx.db.get(args.doctorPatientId);
+
+    if (!relationship) {
+      return null;
+    }
+
+    // Get related doctor and patient details
+    const doctor = await ctx.db.get(relationship.doctorId);
+    const patient = await ctx.db.get(relationship.patientId);
+    const relatedAction = relationship.relatedActionId
+      ? await ctx.db.get(relationship.relatedActionId)
+      : null;
+
+    return {
+      ...relationship,
+      doctor,
+      patient,
+      relatedAction,
+    };
+  },
+});

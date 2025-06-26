@@ -390,30 +390,4 @@ export const notifyAppointmentScheduled = mutation({
   },
 });
 
-// System Notifications
-export const notifyProfileIncomplete = mutation({
-  args: {
-    recipientId: v.id("users"),
-    recipientType: v.union(v.literal("doctor"), v.literal("patient")),
-    missingSteps: v.array(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const profileType = args.recipientType === "doctor" ? "doctor" : "patient";
-    const actionUrl = args.recipientType === "doctor" ? `/doctor/settings/profile` : `/patient/settings/profile`;
 
-    return await ctx.db.insert("notifications", {
-      recipientId: args.recipientId,
-      recipientType: args.recipientType,
-      category: "system",
-      type: NOTIFICATION_TYPES.PROFILE_INCOMPLETE,
-      priority: "medium",
-      title: "Complete Your Profile",
-      message: `Please complete your ${profileType} profile. Missing: ${args.missingSteps.join(", ")}`,
-      actionUrl,
-      channels: ["in_app"],
-      isRead: false,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    });
-  },
-});

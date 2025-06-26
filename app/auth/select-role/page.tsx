@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { UserCheck, Stethoscope, Loader2, ArrowRight } from "lucide-react";
+import { UserCheck, Stethoscope, Loader2, ArrowRight, Building2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,6 +140,43 @@ export default function SelectRolePage() {
                                 </div>
                               </div>
                               {selectedRole === "patient" && (
+                                <ArrowRight className="h-5 w-5 text-primary" />
+                              )}
+                            </Label>
+                          </div>
+
+                          <div className="relative">
+                            <RadioGroupItem
+                              value="pharmacy"
+                              id="pharmacy"
+                              className="peer sr-only"
+                            />
+                            <Label
+                              htmlFor="pharmacy"
+                              className={`
+                                group flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all
+                                ${selectedRole === "pharmacy"
+                                  ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                                  : "border-border/40 bg-background/50 hover:bg-muted/30 hover:border-border"
+                                }
+                              `}
+                            >
+                              <div className={`
+                                flex h-12 w-12 items-center justify-center rounded-2xl transition-colors
+                                ${selectedRole === "pharmacy"
+                                  ? "bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-200 dark:ring-purple-800"
+                                  : "bg-purple-50 dark:bg-purple-950/50 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/50"
+                                }
+                              `}>
+                                <Building2 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <div className="text-base font-semibold text-foreground">Pharmacy</div>
+                                <div className="text-sm text-muted-foreground leading-tight">
+                                  Manage prescriptions and pharmacy operations
+                                </div>
+                              </div>
+                              {selectedRole === "pharmacy" && (
                                 <ArrowRight className="h-5 w-5 text-primary" />
                               )}
                             </Label>

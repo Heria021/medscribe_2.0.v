@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
+import { api } from "./_generated/api";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -8,7 +9,7 @@ export const createUser = mutation({
   args: {
     email: v.string(),
     passwordHash: v.string(),
-    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin")),
+    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin"), v.literal("pharmacy")),
   },
   handler: async (ctx, args) => {
     // Check if user already exists
@@ -33,6 +34,28 @@ export const createUser = mutation({
       updatedAt: now,
     });
 
+    // Create default email preferences
+    await ctx.db.insert("emailPreferences", {
+      userId,
+      welcomeEmails: true,
+      appointmentReminders: true,
+      appointmentConfirmations: true,
+      treatmentReminders: true,
+      medicationReminders: true,
+      securityAlerts: true,
+      systemNotifications: true,
+      marketingEmails: false,
+      profileReminders: true,
+      reengagementEmails: true,
+      emailFrequency: "immediate",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Welcome email will be sent via existing email system on login
+
+
+
     return userId;
   },
 });
@@ -41,7 +64,7 @@ export const createUser = mutation({
 export const createOAuthUser = mutation({
   args: {
     email: v.string(),
-    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin")),
+    role: v.union(v.literal("doctor"), v.literal("patient"), v.literal("admin"), v.literal("pharmacy")),
     provider: v.string(),
     providerId: v.string(),
     name: v.optional(v.string()),
@@ -179,6 +202,27 @@ export const createPasswordResetToken = mutation({
     return { token, email: user.email };
   },
 });
+
+// Get inactive users for re-engagement emails
+export const getInactiveUsers = query({
+  args: { lastLoginBefore: v.number() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("lastLoginAt"), undefined),
+          q.lt(q.field("lastLoginAt"), args.lastLoginBefore)
+        )
+      )
+      .collect();
+  },
+});
+
+
+
+
 
 // Validate password reset token
 export const validatePasswordResetToken = query({
@@ -572,3 +616,5 @@ async function deleteDoctorData(ctx: MutationCtx, userId: Id<"users">) {
   // Delete the doctor record
   await ctx.db.delete(doctorId);
 }
+
+

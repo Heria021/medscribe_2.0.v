@@ -44,6 +44,8 @@ export function DashboardHeader({ user, displayName }: DashboardHeaderProps) {
       router.push("/patient/settings");
     } else if (user.role === "doctor") {
       router.push("/doctor/settings");
+    } else if (user.role === "pharmacy") {
+      router.push("/pharmacy/settings");
     }
   };
 
@@ -52,6 +54,8 @@ export function DashboardHeader({ user, displayName }: DashboardHeaderProps) {
       router.push("/patient/settings");
     } else if (user.role === "doctor") {
       router.push("/doctor/settings");
+    } else if (user.role === "pharmacy") {
+      router.push("/pharmacy/settings");
     }
   };
 

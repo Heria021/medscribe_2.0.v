@@ -1,5 +1,3 @@
-// lib/rag.ts - Direct API functions for RAG system
-
 export interface EmbedData {
   patient_id: string;
   event_type: string;

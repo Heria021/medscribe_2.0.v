@@ -11,6 +11,11 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    // Allow access to landing page (root path) without authentication
+    if (pathname === "/") {
+      return NextResponse.next();
+    }
+
     // Redirect to login if not authenticated
     if (!token) {
       return NextResponse.redirect(new URL("/auth/login", req.url));
@@ -22,6 +27,10 @@ export default withAuth(
     }
 
     if (pathname.startsWith("/patient/") && token.role !== "patient") {
+      return NextResponse.redirect(new URL("/auth/login", req.url));
+    }
+
+    if (pathname.startsWith("/pharmacy/") && token.role !== "pharmacy") {
       return NextResponse.redirect(new URL("/auth/login", req.url));
     }
 
@@ -37,13 +46,18 @@ export default withAuth(
           return true;
         }
 
+        // Allow access to landing page (root path)
+        if (pathname === "/") {
+          return true;
+        }
+
         // Allow access to API routes
         if (pathname.startsWith("/api/")) {
           return true;
         }
 
         // Require authentication for protected routes
-        if (pathname.startsWith("/doctor/") || pathname.startsWith("/patient/")) {
+        if (pathname.startsWith("/doctor/") || pathname.startsWith("/patient/") || pathname.startsWith("/pharmacy/")) {
           return !!token;
         }
 

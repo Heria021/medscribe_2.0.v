@@ -157,116 +157,7 @@ function AssistantSkeleton() {
   );
 }
 
-// Profile Completion Component (Inside Dashboard Layout)
-function ProfileCompletionContent({ patientProfile }: { patientProfile: any }) {
-  // Define required fields for profile completion (matching actual schema)
-  const requiredFields = [
-    { key: 'firstName', label: 'First Name' },
-    { key: 'lastName', label: 'Last Name' },
-    { key: 'dateOfBirth', label: 'Date of Birth' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'primaryPhone', label: 'Phone Number' },
-    { key: 'email', label: 'Email' },
-    { key: 'addressLine1', label: 'Address' },
-    { key: 'city', label: 'City' },
-    { key: 'state', label: 'State' },
-    { key: 'zipCode', label: 'Zip Code' },
-    { key: 'emergencyContactName', label: 'Emergency Contact Name' },
-    { key: 'emergencyContactPhone', label: 'Emergency Contact Phone' },
-  ];
 
-  const completedRequired = useMemo(() => {
-    if (!patientProfile) return [];
-    return requiredFields.filter(field => {
-      const value = patientProfile[field.key];
-      return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
-    });
-  }, [patientProfile, requiredFields]);
-
-  const requiredCompletion = (completedRequired.length / requiredFields.length) * 100;
-  const missingRequired = requiredFields.length - completedRequired.length;
-
-  return (
-    <div className="h-full w-full flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
-              <Brain className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Complete Your Profile to Access AI Assistant</CardTitle>
-          <p className="text-muted-foreground">
-            {!patientProfile
-              ? "Set up your profile to start using the AI medical assistant."
-              : `${missingRequired} required field${missingRequired !== 1 ? 's' : ''} remaining`
-            }
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {patientProfile && (
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Profile Completion</span>
-                <span className="font-medium">{completedRequired.length}/{requiredFields.length} fields</span>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-3">
-                <div
-                  className="bg-primary h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${requiredCompletion}%` }}
-                />
-              </div>
-              <div className="flex justify-center">
-                <Badge variant="secondary" className="text-sm px-3 py-1">
-                  {Math.round(requiredCompletion)}% Complete
-                </Badge>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Required Information
-              </h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Personal details and contact information</li>
-                <li>• Complete address for medical records</li>
-                <li>• Emergency contact information</li>
-                <li>• Basic demographic information</li>
-              </ul>
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-              <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                <Sparkles className="h-4 w-4" />
-                Unlock AI Features
-              </h4>
-              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                <li>• Get AI insights about your SOAP notes and medical records</li>
-                <li>• Ask questions about your treatments and medications</li>
-                <li>• Understand your care plans and health information</li>
-                <li>• Receive personalized health guidance and recommendations</li>
-              </ul>
-            </div>
-
-            <p className="text-sm text-muted-foreground text-center">
-              Complete your profile to unlock AI-powered medical assistance and personalized health insights.
-            </p>
-
-            <Link href="/patient/settings/profile" className="block">
-              <Button className="w-full" size="lg">
-                {!patientProfile ? "Get Started" : "Complete Profile"}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 // Component to display relevant documents
 function RelevantDocumentsSection({ documents }: { documents: RelevantDocument[] }) {
@@ -341,20 +232,7 @@ export default function PatientAssistantPage() {
     currentSessionId ? { sessionId: currentSessionId } : "skip"
   );
 
-  // Check if profile is complete (matching actual schema)
-  const isProfileComplete = useMemo(() => {
-    if (!patientProfile) return false;
-
-    const requiredFields = [
-      'firstName', 'lastName', 'dateOfBirth', 'gender', 'primaryPhone', 'email',
-      'addressLine1', 'city', 'state', 'zipCode', 'emergencyContactName', 'emergencyContactPhone'
-    ] as const;
-
-    return requiredFields.every(field => {
-      const value = patientProfile[field as keyof typeof patientProfile];
-      return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
-    });
-  }, [patientProfile]);
+  // Profiles are now complete after comprehensive registration
 
   // Mutations
   const createSession = useMutation(api.chatSessions.createSession);
@@ -553,12 +431,10 @@ export default function PatientAssistantPage() {
     return null;
   }
 
-  // Show dashboard with profile completion content if profile is not complete
+  // Show main assistant - profiles are complete after registration
   return (
     <DashboardLayout>
-      {!isProfileComplete ? (
-        <ProfileCompletionContent patientProfile={patientProfile} />
-      ) : (
+      {patientProfile ? (
         <div className="h-full flex flex-col space-y-4">
           {/* Header */}
           <div className="flex-shrink-0 space-y-1">
@@ -823,6 +699,13 @@ export default function PatientAssistantPage() {
           </div>
         </div>
       </div>
+      ) : (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Loading your profile...</p>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

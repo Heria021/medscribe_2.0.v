@@ -10,41 +10,22 @@ interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   try {
-    // Try to use Gmail service
     const gmailService = getGmailService();
 
     if (!gmailService) {
-      console.log("Gmail service not configured. Logging email to console:");
-      console.log("=".repeat(50));
-      console.log(`To: ${options.to}`);
-      console.log(`Subject: ${options.subject}`);
-      console.log(`Text: ${options.text || 'No text version'}`);
-      console.log("=".repeat(50));
-      return true; // Return true for development mode
+      throw new Error("Gmail service not available");
     }
 
-    console.log("Sending email via Gmail API...");
     const success = await gmailService.sendEmail(options);
 
     if (success) {
       console.log(`Email sent successfully to ${options.to}`);
       return true;
     } else {
-      console.error("Failed to send email via Gmail API");
       throw new Error("Gmail API failed to send email");
     }
   } catch (error) {
-    console.error("Failed to send email:", error);
-    // In development, still log the email even if Gmail fails
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Development mode: Logging email to console:");
-      console.log("=".repeat(50));
-      console.log(`To: ${options.to}`);
-      console.log(`Subject: ${options.subject}`);
-      console.log(`Text: ${options.text || 'No text version'}`);
-      console.log("=".repeat(50));
-      return true;
-    }
+    console.error("Email sending failed:", error);
     throw error;
   }
 }
@@ -362,6 +343,59 @@ export function generateAppointmentConfirmationEmail(
       If you need to reschedule or cancel this appointment, please contact us as soon as possible.
 
       This confirmation was sent to ${patientEmail}
+    `
+  };
+}
+
+export function generateOtpVerificationEmail(email: string, firstName: string, otp: string): EmailOptions {
+  return {
+    to: email,
+    subject: "Verify your email - TriageAI",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">TriageAI</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Medical Platform</p>
+        </div>
+
+        <div style="padding: 40px 20px; background: white;">
+          <h2 style="color: #333; margin: 0 0 20px 0;">Hi ${firstName}!</h2>
+
+          <p style="color: #666; line-height: 1.6; margin: 0 0 30px 0;">
+            Welcome to TriageAI! To complete your registration, please verify your email address using the code below:
+          </p>
+
+          <div style="background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0;">
+            <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">Your verification code:</p>
+            <div style="font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 4px; font-family: monospace;">
+              ${otp}
+            </div>
+          </div>
+
+          <p style="color: #666; line-height: 1.6; margin: 30px 0 0 0; font-size: 14px;">
+            This code will expire in 10 minutes. If you didn't request this verification, please ignore this email.
+          </p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
+          <p style="color: #999; margin: 0; font-size: 12px;">
+            © 2024 TriageAI. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `,
+    text: `
+      TriageAI - Email Verification
+
+      Hi ${firstName}!
+
+      Welcome to TriageAI! To complete your registration, please verify your email address using this code:
+
+      ${otp}
+
+      This code will expire in 10 minutes. If you didn't request this verification, please ignore this email.
+
+      © 2024 TriageAI. All rights reserved.
     `
   };
 }

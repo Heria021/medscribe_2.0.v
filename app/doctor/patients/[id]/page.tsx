@@ -22,7 +22,10 @@ import {
   CheckCircle,
   Eye,
   FileText,
-  MessageCircle
+  MessageCircle,
+  MapPin,
+  Video,
+  Loader2
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { api } from "@/convex/_generated/api";
@@ -30,8 +33,40 @@ import { Id } from "@/convex/_generated/dataModel";
 import { AddTreatmentForm } from "@/components/treatments/add-treatment-form";
 import { AddMedicationForm } from "@/components/medications/add-medication-form";
 import { DoctorPatientChat } from "@/components/doctor/doctor-patient-chat";
+import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
+import { PrescriptionList } from "@/components/prescriptions/prescription-list";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+const APPOINTMENT_TYPES = [
+  { value: "new_patient", label: "New Patient", description: "First visit with this patient" },
+  { value: "follow_up", label: "Follow-up", description: "Follow-up visit" },
+  { value: "consultation", label: "Consultation", description: "General consultation" },
+  { value: "procedure", label: "Procedure", description: "Medical procedure" },
+  { value: "telemedicine", label: "Telemedicine", description: "Virtual appointment" },
+  { value: "emergency", label: "Emergency", description: "Urgent care" },
+];
+
+const DURATIONS = [
+  { value: 15, label: "15 minutes" },
+  { value: 30, label: "30 minutes" },
+  { value: 45, label: "45 minutes" },
+  { value: 60, label: "1 hour" },
+  { value: 90, label: "1.5 hours" },
+  { value: 120, label: "2 hours" },
+];
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 interface PatientDetailPageProps {
   params: Promise<{
@@ -57,11 +92,29 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<"overview" | "treatment-form" | "medication-form" | "chat">("overview");
+  const [activeView, setActiveView] = useState<"overview" | "treatment-form" | "medication-form" | "appointment-form" | "prescription-form" | "chat">("overview");
   const [showChat, setShowChat] = useState(false);
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+
+  // Appointment form state
+  const [appointmentType, setAppointmentType] = useState<string>("");
+  const [visitReason, setVisitReason] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [appointmentTime, setAppointmentTime] = useState("");
+  const [duration, setDuration] = useState<number>(30);
+  const [locationType, setLocationType] = useState<"in_person" | "telemedicine">("in_person");
+  const [address, setAddress] = useState("");
+  const [room, setRoom] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
+  const [notes, setNotes] = useState("");
+  const [insuranceVerified, setInsuranceVerified] = useState(false);
+  const [copayAmount, setCopayAmount] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const updateTreatment = useMutation(api.treatmentPlans.update);
   const updateMedication = useMutation(api.medications.update);
+  const scheduleEmail = useMutation(api.emailAutomation.scheduleEmail);
+  const createAppointment = useMutation(api.appointments.create);
 
   const resolvedParams = use(params);
   const patientId = resolvedParams.id as Id<"patients">;
@@ -120,6 +173,148 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
     } catch (error) {
       toast.error("Failed to update medication status");
     }
+  };
+
+  const handleCreateAppointment = async () => {
+    if (!appointmentType || !visitReason.trim() || !appointmentDate || !appointmentTime) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (!currentDoctorPatient || !patient || !doctorProfile) {
+      toast.error("Missing patient or doctor information");
+      return;
+    }
+
+    // Combine date and time into a timestamp
+    const dateTime = new Date(`${appointmentDate}T${appointmentTime}`);
+    if (isNaN(dateTime.getTime())) {
+      toast.error("Please enter a valid date and time");
+      return;
+    }
+
+    // Check if appointment is in the future
+    if (dateTime.getTime() <= Date.now()) {
+      toast.error("Appointment must be scheduled for a future date and time");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      // Create the appointment
+      await createAppointment({
+        doctorPatientId: currentDoctorPatient._id as any,
+        appointmentDateTime: dateTime.getTime(),
+        duration,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        appointmentType: appointmentType as any,
+        visitReason,
+        location: {
+          type: locationType,
+          address: locationType === "in_person" ? address : undefined,
+          room: locationType === "in_person" ? room : undefined,
+          meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
+        },
+        notes: notes.trim() || undefined,
+        insuranceVerified: insuranceVerified || undefined,
+        copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
+      });
+
+      // Send immediate appointment confirmation email
+      await scheduleEmail({
+        userId: patient.userId,
+        emailType: "appointment_reminder_24h",
+        scheduledFor: Date.now(), // Send immediately
+        relatedRecordId: "new_appointment",
+        relatedRecordType: "appointment",
+        emailData: {
+          to: patient.email,
+          subject: "Appointment Confirmed - MedScribe",
+          templateData: {
+            patientName: `${patient.firstName} ${patient.lastName}`,
+            doctorName: `${doctorProfile.firstName} ${doctorProfile.lastName}`,
+            appointmentDetails: {
+              date: dateTime.toLocaleDateString(),
+              time: dateTime.toLocaleTimeString(),
+              type: appointmentType,
+              visitReason,
+              location: { type: locationType, address: locationType === "in_person" ? address : "Virtual" },
+              duration,
+            },
+          },
+        },
+      });
+
+      // Schedule reminder email 1 hour before appointment
+      const reminderTime = dateTime.getTime() - (60 * 60 * 1000); // 1 hour before
+      if (reminderTime > Date.now()) {
+        await scheduleEmail({
+          userId: patient.userId,
+          emailType: "appointment_reminder_1h",
+          scheduledFor: reminderTime,
+          relatedRecordId: "new_appointment",
+          relatedRecordType: "appointment",
+          emailData: {
+            to: patient.email,
+            subject: "URGENT: Appointment in 1 Hour - MedScribe",
+            templateData: {
+              patientName: `${patient.firstName} ${patient.lastName}`,
+              doctorName: `${doctorProfile.firstName} ${doctorProfile.lastName}`,
+              appointmentDetails: {
+                date: dateTime.toLocaleDateString(),
+                time: dateTime.toLocaleTimeString(),
+                type: appointmentType,
+                visitReason,
+                location: { type: locationType, address: locationType === "in_person" ? address : "Virtual" },
+                duration,
+              },
+            },
+          },
+        });
+      }
+
+      toast.success("Appointment scheduled successfully!");
+
+      // Reset form and return to treatment details view
+      resetAppointmentForm();
+      setActiveView("overview");
+    } catch (error) {
+      toast.error("Failed to schedule appointment. Please try again.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const resetAppointmentForm = () => {
+    setAppointmentType("");
+    setVisitReason("");
+    setAppointmentDate("");
+    setAppointmentTime("");
+    setDuration(30);
+    setLocationType("in_person");
+    setAddress("");
+    setRoom("");
+    setMeetingLink("");
+    setNotes("");
+    setInsuranceVerified(false);
+    setCopayAmount("");
+  };
+
+  // Generate time slots (9 AM to 5 PM in 15-minute intervals)
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour < 17; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        slots.push({ value: timeString, label: displayTime });
+      }
+    }
+    return slots;
   };
 
   if (!session || session.user.role !== "doctor") {
@@ -223,6 +418,16 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
               >
                 <MessageCircle className="h-3 w-3 mr-1" />
                 Chat
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveView("appointment-form")}
+                className="h-8 px-3 text-xs"
+              >
+                <Calendar className="h-3 w-3 mr-1" />
+                Set Appointment
               </Button>
 
               <Button
@@ -391,7 +596,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
                 </Card>
               </div>
 
-              {/* Treatment Details - Adjusts based on chat visibility */}
+              {/* Treatment Details / Appointment Form - Adjusts based on chat visibility */}
               <div className={cn(
                 "flex flex-col min-h-0",
                 showChat
@@ -399,7 +604,241 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
                   : "lg:col-span-3 lg:order-2 order-1"
               )}>
                 <Card className="flex-1 min-h-0 flex flex-col">
-                  {selectedTreatment ? (
+                  {activeView === "appointment-form" ? (
+                    <>
+                      <CardHeader className="pb-3 flex-shrink-0">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            Schedule Appointment
+                          </CardTitle>
+                          <Button variant="outline" size="sm" onClick={() => setActiveView("overview")}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 min-h-0 p-4">
+                        <div className="h-full flex flex-col space-y-4">
+                          {/* Top Row - Type and Reason */}
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label htmlFor="appointmentType" className="text-sm font-medium">Type *</Label>
+                              <Select value={appointmentType} onValueChange={setAppointmentType}>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {APPOINTMENT_TYPES.map((type) => (
+                                    <SelectItem key={type.value} value={type.value}>
+                                      <span className="font-medium">{type.label}</span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label htmlFor="visitReason" className="text-sm font-medium">Visit Reason *</Label>
+                              <Textarea
+                                id="visitReason"
+                                placeholder="Reason for appointment..."
+                                value={visitReason}
+                                onChange={(e) => setVisitReason(e.target.value)}
+                                rows={2}
+                                className="resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Date, Time, Duration Row */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label htmlFor="date" className="text-sm font-medium">Date *</Label>
+                              <Input
+                                id="date"
+                                type="date"
+                                value={appointmentDate}
+                                onChange={(e) => setAppointmentDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="h-9"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label htmlFor="time" className="text-sm font-medium">Time *</Label>
+                              <Select value={appointmentTime} onValueChange={setAppointmentTime}>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Select time" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {generateTimeSlots().map((slot) => (
+                                    <SelectItem key={slot.value} value={slot.value}>
+                                      {slot.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label htmlFor="duration" className="text-sm font-medium">Duration</Label>
+                              <Select value={duration.toString()} onValueChange={(value) => setDuration(parseInt(value))}>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {DURATIONS.map((dur) => (
+                                    <SelectItem key={dur.value} value={dur.value.toString()}>
+                                      {dur.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Location Type - Compact */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Location Type</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                type="button"
+                                variant={locationType === "in_person" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setLocationType("in_person")}
+                                className="h-8 justify-start"
+                              >
+                                <MapPin className="h-3 w-3 mr-2" />
+                                In-Person
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={locationType === "telemedicine" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setLocationType("telemedicine")}
+                                className="h-8 justify-start"
+                              >
+                                <Video className="h-3 w-3 mr-2" />
+                                Virtual
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Location Details */}
+                          {locationType === "in_person" && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label htmlFor="address" className="text-sm font-medium">Address</Label>
+                                <Input
+                                  id="address"
+                                  placeholder="Clinic address"
+                                  value={address}
+                                  onChange={(e) => setAddress(e.target.value)}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor="room" className="text-sm font-medium">Room</Label>
+                                <Input
+                                  id="room"
+                                  placeholder="Room number"
+                                  value={room}
+                                  onChange={(e) => setRoom(e.target.value)}
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {locationType === "telemedicine" && (
+                            <div className="space-y-1">
+                              <Label htmlFor="meetingLink" className="text-sm font-medium">Meeting Link</Label>
+                              <Input
+                                id="meetingLink"
+                                placeholder="Video call link"
+                                value={meetingLink}
+                                onChange={(e) => setMeetingLink(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                          )}
+
+                          {/* Notes and Additional Info - Compact */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+                              <Textarea
+                                id="notes"
+                                placeholder="Additional notes..."
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                rows={2}
+                                className="resize-none"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Insurance</Label>
+                              <div className="flex items-center space-x-2 h-9">
+                                <input
+                                  type="checkbox"
+                                  id="insurance"
+                                  checked={insuranceVerified}
+                                  onChange={(e) => setInsuranceVerified(e.target.checked)}
+                                  className="rounded"
+                                />
+                                <Label htmlFor="insurance" className="text-sm">Verified</Label>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label htmlFor="copay" className="text-sm font-medium">Copay ($)</Label>
+                              <Input
+                                id="copay"
+                                type="number"
+                                placeholder="0.00"
+                                value={copayAmount}
+                                onChange={(e) => setCopayAmount(e.target.value)}
+                                min="0"
+                                step="0.01"
+                                className="h-9"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action Buttons - Compact */}
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setActiveView("overview")}
+                              size="sm"
+                              className="h-8"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleCreateAppointment}
+                              disabled={!appointmentType || !visitReason.trim() || !appointmentDate || !appointmentTime || isCreating}
+                              className="flex-1 h-8"
+                              size="sm"
+                            >
+                              {isCreating ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                  Scheduling...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3 w-3 mr-2" />
+                                  Schedule Appointment
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </>
+                  ) : selectedTreatment ? (
                     <>
                       <CardHeader className="pb-3 flex-shrink-0">
                         <div className="flex items-start justify-between">
@@ -532,6 +971,48 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
                                 </Button>
                               </div>
                             )}
+
+                            {/* E-Prescribing Section */}
+                            <div className="border rounded-xl p-4 bg-blue-50 dark:bg-blue-950/20">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                  <Pill className="h-4 w-4 text-blue-600" />
+                                  <h3 className="font-semibold text-base text-blue-900 dark:text-blue-100">E-Prescribing</h3>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setShowPrescriptionForm(!showPrescriptionForm)}
+                                  className="h-8"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  {showPrescriptionForm ? "Hide Form" : "Add Prescription"}
+                                </Button>
+                              </div>
+
+                              {showPrescriptionForm && (
+                                <div className="mt-4">
+                                  <PrescriptionForm
+                                    patientId={patientId}
+                                    treatmentPlanId={selectedTreatmentId as any}
+                                    onSuccess={(_prescriptionId) => {
+                                      toast.success("Prescription created successfully!");
+                                      setShowPrescriptionForm(false);
+                                    }}
+                                    onCancel={() => setShowPrescriptionForm(false)}
+                                  />
+                                </div>
+                              )}
+
+                              {!showPrescriptionForm && (
+                                <div className="space-y-3">
+                                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    Create electronic prescriptions for this treatment plan
+                                  </p>
+                                  <PrescriptionList patientId={patientId} />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </ScrollArea>
                       </CardContent>
@@ -564,6 +1045,8 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
             </div>
           )}
         </div>
+
+
       </div>
     </DashboardLayout>
   );

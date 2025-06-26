@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const roleSchema = z.enum(["doctor", "patient"], {
+export const roleSchema = z.enum(["doctor", "patient", "pharmacy"], {
   required_error: "Please select a role",
 });
 

@@ -93,6 +93,28 @@ class GmailService {
       return true;
     } catch (error) {
       console.error('Failed to send email via Gmail:', error);
+
+      // Try to refresh token once if authentication fails
+      if (error.code === 401 || error.message?.includes('invalid_grant')) {
+        try {
+          await this.oauth2Client.refreshAccessToken();
+
+          // Retry once
+          const retryResponse = await this.gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+              raw: encodedMessage,
+            },
+          });
+
+          console.log('Email sent successfully after token refresh:', retryResponse.data.id);
+          return true;
+        } catch (retryError) {
+          console.error('Failed to send email after token refresh:', retryError);
+          return false;
+        }
+      }
+
       return false;
     }
   }

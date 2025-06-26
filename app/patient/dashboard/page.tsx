@@ -13,6 +13,7 @@ import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { ActionCard } from "@/components/ui/action-card";
 import { TreatmentOverview } from "@/components/patient/treatment-overview";
 
+
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 
@@ -118,109 +119,7 @@ function DashboardSkeleton() {
   );
 }
 
-// Profile Completion Component (Inside Dashboard Layout)
-function ProfileCompletionContent({ patientProfile }: { patientProfile: any }) {
-  // Define required fields for profile completion
-  const requiredFields = [
-    { key: 'firstName', label: 'First Name' },
-    { key: 'lastName', label: 'Last Name' },
-    { key: 'dateOfBirth', label: 'Date of Birth' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'email', label: 'Email' },
-    { key: 'primaryPhone', label: 'Phone Number' },
-    { key: 'addressLine1', label: 'Address' },
-    { key: 'city', label: 'City' },
-    { key: 'state', label: 'State' },
-    { key: 'zipCode', label: 'ZIP Code' },
-    { key: 'emergencyContactName', label: 'Emergency Contact' },
-    { key: 'emergencyContactPhone', label: 'Emergency Phone' },
-  ];
 
-  const completedRequired = useMemo(() => {
-    if (!patientProfile) return [];
-    return requiredFields.filter(field => {
-      const value = patientProfile[field.key];
-      return value && value.toString().trim() !== "" && value.toString().trim() !== "To be updated";
-    });
-  }, [patientProfile, requiredFields]);
-
-  const requiredCompletion = (completedRequired.length / requiredFields.length) * 100;
-  const missingRequired = requiredFields.length - completedRequired.length;
-
-  return (
-    <div className="h-full flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
-              <User className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Complete Your Patient Profile</CardTitle>
-          <p className="text-muted-foreground">
-            {!patientProfile
-              ? "Set up your patient profile to access all features."
-              : `${missingRequired} required field${missingRequired !== 1 ? 's' : ''} remaining`
-            }
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {patientProfile && (
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Profile Completion</span>
-                <span className="font-medium">{completedRequired.length}/{requiredFields.length} fields</span>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-3">
-                <div
-                  className="bg-primary h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${requiredCompletion}%` }}
-                />
-              </div>
-              <div className="flex justify-center">
-                <Badge variant="secondary" className="text-sm px-3 py-1">
-                  {Math.round(requiredCompletion)}% Complete
-                </Badge>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Required Information
-              </h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Personal and contact information</li>
-                <li>• Medical history and demographics</li>
-                <li>• Emergency contact details</li>
-                <li>• Address and insurance information</li>
-              </ul>
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-              <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                <Sparkles className="h-4 w-4" />
-                Unlock AI Features
-              </h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Complete your profile to generate SOAP notes with AI and access your medical assistant.
-              </p>
-            </div>
-
-            <Link href="/patient/settings/profile" className="block">
-              <Button className="w-full" size="lg">
-                {!patientProfile ? "Get Started" : "Complete Profile"}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 export default function PatientDashboard() {
   const { data: session, status } = useSession();
@@ -249,20 +148,7 @@ export default function PatientDashboard() {
     patientProfile?._id ? { patientId: patientProfile._id as any } : "skip"
   );
 
-  // Check if profile is complete
-  const isProfileComplete = useMemo(() => {
-    if (!patientProfile) return false;
-
-    const requiredFields = [
-      'firstName', 'lastName', 'dateOfBirth', 'gender', 'email', 'primaryPhone',
-      'addressLine1', 'city', 'state', 'zipCode', 'emergencyContactName', 'emergencyContactPhone'
-    ] as const;
-
-    return requiredFields.every(field => {
-      const value = patientProfile[field as keyof typeof patientProfile];
-      return value && value.toString().trim() !== "" && value.toString().trim() !== "To be updated";
-    });
-  }, [patientProfile]);
+  // Profiles are now complete after comprehensive registration
 
   useEffect(() => {
     if (status === "loading") return;
@@ -282,12 +168,10 @@ export default function PatientDashboard() {
     return null;
   }
 
-  // Show dashboard with profile completion content if profile is not complete
+  // Show main dashboard - profiles are complete after registration
   return (
     <DashboardLayout>
-      {!isProfileComplete ? (
-        <ProfileCompletionContent patientProfile={patientProfile} />
-      ) : (
+      {patientProfile ? (
         <div className="h-full flex flex-col space-y-4">
           {/* Header */}
           <div className="flex-shrink-0 space-y-1">
@@ -489,6 +373,13 @@ export default function PatientDashboard() {
           </div>
         </div>
       </div>
+      ) : (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Loading your profile...</p>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

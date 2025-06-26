@@ -172,6 +172,19 @@ export const getDoctorById = query({
   },
 });
 
+// Get doctor by user ID (alias for getDoctorProfile for compatibility)
+export const getDoctorByUserId = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const doctor = await ctx.db
+      .query("doctors")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return doctor;
+  },
+});
+
 // Get all doctors except current doctor (for referrals and sharing)
 export const getAll = query({
   args: { excludeDoctorId: v.optional(v.id("doctors")) },
@@ -470,67 +483,9 @@ export const updateAcceptingNewPatients = mutation({
   },
 });
 
-// Check if doctor profile is complete
-export const isDoctorProfileComplete = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const doctor = await ctx.db
-      .query("doctors")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
-      .first();
 
-    if (!doctor) {
-      return {
-        isComplete: false,
-        completedSteps: [],
-        missingSteps: ["personal", "professional", "credentials", "availability"],
-      };
-    }
 
-    const completedSteps = [];
-    const missingSteps = [];
 
-    // Check personal information
-    if (doctor.firstName && doctor.lastName && doctor.phone && doctor.email) {
-      completedSteps.push("personal");
-    } else {
-      missingSteps.push("personal");
-    }
-
-    // Check professional information
-    if (doctor.primarySpecialty && doctor.licenseNumber) {
-      completedSteps.push("professional");
-    } else {
-      missingSteps.push("professional");
-    }
-
-    // Check credentials (optional but recommended)
-    if (doctor.npiNumber || doctor.boardCertifications?.length) {
-      completedSteps.push("credentials");
-    } else {
-      missingSteps.push("credentials");
-    }
-
-    // Check availability (optional)
-    if (doctor.availabilitySchedule) {
-      completedSteps.push("availability");
-    } else {
-      missingSteps.push("availability");
-    }
-
-    const requiredSteps = ["personal", "professional"];
-    const completedRequiredSteps = completedSteps.filter(step => requiredSteps.includes(step));
-    const isComplete = completedRequiredSteps.length === requiredSteps.length;
-
-    return {
-      isComplete,
-      completedSteps,
-      missingSteps,
-      completionPercentage: (completedSteps.length / 4) * 100,
-      isVerified: doctor.isVerified,
-    };
-  },
-});
 
 // Seed sample doctors for testing (development only)
 export const seedSampleDoctors = mutation({
