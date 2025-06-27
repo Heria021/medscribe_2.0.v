@@ -1,9 +1,9 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useDoctorAuth } from "@/hooks/use-doctor-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,29 +22,15 @@ import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 
 export default function DoctorChatPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const { session, isLoading, isAuthenticated } = useDoctorAuth();
   const [selectedPatientId, setSelectedPatientId] = useState<Id<"patients"> | null>(null);
   const [showChat, setShowChat] = useState(false);
-
-  useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session) {
-      router.push("/auth/login");
-      return;
-    }
-
-    if (session.user.role !== "doctor") {
-      router.push("/auth/login");
-      return;
-    }
-  }, [session, status, router]);
 
   // Get doctor profile
   const doctorProfile = useQuery(
     api.doctors.getDoctorProfile,
-    session?.user?.id ? { userId: session.user.id as any } : "skip"
+    session?.user?.id ? { userId: session.user.id as Id<"users"> } : "skip"
   );
 
   // Get doctor conversations
@@ -55,7 +41,7 @@ export default function DoctorChatPage() {
 
   const selectedPatient = conversations?.find(conv => conv.patientId === selectedPatientId)?.patient;
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -68,7 +54,7 @@ export default function DoctorChatPage() {
     );
   }
 
-  if (!session || session.user.role !== "doctor") {
+  if (!isAuthenticated) {
     return null;
   }
 

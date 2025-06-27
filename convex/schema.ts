@@ -469,7 +469,6 @@ export default defineSchema({
     userId: v.id("users"),
     emailType: v.union(
       v.literal("welcome"),
-      v.literal("profile_completion_reminder"),
       v.literal("appointment_reminder_24h"),
       v.literal("appointment_reminder_1h"),
       v.literal("appointment_followup"),

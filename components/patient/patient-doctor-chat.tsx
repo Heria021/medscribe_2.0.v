@@ -51,7 +51,7 @@ export function PatientDoctorChat({
   // Get patient profile to get user ID
   const patientProfile = useQuery(
     api.patients.getPatientByUserId,
-    session?.user?.id ? { userId: session.user.id as any } : "skip"
+    session?.user?.id ? { userId: session.user.id as Id<"users"> } : "skip"
   );
 
   // Get doctor to get user ID

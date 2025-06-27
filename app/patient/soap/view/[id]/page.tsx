@@ -71,7 +71,6 @@ export default function ViewSOAPPage() {
 
   if (!soapNote) {
     return (
-      <DashboardLayout>
         <div className="flex flex-col h-full space-y-6">
           <div className="flex items-center gap-4">
             <Link href="/patient/soap/history">
@@ -91,12 +90,10 @@ export default function ViewSOAPPage() {
             </Link>
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 h-full flex flex-col">
         {/* Enhanced Navigation */}
         <div className="flex-shrink-0">
@@ -140,6 +137,5 @@ export default function ViewSOAPPage() {
           />
         </div>
       </div>
-    </DashboardLayout>
   );
 }

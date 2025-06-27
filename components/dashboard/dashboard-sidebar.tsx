@@ -9,7 +9,6 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
@@ -48,14 +47,11 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
       </SidebarHeader>
 
       <SidebarContent>
-        {navigation.map((section) => (
-          <SidebarGroup key={section.title}>
-            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {section.title}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map((item) => {
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-2">
+              {navigation.flatMap((section) =>
+                section.items.map((item) => {
                   const isActive = currentPath === item.href;
 
                   return (
@@ -64,11 +60,11 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className="transition-all duration-200"
+                        className="transition-all duration-200 h-11 px-4 rounded-lg hover:bg-sidebar-accent/50"
                       >
                         <Link href={item.href} className="flex items-center gap-3">
-                          <item.icon className="h-4 w-4" />
-                          <span className="font-medium">{item.title}</span>
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium text-sm">{item.title}</span>
                           {item.badge && (
                             <SidebarMenuBadge className="ml-auto bg-primary text-primary-foreground">
                               {item.badge}
@@ -78,11 +74,11 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                })
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/40">

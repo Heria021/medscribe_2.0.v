@@ -88,7 +88,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href={`/${userRole}/dashboard`}>
+                  <BreadcrumbLink href={userRole === "patient" ? "/patient" : `/${userRole}/dashboard`}>
                     Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>

@@ -29,7 +29,6 @@ import type * as patients from "../patients.js";
 import type * as pharmacies from "../pharmacies.js";
 import type * as prescriptions from "../prescriptions.js";
 import type * as referrals from "../referrals.js";
-import type * as scheduledTasks from "../scheduledTasks.js";
 import type * as seedAppointments from "../seedAppointments.js";
 import type * as sharedSoapNotes from "../sharedSoapNotes.js";
 import type * as soapNotes from "../soapNotes.js";
@@ -61,7 +60,6 @@ declare const fullApi: ApiFromModules<{
   pharmacies: typeof pharmacies;
   prescriptions: typeof prescriptions;
   referrals: typeof referrals;
-  scheduledTasks: typeof scheduledTasks;
   seedAppointments: typeof seedAppointments;
   sharedSoapNotes: typeof sharedSoapNotes;
   soapNotes: typeof soapNotes;

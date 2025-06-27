@@ -25,7 +25,6 @@ import Link from "next/link";
 // Skeleton Loading Component
 function SOAPHistorySkeleton() {
   return (
-    <DashboardLayout>
       <div className="h-full flex flex-col space-y-4">
         {/* Header Skeleton */}
         <div className="flex-shrink-0 space-y-1">
@@ -79,7 +78,6 @@ function SOAPHistorySkeleton() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 
@@ -251,21 +249,19 @@ export default function SOAPHistoryPage() {
     const note = filteredNotes.find(n => n._id === selectedNote);
     if (note) {
       return (
-        <DashboardLayout>
           <SOAPNoteDetailView
             note={note}
             onBack={() => setSelectedNote(null)}
             formatDate={formatDate}
             getQualityColor={getQualityColor}
           />
-        </DashboardLayout>
       );
     }
   }
 
   // Show dashboard with profile completion content if profile is not complete
   return (
-    <DashboardLayout>
+    <>
       {!isProfileComplete ? (
         <ProfileCompletionContent patientProfile={patientProfile} />
       ) : (
@@ -316,6 +312,6 @@ export default function SOAPHistoryPage() {
           )}
         </div>
       )}
-    </DashboardLayout>
+      </>
   );
 }

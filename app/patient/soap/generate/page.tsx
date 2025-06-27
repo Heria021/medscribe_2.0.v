@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import { AudioRecorder, AudioRecorderRef } from "@/components/patient/audio-recorder";
 import {
   FileText,
@@ -23,7 +22,7 @@ import { toast } from "sonner";
 // Skeleton Loading Component
 function GenerateSOAPSkeleton() {
   return (
-    <DashboardLayout>
+    <>
       <div className="h-full flex flex-col space-y-4">
         {/* Header Skeleton */}
         <div className="flex-shrink-0 space-y-2">
@@ -131,7 +130,7 @@ function GenerateSOAPSkeleton() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+      </>
   );
 }
 
@@ -242,7 +241,6 @@ export default function GenerateSOAPPage() {
 
   if (!patientProfile) {
     return (
-      <DashboardLayout>
         <div className="flex flex-col h-full w-full overflow-hidden">
           <div className="flex-1 flex items-center justify-center">
             <Alert className="max-w-md">
@@ -260,12 +258,10 @@ export default function GenerateSOAPPage() {
             </Alert>
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="flex flex-col h-full w-full overflow-hidden gap-4">
         {/* Header - Fixed height */}
         <div className="flex-shrink-0 flex items-start justify-between">
@@ -440,6 +436,5 @@ export default function GenerateSOAPPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

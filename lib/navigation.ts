@@ -122,7 +122,7 @@ export const patientNavigation: NavSection[] = [
     items: [
       {
         title: "Overview",
-        href: "/patient/dashboard",
+        href: "/patient",
         icon: LayoutDashboard,
       },
     ],
