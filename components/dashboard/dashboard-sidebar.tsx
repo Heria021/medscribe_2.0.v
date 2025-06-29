@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Stethoscope, UserCheck } from "lucide-react";
+import { Stethoscope, UserCheck, LogOut } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { NavSection } from "@/lib/navigation";
 
@@ -29,7 +32,7 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-sm">
             {userRole === "doctor" ? (
               <Stethoscope className="h-5 w-5 text-primary-foreground" />
@@ -46,6 +49,8 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
         </div>
       </SidebarHeader>
 
+      <Separator />
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -60,7 +65,7 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className="transition-all duration-200 h-11 px-4 rounded-lg hover:bg-sidebar-accent/50"
+                        className="transition-all duration-200 h-11 rounded-lg hover:bg-sidebar-accent/50"
                       >
                         <Link href={item.href} className="flex items-center gap-3">
                           <item.icon className="h-5 w-5" />
@@ -81,15 +86,18 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/40">
-        <div className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground font-medium">
-              MedScribe v2.0
-            </div>
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="System Online" />
-          </div>
-        </div>
+      <Separator />
+
+      <SidebarFooter>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => signOut({ callbackUrl: "/auth/login" })}
+          className="w-full h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign out
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

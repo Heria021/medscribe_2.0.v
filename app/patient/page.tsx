@@ -2,19 +2,98 @@
 
 import { useSession } from "next-auth/react";
 import { useQuery } from "convex/react";
-import { UserCheck, Calendar, FileText, Mic, History, Bot, Sparkles, Brain, Pill, MessageCircle, CloudSun } from "lucide-react";
-import { 
-  FeatureCard, 
-  AppointmentSection, 
-  QuickActionGrid, 
-  HealthTipCard, 
+import { UserCheck, Calendar, FileText, Mic, History, Bot, Sparkles, Brain, Pill, MessageCircle, CloudSun, Cloud, Sun, CloudRain, Snowflake, Wind } from "lucide-react";
+import {
+  FeatureCard,
+  AppointmentSection,
+  QuickActionGrid,
+  HealthTipCard,
   DashboardSkeleton,
+  TreatmentOverview,
   type Appointment,
   type QuickAction
 } from "@/app/patient/_components/dashboard";
-import { TreatmentOverview } from "@/components/patient/treatment-overview";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
+
+// Weather-based health tips utility
+function getWeatherHealthTip() {
+  const tips = [
+    {
+      weather: "Sunny",
+      temp: "75°F",
+      condition: "Clear skies",
+      icon: <Sun className="h-4 w-4 text-white" />,
+      tip: "Perfect day for outdoor exercise! UV protection recommended.",
+      gradient: {
+        from: "from-yellow-50",
+        to: "to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20",
+        border: "border-yellow-200 dark:border-yellow-800",
+        iconBg: "bg-yellow-500",
+        textColor: "text-yellow-900 dark:text-yellow-100"
+      }
+    },
+    {
+      weather: "Partly Cloudy",
+      temp: "72°F",
+      condition: "Good air quality",
+      icon: <CloudSun className="h-4 w-4 text-white" />,
+      tip: "Ideal weather for walking or light outdoor activities.",
+      gradient: {
+        from: "from-sky-50",
+        to: "to-cyan-50 dark:from-sky-950/20 dark:to-cyan-950/20",
+        border: "border-sky-200 dark:border-sky-800",
+        iconBg: "bg-sky-500",
+        textColor: "text-sky-900 dark:text-sky-100"
+      }
+    },
+    {
+      weather: "Cloudy",
+      temp: "68°F",
+      condition: "Overcast",
+      icon: <Cloud className="h-4 w-4 text-white" />,
+      tip: "Great for indoor workouts or yoga. Stay hydrated!",
+      gradient: {
+        from: "from-gray-50",
+        to: "to-slate-50 dark:from-gray-950/20 dark:to-slate-950/20",
+        border: "border-gray-200 dark:border-gray-800",
+        iconBg: "bg-gray-500",
+        textColor: "text-gray-900 dark:text-gray-100"
+      }
+    },
+    {
+      weather: "Rainy",
+      temp: "65°F",
+      condition: "Light rain",
+      icon: <CloudRain className="h-4 w-4 text-white" />,
+      tip: "Perfect for indoor meditation or stretching exercises.",
+      gradient: {
+        from: "from-blue-50",
+        to: "to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20",
+        border: "border-blue-200 dark:border-blue-800",
+        iconBg: "bg-blue-500",
+        textColor: "text-blue-900 dark:text-blue-100"
+      }
+    },
+    {
+      weather: "Windy",
+      temp: "70°F",
+      condition: "Breezy",
+      icon: <Wind className="h-4 w-4 text-white" />,
+      tip: "Good for brisk walks. Protect eyes from dust and debris.",
+      gradient: {
+        from: "from-teal-50",
+        to: "to-emerald-50 dark:from-teal-950/20 dark:to-emerald-950/20",
+        border: "border-teal-200 dark:border-teal-800",
+        iconBg: "bg-teal-500",
+        textColor: "text-teal-900 dark:text-teal-100"
+      }
+    }
+  ];
+
+  // Simulate different weather conditions (in real app, this would come from weather API)
+  const randomIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 6)) % tips.length; // Changes every 6 hours
+  return tips[randomIndex];
+}
 
 export default function PatientDashboard() {
   const { data: session } = useSession();
@@ -30,8 +109,6 @@ export default function PatientDashboard() {
     api.treatmentPlans.getWithDetailsByPatientId,
     patientProfile?._id ? { patientId: patientProfile._id as any } : "skip"
   );
-
-
 
   // Fetch upcoming appointments
   const upcomingAppointments = useQuery(
@@ -105,8 +182,11 @@ export default function PatientDashboard() {
     reason: (appointment as any).reason || undefined
   })) || [];
 
+  // Get current weather-based health tip
+  const weatherTip = getWeatherHealthTip();
+
   return (
-    <div className="h-full flex flex-col overflow-hidden  space-y-4">
+    <div className="h-full flex flex-col p-4 space-y-4">
       {/* Header */}
       <div className="flex-shrink-0">
         <h1 className="text-xl font-bold tracking-tight">
@@ -203,71 +283,82 @@ export default function PatientDashboard() {
         </div>
       </div>
 
-      {/* Additional Actions & Weather Tips - Compact */}
-      <div className="flex-shrink-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Health Tip Card */}
-        <HealthTipCard
-          title="Health Tips"
-          subtitle="72°F • Good air quality"
-          tip="Perfect weather for outdoor activities. Stay hydrated and enjoy the fresh air!"
-          icon={<CloudSun className="h-4 w-4 text-white" />}
-          gradient={{
-            from: "from-sky-50",
-            to: "to-cyan-50 dark:from-sky-950/20 dark:to-cyan-950/20",
-            border: "border-sky-200 dark:border-sky-800",
-            iconBg: "bg-sky-500",
-            textColor: "text-sky-900 dark:text-sky-100"
-          }}
-        />
-
-        {/* Appointments Section */}
-        <AppointmentSection
-          appointments={appointments}
-          title="Appointments & Records"
-          description="Quick access to your healthcare"
-          icon={<Calendar className="h-4 w-4 text-white" />}
-          gradient={{
-            from: "from-orange-50",
-            to: "to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20",
-            border: "border-orange-200 dark:border-orange-800",
-            iconBg: "bg-orange-500",
-            textColor: "text-orange-900 dark:text-orange-100",
-            itemBg: "bg-orange-100/50 dark:bg-orange-900/20",
-            itemBorder: "border-orange-200 dark:border-orange-700"
-          }}
-          emptyState={{
-            icon: <Calendar className="h-8 w-8" />,
-            message: "No upcoming appointments",
-            actionLabel: "Book Appointment",
-            actionHref: "/patient/appointments/book"
-          }}
-          viewAllHref="/patient/appointments"
-          maxItems={3}
-        />
-      </div>
-
-      {/* Main Content Grid - Treatment + Quick Actions */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Treatment Section - 1/3 width */}
-          {patientProfile && activeTreatments && activeTreatments.length > 0 && (
-            <div className="lg:col-span-1 min-h-0 overflow-hidden">
-              <TreatmentOverview patientId={patientProfile._id} />
-            </div>
-          )}
-
-          {/* Quick Actions - Takes remaining space */}
-          <div className={cn(
-            "lg:col-span-1 min-h-0 overflow-hidden",
-            patientProfile && activeTreatments && activeTreatments.length > 0
-              ? "lg:col-start-2"
-              : "lg:col-span-2"
-          )}>
+      {/* New 3-Column Grid: Takes full remaining space */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
+        {/* Left Column - Health Tips + Quick Actions */}
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <HealthTipCard
+              title="Weather & Health"
+              subtitle={`${weatherTip.temp} • ${weatherTip.condition}`}
+              tip={weatherTip.tip}
+              icon={weatherTip.icon}
+              gradient={weatherTip.gradient}
+              className="h-full"
+            />
+          </div>
+          <div className="flex-shrink-0 mt-4">
             <QuickActionGrid
               title="Quick Actions"
-              actions={quickActions}
+              actions={quickActions.slice(0, 4)}
               columns={2}
               variant="compact"
+              gradient={{
+                from: "from-rose-50",
+                to: "to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20",
+                border: "border-rose-200 dark:border-rose-800",
+                iconBg: "bg-rose-500",
+                textColor: "text-rose-900 dark:text-rose-100"
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Middle Column - Treatment Overview */}
+        <div className="flex flex-col h-full overflow-hidden">
+          {patientProfile && activeTreatments && activeTreatments.length > 0 && (
+            <div className="flex-1 overflow-y-auto">
+              <TreatmentOverview
+                patientId={patientProfile._id}
+                gradient={{
+                  from: "from-indigo-50",
+                  to: "to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20",
+                  border: "border-indigo-200 dark:border-indigo-800",
+                  iconBg: "bg-indigo-500",
+                  textColor: "text-indigo-900 dark:text-indigo-100",
+                  itemBg: "bg-indigo-100/50 dark:bg-indigo-900/20",
+                  itemBorder: "border-indigo-200 dark:border-indigo-700"
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Appointments Only */}
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <AppointmentSection
+              appointments={appointments}
+              title="Upcoming Appointments"
+              description="Your scheduled visits"
+              icon={<Calendar className="h-4 w-4 text-white" />}
+              gradient={{
+                from: "from-orange-50",
+                to: "to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20",
+                border: "border-orange-200 dark:border-orange-800",
+                iconBg: "bg-orange-500",
+                textColor: "text-orange-900 dark:text-orange-100",
+                itemBg: "bg-orange-100/50 dark:bg-orange-900/20",
+                itemBorder: "border-orange-200 dark:border-orange-700"
+              }}
+              emptyState={{
+                icon: <Calendar className="h-8 w-8" />,
+                message: "No upcoming appointments",
+                actionLabel: "Book Appointment",
+                actionHref: "/patient/appointments/book"
+              }}
+              viewAllHref="/patient/appointments"
+              maxItems={3}
             />
           </div>
         </div>

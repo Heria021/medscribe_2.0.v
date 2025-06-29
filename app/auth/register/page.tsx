@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MultiStepRegistration } from "@/components/auth/multi-step-registration";
+import { MultiStepRegistration } from "@/app/auth/_components/multi-step-registration";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { type UserRole } from "@/lib/validations/auth";
 

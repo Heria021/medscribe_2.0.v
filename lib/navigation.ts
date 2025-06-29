@@ -94,22 +94,22 @@ export const doctorNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Settings",
+    title: "Practice Settings",
     items: [
-      {
-        title: "Profile",
-        href: "/doctor/settings/profile",
-        icon: User,
-      },
       {
         title: "Practice",
         href: "/doctor/settings/practice",
         icon: Stethoscope,
       },
+    ],
+  },
+  {
+    title: "Support",
+    items: [
       {
-        title: "Security",
-        href: "/doctor/settings/security",
-        icon: Shield,
+        title: "Settings",
+        href: "/doctor/settings",
+        icon: Settings,
       },
     ],
   },
@@ -138,37 +138,32 @@ export const patientNavigation: NavSection[] = [
     ],
   },
   {
-    title: "SOAP Notes",
+    title: "Medical Notes",
     items: [
       {
-        title: "Generate SOAP",
+        title: "Create SOAP Note",
         href: "/patient/soap/generate",
         icon: Mic,
       },
       {
-        title: "SOAP History",
+        title: "My SOAP Notes",
         href: "/patient/soap/history",
         icon: History,
       },
     ],
   },
   {
-    title: "Health Management",
+    title: "Healthcare",
     items: [
       {
-        title: "My Appointments",
+        title: "Appointments",
         href: "/patient/appointments",
         icon: Calendar,
       },
       {
-        title: "My Treatments",
+        title: "Treatments",
         href: "/patient/treatments",
         icon: Activity,
-      },
-      {
-        title: "My Records",
-        href: "/patient/records",
-        icon: FileText,
       },
     ],
   },
@@ -176,7 +171,7 @@ export const patientNavigation: NavSection[] = [
     title: "Communication",
     items: [
       {
-        title: "Chat with Doctors",
+        title: "Messages",
         href: "/patient/chat",
         icon: MessageCircle,
       },
@@ -188,17 +183,12 @@ export const patientNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Settings",
+    title: "Support",
     items: [
       {
-        title: "Profile",
-        href: "/patient/settings/profile",
-        icon: User,
-      },
-      {
-        title: "Security",
-        href: "/patient/settings/security",
-        icon: Shield,
+        title: "Settings",
+        href: "/patient/settings",
+        icon: Settings,
       },
     ],
   },

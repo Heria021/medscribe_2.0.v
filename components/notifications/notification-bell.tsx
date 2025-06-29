@@ -208,8 +208,11 @@ export function NotificationBell() {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          {hasUnread ? (
+        <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-9 p-0 border-border hover:bg-accent hover:border-accent-foreground/20 transition-colors"
+                > {hasUnread ? (
             <BellRing className={cn("h-5 w-5", hasUrgent && "text-red-600 animate-pulse")} />
           ) : (
             <Bell className="h-5 w-5" />
@@ -237,7 +240,7 @@ export function NotificationBell() {
             <div className="flex items-center gap-2">
               {hasUnread && (
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={handleMarkAllAsRead}
                   className="text-xs h-8"

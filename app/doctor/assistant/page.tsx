@@ -55,7 +55,6 @@ interface ChatMessage {
 // Skeleton Loading Component
 function AssistantSkeleton() {
   return (
-    <DashboardLayout>
       <div className="h-full flex flex-col space-y-4">
         {/* Header Skeleton */}
         <div className="flex-shrink-0 space-y-1">
@@ -142,7 +141,6 @@ function AssistantSkeleton() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 
@@ -470,7 +468,7 @@ export default function DoctorAssistant() {
 
   // Show dashboard with profile completion content if profile is not complete
   return (
-    <DashboardLayout>
+    <>
       {!isProfileComplete ? (
         <ProfileCompletionContent doctorProfile={doctorProfile} />
       ) : (
@@ -686,6 +684,6 @@ export default function DoctorAssistant() {
         </div>
       </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

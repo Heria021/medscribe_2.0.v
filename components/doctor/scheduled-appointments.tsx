@@ -10,24 +10,74 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, Clock, MapPin, User, Phone, Video, FileText } from "lucide-react";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
+
+interface ScheduledAppointmentsGradient {
+  from: string;
+  to: string;
+  border: string;
+  iconBg: string;
+  textColor: string;
+  itemBg?: string;
+  itemBorder?: string;
+}
 
 interface ScheduledAppointmentsProps {
   doctorId: Id<"doctors">;
+  gradient?: ScheduledAppointmentsGradient;
+  className?: string;
 }
 
-export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) {
+export function ScheduledAppointments({
+  doctorId,
+  gradient = {
+    from: "from-blue-50",
+    to: "to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20",
+    border: "border-blue-200 dark:border-blue-800",
+    iconBg: "bg-blue-500",
+    textColor: "text-blue-900 dark:text-blue-100",
+    itemBg: "bg-blue-100/50 dark:bg-blue-900/20",
+    itemBorder: "border-blue-200 dark:border-blue-700"
+  },
+  className
+}: ScheduledAppointmentsProps) {
   const weekAppointments = useQuery(api.appointments.getWeekByDoctor, {
     doctorId,
   });
 
   if (weekAppointments === undefined) {
     return (
-      <Card className="flex flex-col h-full">
+      <Card className={cn(
+        `bg-gradient-to-br ${gradient.from} ${gradient.to}`,
+        `border-${gradient.border}`,
+        "flex flex-col h-full",
+        className
+      )}>
         <CardHeader className="pb-2 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">This Week's Schedule</CardTitle>
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                gradient.iconBg
+              )}>
+                <Calendar className="h-4 w-4 text-white" />
+              </div>
+              <CardTitle className={cn(
+                "text-base font-semibold",
+                gradient.textColor
+              )}>
+                This Week's Schedule
+              </CardTitle>
+            </div>
             <Link href="/doctor/appointments">
-              <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-6 px-2 text-xs bg-white/10 border-white/20 hover:bg-white/20",
+                  gradient.textColor
+                )}
+              >
                 <Clock className="h-3 w-3 mr-1" />
                 View All
               </Button>
@@ -36,7 +86,10 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
         </CardHeader>
         <CardContent className="flex-1 min-h-0 p-0">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+            <div className={cn(
+              "animate-spin rounded-full h-5 w-5 border-b-2",
+              `border-${gradient.iconBg.replace('bg-', 'border-')}`
+            )}></div>
           </div>
         </CardContent>
       </Card>
@@ -117,12 +170,37 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
   );
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className={cn(
+      `bg-gradient-to-br ${gradient.from} ${gradient.to}`,
+      `border-${gradient.border}`,
+      "flex flex-col h-full",
+      className
+    )}>
       <CardHeader className="pb-2 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">This Week's Schedule</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              gradient.iconBg
+            )}>
+              <Calendar className="h-4 w-4 text-white" />
+            </div>
+            <CardTitle className={cn(
+              "text-base font-semibold",
+              gradient.textColor
+            )}>
+              This Week's Schedule
+            </CardTitle>
+          </div>
           <Link href="/doctor/appointments">
-            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "h-6 px-2 text-xs bg-white/10 border-white/20 hover:bg-white/20",
+                gradient.textColor
+              )}
+            >
               <Clock className="h-3 w-3 mr-1" />
               View All
             </Button>
@@ -134,10 +212,24 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
           {sortedDays.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-center">
               <div className="space-y-2">
-                <Calendar className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">No appointments this week</p>
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3",
+                  gradient.itemBg || "bg-white/10"
+                )}>
+                  <Calendar className={cn("h-6 w-6", gradient.textColor)} />
+                </div>
+                <p className={cn("text-sm opacity-75", gradient.textColor)}>
+                  No appointments this week
+                </p>
                 <Link href="/doctor/appointments">
-                  <Button variant="outline" size="sm" className="h-6 px-3 text-xs">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-6 px-3 text-xs bg-white/10 border-white/20 hover:bg-white/20",
+                      gradient.textColor
+                    )}
+                  >
                     Schedule Appointment
                   </Button>
                 </Link>
@@ -154,15 +246,18 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
                   <div key={dayKey} className="space-y-2">
                     {/* Day Header */}
                     <div className="flex items-center gap-2 px-1">
-                      <div className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+                      <div className={cn(
+                        "text-xs font-medium",
+                        isToday ? gradient.textColor : `${gradient.textColor} opacity-75`
+                      )}>
                         {isToday ? 'Today' : dayDate.toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'short',
                           day: 'numeric'
                         })}
                       </div>
-                      <div className="flex-1 h-px bg-border"></div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className={cn("flex-1 h-px", gradient.itemBorder || "bg-white/20")}></div>
+                      <div className={cn("text-xs opacity-75", gradient.textColor)}>
                         {dayAppointments.length} appointment{dayAppointments.length !== 1 ? 's' : ''}
                       </div>
                     </div>
@@ -176,13 +271,14 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
                         return (
                           <div
                             key={appointment._id}
-                            className={`relative flex items-center gap-2 p-2 rounded transition-colors ${
-                              timeStatus === "current"
-                                ? "bg-primary/5 border border-primary/20"
-                                : timeStatus === "past"
-                                ? "bg-green-500/5"
-                                : "hover:bg-muted/50"
-                            }`}
+                            className={cn(
+                              "relative flex items-center gap-2 p-2 rounded transition-colors",
+                              gradient.itemBg || "bg-white/10",
+                              gradient.itemBorder && `border ${gradient.itemBorder}`,
+                              timeStatus === "current" && "ring-2 ring-white/30",
+                              timeStatus === "past" && "opacity-75",
+                              "hover:bg-white/20"
+                            )}
                           >
                             {/* Timeline indicator */}
                             <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -203,7 +299,7 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
                             {/* Appointment Details */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1">
-                                <h4 className="text-xs font-medium truncate">
+                                <h4 className={cn("text-xs font-medium truncate", gradient.textColor)}>
                                   {appointment.patient?.firstName} {appointment.patient?.lastName}
                                 </h4>
                                 <Badge variant="secondary" className={`${getStatusColor(appointment.status)} text-xs h-4 px-1`}>
@@ -211,7 +307,7 @@ export function ScheduledAppointments({ doctorId }: ScheduledAppointmentsProps) 
                                 </Badge>
                               </div>
 
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className={cn("flex items-center gap-2 text-xs opacity-75", gradient.textColor)}>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {appointmentTime.toLocaleTimeString('en-US', {
