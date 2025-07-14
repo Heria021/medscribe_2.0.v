@@ -49,36 +49,9 @@ export const QuickActionsGrid = React.memo<QuickActionsGridProps>(({
   // Compact variant
   if (variant === "compact") {
     return (
-      <Card className={cn("flex-shrink-0", className)}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <div className="grid grid-cols-3 gap-1">
-            {actions.map((action) => (
-              <ActionCard
-                key={action.title}
-                title={action.title}
-                description={action.description}
-                icon={action.icon}
-                href={action.href}
-                className="border-0 shadow-none p-2 text-xs"
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Default variant
-  return (
-    <Card className={cn("w-full", className)}>
-      <CardHeader>
-        <CardTitle className="text-lg">Quick Actions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={cn("space-y-2", className)}>
+        <h3 className="text-sm font-medium">Quick Actions</h3>
+        <div className="grid grid-cols-3 gap-2">
           {actions.map((action) => (
             <ActionCard
               key={action.title}
@@ -86,12 +59,31 @@ export const QuickActionsGrid = React.memo<QuickActionsGridProps>(({
               description={action.description}
               icon={action.icon}
               href={action.href}
-              className="h-full"
+              className="border p-3 text-xs"
             />
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    );
+  }
+
+  // Default variant
+  return (
+    <div className={cn("w-full space-y-3", className)}>
+      <h3 className="text-base font-medium">Quick Actions</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {actions.map((action) => (
+          <ActionCard
+            key={action.title}
+            title={action.title}
+            description={action.description}
+            icon={action.icon}
+            href={action.href}
+            className="h-full"
+          />
+        ))}
+      </div>
+    </div>
   );
 });
 

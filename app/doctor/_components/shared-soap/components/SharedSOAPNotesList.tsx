@@ -29,36 +29,26 @@ export const SharedSOAPNotesList = React.memo<SharedSOAPNotesListProps>(({
 
   return (
     <div className={cn("flex-1 min-h-0", className)}>
-      <Card className="h-full flex flex-col">
-        <CardHeader className="py-0 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Shared Notes</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              {notes.length} notes
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0 flex-1 min-h-0">
-          <ScrollArea className="h-full">
-            {notes.length === 0 ? (
-              <EmptyState hasAnyNotes={hasAnyNotes} onClearFilters={onClearFilters} />
-            ) : (
-              <div className="divide-y">
-                {notes.map((note) => (
-                  <SharedSOAPNoteCard
-                    key={note._id}
-                    note={note}
-                    onViewSOAP={onViewSOAP}
-                    onTakeAction={onTakeAction}
-                    onDownloadNote={onDownloadNote}
-                    formatDate={formatDate}
-                  />
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </CardContent>
-      </Card>
+      <div className="h-full flex flex-col">
+        <ScrollArea className="h-full">
+          {notes.length === 0 ? (
+            <EmptyState hasAnyNotes={hasAnyNotes} onClearFilters={onClearFilters} />
+          ) : (
+            <div className="space-y-3">
+              {notes.map((note) => (
+                <SharedSOAPNoteCard
+                  key={note._id}
+                  note={note}
+                  onViewSOAP={onViewSOAP}
+                  onTakeAction={onTakeAction}
+                  onDownloadNote={onDownloadNote}
+                  formatDate={formatDate}
+                />
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
     </div>
   );
 });
@@ -70,22 +60,20 @@ export const SharedSOAPNotesList = React.memo<SharedSOAPNotesListProps>(({
  */
 const EmptyState = React.memo<{ hasAnyNotes: boolean; onClearFilters?: () => void }>(({ hasAnyNotes, onClearFilters }) => {
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4">
-      <div className="w-10 h-10 bg-muted/50 rounded-full flex items-center justify-center mb-3">
-        <FileText className="h-5 w-5 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-12 px-4">
+      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+        <FileText className="h-8 w-8 text-muted-foreground" />
       </div>
       {hasAnyNotes ? (
         <>
-          <h3 className="font-medium mb-1">No notes match your filters</h3>
-          <p className="text-sm text-muted-foreground text-center max-w-sm">
+          <h3 className="text-lg font-semibold mb-2">No notes match your filters</h3>
+          <p className="text-muted-foreground text-center max-w-md mb-4">
             Try adjusting your search terms or filters to see more results.
           </p>
           {onClearFilters && (
             <Button
               variant="outline"
-              size="sm"
               onClick={onClearFilters}
-              className="mt-3"
             >
               Clear All Filters
             </Button>
@@ -93,8 +81,8 @@ const EmptyState = React.memo<{ hasAnyNotes: boolean; onClearFilters?: () => voi
         </>
       ) : (
         <>
-          <h3 className="font-medium mb-1">No shared notes yet</h3>
-          <p className="text-sm text-muted-foreground text-center max-w-sm">
+          <h3 className="text-lg font-semibold mb-2">No shared notes yet</h3>
+          <p className="text-muted-foreground text-center max-w-md">
             Shared SOAP notes will appear here when patients share them with you.
             Patients can share notes directly or through referrals.
           </p>

@@ -18,10 +18,10 @@ import {
   PatientHeader,
   TreatmentList,
   TreatmentDetails,
-  AppointmentForm,
   PatientChat,
   type ActiveView,
 } from "@/app/doctor/_components/patient-detail";
+import { SlotBasedAppointmentForm } from "@/app/doctor/_components/patient-detail/components/SlotBasedAppointmentForm";
 
 
 
@@ -193,27 +193,31 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
             </CardContent>
           </Card>
         ) : activeView === "appointment-form" ? (
-          patient && currentDoctorPatient && doctorProfile ? (
-            <AppointmentForm
-              patientId={patient._id}
-              currentDoctorPatient={currentDoctorPatient}
-              patient={patient}
-              doctorProfile={doctorProfile}
-              onCancel={handleBackToOverview}
-              onSuccess={handleBackToOverview}
-            />
-          ) : (
-            <Card className="h-full flex flex-col bg-background border-border">
-              <CardContent className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="space-y-2">
-                    <Skeleton className="h-8 w-8 rounded-full mx-auto" />
-                    <Skeleton className="h-4 w-48 mx-auto" />
+          <div className="h-full flex flex-col">
+            <ScrollArea className="h-full">
+              <div className="p-6">
+                {patient && currentDoctorPatient && doctorProfile ? (
+                  <SlotBasedAppointmentForm
+                    patientId={patient._id}
+                    currentDoctorPatient={currentDoctorPatient}
+                    patient={patient}
+                    doctorProfile={doctorProfile}
+                    onCancel={handleBackToOverview}
+                    onSuccess={handleBackToOverview}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="text-center space-y-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-8 w-8 rounded-full mx-auto" />
+                        <Skeleton className="h-4 w-48 mx-auto" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         ) : activeView === "prescription-form" ? (
           <Card className="h-full flex flex-col bg-background border-border">
             <CardHeader className="pb-3 flex-shrink-0">

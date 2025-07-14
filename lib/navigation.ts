@@ -13,7 +13,8 @@ import {
   Activity,
   Stethoscope,
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  CalendarClock
 } from "lucide-react";
 
 export interface NavItem {
@@ -63,6 +64,11 @@ export const doctorNavigation: NavSection[] = [
         title: "Appointments",
         href: "/doctor/appointments",
         icon: Calendar,
+      },
+      {
+        title: "Reschedule Requests",
+        href: "/doctor/reschedule-requests",
+        icon: CalendarClock,
       },
     ],
   },

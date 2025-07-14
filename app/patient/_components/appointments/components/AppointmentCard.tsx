@@ -59,28 +59,28 @@ export const AppointmentCard = React.memo<AppointmentCardProps>(({
   if (variant === "compact") {
     return (
       <div className={cn(
-        "p-2 hover:bg-muted/50 transition-colors rounded border",
+        "p-3 hover:bg-muted/50 transition-colors rounded-lg border",
         className
       )}>
-        <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {doctorInitials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-xs truncate">{doctorName}</h4>
+              <h4 className="font-medium text-sm truncate">{doctorName}</h4>
               <div className="text-xs text-muted-foreground">
                 {formatDate(appointment.appointmentDateTime)}
               </div>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-1">
               <p className="text-xs text-muted-foreground truncate">
                 {appointment.doctor?.primarySpecialty || 'General Practice'}
               </p>
               <div className="flex items-center gap-1">
-                <Badge variant="outline" className="text-xs h-4 px-1">
+                <Badge variant="outline" className="text-xs h-5 px-2">
                   {getAppointmentTypeLabel(appointment.appointmentType)}
                 </Badge>
                 <StatusIndicator
@@ -100,13 +100,13 @@ export const AppointmentCard = React.memo<AppointmentCardProps>(({
   // Default and detailed variants
   return (
     <div className={cn(
-      "p-3 hover:bg-muted/50 transition-colors border rounded-lg",
+      "p-4 hover:bg-muted/50 transition-colors border rounded-lg",
       className
     )}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {/* Date & Time Section */}
-        <div className="flex flex-col items-center gap-1 p-2 rounded bg-primary/5 min-w-[80px]">
-          <div className="text-xs font-bold">
+        <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-primary/5 min-w-[70px]">
+          <div className="text-xs font-medium">
             {formatDate(appointment.appointmentDateTime)}
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -120,9 +120,9 @@ export const AppointmentCard = React.memo<AppointmentCardProps>(({
 
         {/* Doctor Info Section */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                 {doctorInitials}
               </AvatarFallback>
             </Avatar>
@@ -131,7 +131,7 @@ export const AppointmentCard = React.memo<AppointmentCardProps>(({
               <p className="text-xs text-muted-foreground truncate">
                 {appointment.doctor?.primarySpecialty || 'General Practice'}
               </p>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                 {isTelemedicine ? (
                   <Video className="h-3 w-3" />
                 ) : (
@@ -149,9 +149,9 @@ export const AppointmentCard = React.memo<AppointmentCardProps>(({
         </div>
 
         {/* Status & Actions Section */}
-        <div className="flex flex-col gap-1 items-end">
-          <div className="flex items-center gap-1">
-            <Badge variant="outline" className="text-xs h-5">
+        <div className="flex flex-col gap-2 items-end">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs h-6 px-2">
               {getAppointmentTypeLabel(appointment.appointmentType)}
             </Badge>
             <StatusIndicator

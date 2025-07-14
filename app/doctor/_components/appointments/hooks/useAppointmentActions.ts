@@ -5,24 +5,26 @@ import { Id } from "@/convex/_generated/dataModel";
 import type { UseAppointmentActionsReturn, Appointment } from "../types";
 
 /**
- * Custom hook for handling appointment actions
- * 
+ * Custom hook for handling appointment actions (UPDATED for new slot-based system)
+ *
  * Features:
  * - Appointment status updates (cancel, confirm, start, complete)
- * - Rescheduling functionality
+ * - Slot-based rescheduling functionality
  * - Video call joining
  * - Loading states for each action
  * - Error handling and reporting
- * 
+ * - Automatic slot management
+ *
  * @returns {UseAppointmentActionsReturn} Action handlers and state
  */
 export function useAppointmentActions(): UseAppointmentActionsReturn {
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Convex mutations
+  // NEW: Slot-based Convex mutations
   const updateAppointmentStatus = useMutation(api.appointments.updateStatus);
-  const updateAppointmentDateTime = useMutation(api.appointments.updateDateTime);
+  const cancelWithSlotRelease = useMutation(api.appointments.cancelWithSlotRelease);
+  const rescheduleWithSlot = useMutation(api.appointments.rescheduleWithSlot);
 
   // Helper function to manage loading state
   const withLoading = useCallback(async <T,>(
@@ -47,15 +49,15 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
     }
   }, []);
 
-  // Cancel appointment
-  const cancelAppointment = useCallback(async (appointmentId: Id<"appointments">) => {
+  // Cancel appointment (NEW: with automatic slot release)
+  const cancelAppointment = useCallback(async (appointmentId: Id<"appointments">, reason?: string) => {
     await withLoading(appointmentId, "cancel", async () => {
-      await updateAppointmentStatus({
+      await cancelWithSlotRelease({
         appointmentId,
-        status: "cancelled"
+        reason: reason || "Cancelled by doctor"
       });
     });
-  }, [updateAppointmentStatus, withLoading]);
+  }, [cancelWithSlotRelease, withLoading]);
 
   // Confirm appointment
   const confirmAppointment = useCallback(async (appointmentId: Id<"appointments">) => {
@@ -87,18 +89,34 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
     });
   }, [updateAppointmentStatus, withLoading]);
 
-  // Reschedule appointment
+  // Reschedule appointment (NEW: slot-based with automatic slot management)
   const rescheduleAppointment = useCallback(async (
-    appointmentId: Id<"appointments">, 
-    newDateTime: number
+    appointmentId: Id<"appointments">,
+    newDateTime: Date,
+    reason?: string
   ) => {
     await withLoading(appointmentId, "reschedule", async () => {
-      await updateAppointmentDateTime({
+      // For now, we need to find the slot ID that corresponds to the new date/time
+      // This would typically be passed from the slot selector component
+      // For backward compatibility, we'll throw an error asking for slot-based reschedule
+      throw new Error("Please use rescheduleAppointmentWithSlot for slot-based rescheduling");
+    });
+  }, [withLoading]);
+
+  // NEW: Slot-based reschedule appointment
+  const rescheduleAppointmentWithSlot = useCallback(async (
+    appointmentId: Id<"appointments">,
+    newSlotId: Id<"timeSlots">,
+    reason?: string
+  ) => {
+    await withLoading(appointmentId, "reschedule", async () => {
+      await rescheduleWithSlot({
         appointmentId,
-        newDateTime
+        newSlotId,
+        reason
       });
     });
-  }, [updateAppointmentDateTime, withLoading]);
+  }, [rescheduleWithSlot, withLoading]);
 
   // Join video call
   const joinCall = useCallback((appointment: Appointment) => {
@@ -115,7 +133,8 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
     confirmAppointment,
     startAppointment,
     completeAppointment,
-    rescheduleAppointment,
+    rescheduleAppointment, // Legacy - throws error
+    rescheduleAppointmentWithSlot, // NEW: Slot-based reschedule
     joinCall,
     loadingStates,
     errors,

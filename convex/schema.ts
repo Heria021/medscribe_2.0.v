@@ -744,5 +744,123 @@ export default defineSchema({
     .index("by_conversation_created", ["conversationId", "createdAt"])
     .index("by_unread", ["conversationId", "isRead"])
     .index("by_created_at", ["createdAt"]),
+
+  // Time-Slot Based Appointment System Tables
+
+  // Doctor Availability Templates - Weekly schedule templates
+  doctorAvailability: defineTable({
+    doctorId: v.id("doctors"),
+    dayOfWeek: v.number(), // 0-6 (Sunday-Saturday)
+    startTime: v.string(), // "09:00"
+    endTime: v.string(),   // "17:00"
+    slotDuration: v.number(), // 30 or 60 minutes
+    bufferTime: v.number(),   // 5-15 minutes between slots
+    breakTimes: v.array(v.object({
+      startTime: v.string(), // "12:00"
+      endTime: v.string(),   // "13:00"
+      reason: v.string(),    // "Lunch Break"
+    })),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_doctor", ["doctorId"])
+    .index("by_doctor_day", ["doctorId", "dayOfWeek"])
+    .index("by_doctor_active", ["doctorId", "isActive"])
+    .index("by_day_of_week", ["dayOfWeek"]),
+
+  // Generated Time Slots - Pre-generated available time slots
+  timeSlots: defineTable({
+    doctorId: v.id("doctors"),
+    date: v.string(),        // "2025-07-15"
+    time: v.string(),        // "09:00"
+    endTime: v.string(),     // "09:30"
+    slotType: v.union(
+      v.literal("available"),
+      v.literal("booked"),
+      v.literal("blocked"),
+      v.literal("break")
+    ),
+    appointmentId: v.optional(v.id("appointments")),
+    isRecurring: v.boolean(),
+    generatedFrom: v.union(
+      v.literal("template"),
+      v.literal("manual"),
+      v.literal("exception")
+    ),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_doctor", ["doctorId"])
+    .index("by_doctor_date", ["doctorId", "date"])
+    .index("by_doctor_date_time", ["doctorId", "date", "time"])
+    .index("by_slot_type", ["slotType"])
+    .index("by_appointment", ["appointmentId"])
+    .index("by_date_range", ["date", "time"])
+    .index("by_doctor_available", ["doctorId", "slotType"])
+    .index("by_doctor_date_available", ["doctorId", "date", "slotType"]),
+
+  // Doctor Exceptions - Handle unavailability (vacation, sick days, etc.)
+  doctorExceptions: defineTable({
+    doctorId: v.id("doctors"),
+    date: v.string(),        // "2025-07-15"
+    exceptionType: v.union(
+      v.literal("vacation"),
+      v.literal("sick"),
+      v.literal("conference"),
+      v.literal("emergency"),
+      v.literal("personal"),
+      v.literal("training")
+    ),
+    startTime: v.optional(v.string()), // null for full day
+    endTime: v.optional(v.string()),
+    reason: v.string(),
+    affectedSlots: v.array(v.id("timeSlots")),
+    isRecurring: v.boolean(),
+    recurringPattern: v.optional(v.object({
+      frequency: v.union(v.literal("weekly"), v.literal("monthly")),
+      interval: v.number(), // every N weeks/months
+      endDate: v.optional(v.string()),
+    })),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"),
+  })
+    .index("by_doctor", ["doctorId"])
+    .index("by_doctor_date", ["doctorId", "date"])
+    .index("by_exception_type", ["exceptionType"])
+    .index("by_date_range", ["date"])
+    .index("by_doctor_type", ["doctorId", "exceptionType"])
+    .index("by_recurring", ["isRecurring"]),
+
+  // Appointment Reschedule Requests - Patient requests for rescheduling
+  appointmentRescheduleRequests: defineTable({
+    appointmentId: v.id("appointments"),
+    patientId: v.id("patients"),
+    doctorId: v.id("doctors"),
+    currentDateTime: v.number(), // Current appointment time
+    requestedSlotId: v.optional(v.id("timeSlots")), // Requested new slot
+    requestedDateTime: v.optional(v.number()), // Requested new time
+    reason: v.string(), // Patient's reason for rescheduling
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("cancelled")
+    ),
+    adminNotes: v.optional(v.string()), // Doctor/admin response notes
+    requestedAt: v.number(),
+    respondedAt: v.optional(v.number()),
+    respondedBy: v.optional(v.id("users")), // Doctor/admin who responded
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_appointment", ["appointmentId"])
+    .index("by_patient", ["patientId"])
+    .index("by_doctor", ["doctorId"])
+    .index("by_status", ["status"])
+    .index("by_doctor_status", ["doctorId", "status"])
+    .index("by_requested_at", ["requestedAt"])
+    .index("by_patient_status", ["patientId", "status"]),
 });
 

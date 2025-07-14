@@ -131,7 +131,7 @@ export interface UsePatientAppointmentsReturn {
 
 export interface UseAppointmentActionsReturn {
   cancelAppointment: (appointmentId: Id<"appointments">, reason?: string) => Promise<void>;
-  rescheduleAppointment: (appointmentId: Id<"appointments">, newDateTime: number) => Promise<void>;
+  rescheduleAppointment: (appointmentId: Id<"appointments">, newSlotId: Id<"timeSlots">, reason?: string) => Promise<void>;
   joinCall: (meetingLink?: string) => void;
   loadingStates: ActionLoadingStates;
   errors: ActionErrors;

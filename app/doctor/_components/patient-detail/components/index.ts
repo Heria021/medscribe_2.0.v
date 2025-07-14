@@ -3,6 +3,7 @@ export { PatientHeader } from "./PatientHeader";
 export { TreatmentList } from "./TreatmentList";
 export { TreatmentDetails } from "./TreatmentDetails";
 export { AppointmentForm } from "./AppointmentForm";
+export { SlotBasedAppointmentForm } from "./SlotBasedAppointmentForm";
 export { PatientChat } from "./PatientChat";
 export { PatientDetailSkeleton } from "./PatientDetailSkeleton";
 

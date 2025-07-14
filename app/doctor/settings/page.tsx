@@ -115,7 +115,6 @@ export default function DoctorSettingsPage() {
   }
 
   return (
-    <DashboardLayout>
       <div className="h-full flex flex-col space-y-6">
         {/* Header */}
         <div className="flex-shrink-0">
@@ -337,6 +336,5 @@ export default function DoctorSettingsPage() {
           </ScrollArea>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

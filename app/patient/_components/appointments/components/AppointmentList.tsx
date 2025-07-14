@@ -42,10 +42,12 @@ export const AppointmentList = React.memo<AppointmentListProps>(({
 
   // Default empty state
   const defaultEmptyState = (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <Calendar className="h-8 w-8 text-muted-foreground mb-3" />
+    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
+      <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+        <Calendar className="h-8 w-8 text-muted-foreground" />
+      </div>
       <h3 className="font-medium mb-2">No appointments found</h3>
-      <p className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground text-sm max-w-sm">
         Your appointments will appear here when scheduled
       </p>
     </div>
@@ -86,7 +88,7 @@ export const AppointmentList = React.memo<AppointmentListProps>(({
 
   // List variant (default)
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-2", className)}>
       {displayedAppointments.map((appointment) => (
         <AppointmentCard
           key={appointment._id}
@@ -124,8 +126,10 @@ export const CompactAppointmentList = React.memo<AppointmentListProps>(({
 
   // Compact empty state
   const compactEmptyState = (
-    <div className="flex flex-col items-center justify-center py-6 text-center">
-      <Clock className="h-6 w-6 text-muted-foreground mb-2" />
+    <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-muted rounded-lg">
+      <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center mb-3">
+        <Clock className="h-6 w-6 text-muted-foreground" />
+      </div>
       <p className="text-sm text-muted-foreground">No appointments</p>
     </div>
   );

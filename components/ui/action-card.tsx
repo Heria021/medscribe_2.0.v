@@ -78,19 +78,21 @@ export function ActionCard({
 
   const cardContent = (
     <Card className={cn(
-      "bg-card text-card-foreground transition-all duration-200 group gap-0 py-3",
+      "bg-card text-card-foreground transition-all duration-200 group",
       // Default styling that can be overridden
       !className?.includes("border") && "border border-border/50 hover:border-border",
       disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-[1.02]",
+      variant === "compact" && "py-2",
+      variant !== "compact" && "py-3",
       className
     )}>
       <CardContent className={cn(
-        "p-1",
-        variant === "compact" && "p-1",
+        "p-3",
+        variant === "compact" && "p-2",
         variant === "featured" && "p-8"
       )}>
         {variant === "compact" ? (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-2 text-center">
             <div className={cn(
               "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
               colorClasses.bg,
@@ -99,10 +101,10 @@ export function ActionCard({
             )}>
               {icon}
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-xs truncate text-foreground">{title}</h3>
+            <div className="space-y-0.5">
+              <h3 className="font-medium text-xs text-foreground">{title}</h3>
               {description && (
-                <p className="text-xs text-muted-foreground truncate">{description}</p>
+                <p className="text-xs text-muted-foreground">{description}</p>
               )}
             </div>
             {badge && (

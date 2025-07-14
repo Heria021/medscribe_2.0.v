@@ -13,10 +13,14 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as appointmentRescheduleRequests from "../appointmentRescheduleRequests.js";
 import type * as appointments from "../appointments.js";
 import type * as audioRecordings from "../audioRecordings.js";
 import type * as chatMessages from "../chatMessages.js";
 import type * as chatSessions from "../chatSessions.js";
+import type * as devUtils from "../devUtils.js";
+import type * as doctorAvailability from "../doctorAvailability.js";
+import type * as doctorExceptions from "../doctorExceptions.js";
 import type * as doctorPatientConversations from "../doctorPatientConversations.js";
 import type * as doctorPatients from "../doctorPatients.js";
 import type * as doctors from "../doctors.js";
@@ -39,7 +43,10 @@ import type * as prescriptions from "../prescriptions.js";
 import type * as referrals from "../referrals.js";
 import type * as seedAppointments from "../seedAppointments.js";
 import type * as sharedSoapNotes from "../sharedSoapNotes.js";
+import type * as slotAvailability from "../slotAvailability.js";
+import type * as slotMaintenance from "../slotMaintenance.js";
 import type * as soapNotes from "../soapNotes.js";
+import type * as timeSlots from "../timeSlots.js";
 import type * as treatmentPlans from "../treatmentPlans.js";
 import type * as users from "../users.js";
 
@@ -52,10 +59,14 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  appointmentRescheduleRequests: typeof appointmentRescheduleRequests;
   appointments: typeof appointments;
   audioRecordings: typeof audioRecordings;
   chatMessages: typeof chatMessages;
   chatSessions: typeof chatSessions;
+  devUtils: typeof devUtils;
+  doctorAvailability: typeof doctorAvailability;
+  doctorExceptions: typeof doctorExceptions;
   doctorPatientConversations: typeof doctorPatientConversations;
   doctorPatients: typeof doctorPatients;
   doctors: typeof doctors;
@@ -78,7 +89,10 @@ declare const fullApi: ApiFromModules<{
   referrals: typeof referrals;
   seedAppointments: typeof seedAppointments;
   sharedSoapNotes: typeof sharedSoapNotes;
+  slotAvailability: typeof slotAvailability;
+  slotMaintenance: typeof slotMaintenance;
   soapNotes: typeof soapNotes;
+  timeSlots: typeof timeSlots;
   treatmentPlans: typeof treatmentPlans;
   users: typeof users;
 }>;

@@ -12,6 +12,7 @@ export {
   AppointmentsList,
   AppointmentFilters,
   AppointmentsSkeleton,
+  AppointmentDetails,
 } from './components';
 
 // Export all types

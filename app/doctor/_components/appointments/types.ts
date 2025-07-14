@@ -150,11 +150,12 @@ export interface UseDoctorAppointmentsReturn {
 }
 
 export interface UseAppointmentActionsReturn {
-  cancelAppointment: (appointmentId: Id<"appointments">) => Promise<void>;
+  cancelAppointment: (appointmentId: Id<"appointments">, reason?: string) => Promise<void>;
   confirmAppointment: (appointmentId: Id<"appointments">) => Promise<void>;
   startAppointment: (appointmentId: Id<"appointments">) => Promise<void>;
   completeAppointment: (appointmentId: Id<"appointments">) => Promise<void>;
-  rescheduleAppointment: (appointmentId: Id<"appointments">, newDateTime: number) => Promise<void>;
+  rescheduleAppointment: (appointmentId: Id<"appointments">, newDateTime: Date, reason?: string) => Promise<void>; // Legacy
+  rescheduleAppointmentWithSlot: (appointmentId: Id<"appointments">, newSlotId: Id<"timeSlots">, reason?: string) => Promise<void>; // NEW
   joinCall: (appointment: Appointment) => void;
   loadingStates: Record<string, boolean>;
   errors: Record<string, string>;

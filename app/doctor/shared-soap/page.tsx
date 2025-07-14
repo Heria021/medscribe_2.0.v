@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { DoctorActionModal } from "@/components/doctor/doctor-action-modal";
 import {
   useSharedSOAPAuth,
   useSharedSOAPNotes,
@@ -9,6 +8,7 @@ import {
   SharedSOAPSkeleton,
   SharedSOAPFilters,
   SharedSOAPNotesList,
+  TakeActionDialog,
 } from "@/app/doctor/_components/shared-soap";
 
 /**
@@ -74,13 +74,23 @@ const SharedSOAPPage = React.memo(() => {
 
 
   return (
-    <div className="h-full flex flex-col space-y-4">
-      {/* Header */}
-      <div className="flex-shrink-0 space-y-1">
-        <h1 className="text-xl font-bold tracking-tight">Shared SOAP Notes</h1>
-        <p className="text-muted-foreground text-sm">
-          Review and take action on notes shared by patients
-        </p>
+    <div className="h-full flex flex-col space-y-6">
+      {/* Modern Header */}
+      <div className="flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Shared SOAP Notes</h1>
+            <p className="text-muted-foreground">
+              Review and take action on notes shared by patients
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-sm font-medium">{filteredNotes.length}</p>
+              <p className="text-xs text-muted-foreground">Total Notes</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -104,16 +114,13 @@ const SharedSOAPPage = React.memo(() => {
         onClearFilters={clearAllFilters}
       />
 
-      {/* Action Modal */}
-      {selectedNote && doctorProfile && (
-        <DoctorActionModal
-          isOpen={actionModalOpen}
-          onClose={closeActionModal}
-          soapNoteId={selectedNote.soapNote._id}
-          patientId={selectedNote.patient._id}
+      {/* NEW: Modern Take Action Dialog */}
+      {doctorProfile && (
+        <TakeActionDialog
+          open={actionModalOpen}
+          onOpenChange={closeActionModal}
+          note={selectedNote}
           doctorId={doctorProfile._id}
-          patientName={`${selectedNote.patient.firstName} ${selectedNote.patient.lastName}`}
-          sharedSoapNoteId={selectedNote._id}
         />
       )}
     </div>

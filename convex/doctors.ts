@@ -172,8 +172,30 @@ export const getDoctorById = query({
   },
 });
 
+// Get doctor by ID (alias for getDoctorById)
+export const getById = query({
+  args: { doctorId: v.id("doctors") },
+  handler: async (ctx, args) => {
+    const doctor = await ctx.db.get(args.doctorId);
+    return doctor;
+  },
+});
+
 // Get doctor by user ID (alias for getDoctorProfile for compatibility)
 export const getDoctorByUserId = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const doctor = await ctx.db
+      .query("doctors")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return doctor;
+  },
+});
+
+// Get current doctor profile (alias for getDoctorProfile)
+export const getCurrentDoctor = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const doctor = await ctx.db

@@ -1,7 +1,226 @@
 import { v } from "convex/values";
 import { mutation, query, action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
+// Slot-based appointment creation (NEW - RECOMMENDED)
+export const createWithSlot = mutation({
+  args: {
+    doctorPatientId: v.id("doctorPatients"),
+    slotId: v.id("timeSlots"),
+    appointmentType: v.union(
+      v.literal("new_patient"),
+      v.literal("follow_up"),
+      v.literal("consultation"),
+      v.literal("procedure"),
+      v.literal("telemedicine"),
+      v.literal("emergency")
+    ),
+    visitReason: v.string(),
+    location: v.object({
+      type: v.union(v.literal("in_person"), v.literal("telemedicine")),
+      address: v.optional(v.string()),
+      room: v.optional(v.string()),
+      meetingLink: v.optional(v.string())
+    }),
+    notes: v.optional(v.string()),
+    insuranceVerified: v.optional(v.boolean()),
+    copayAmount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Validate doctor-patient relationship
+    const doctorPatient = await ctx.db.get(args.doctorPatientId);
+    if (!doctorPatient) {
+      throw new Error("Doctor-patient relationship not found");
+    }
+
+    const doctor = await ctx.db.get(doctorPatient.doctorId);
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+
+    // Validate and book the time slot
+    const slot = await ctx.db.get(args.slotId);
+    if (!slot) {
+      throw new Error("Time slot not found");
+    }
+
+    if (slot.slotType !== "available") {
+      throw new Error("Time slot is not available for booking");
+    }
+
+    if (slot.doctorId !== doctorPatient.doctorId) {
+      throw new Error("Time slot does not belong to the specified doctor");
+    }
+
+    // Convert slot date and time to timestamp
+    const appointmentDateTime = new Date(`${slot.date}T${slot.time}`).getTime();
+
+    // Calculate duration from slot
+    const slotStartTime = new Date(`${slot.date}T${slot.time}`).getTime();
+    const slotEndTime = new Date(`${slot.date}T${slot.endTime}`).getTime();
+    const duration = (slotEndTime - slotStartTime) / (1000 * 60); // Convert to minutes
+
+    // Create the appointment
+    const appointmentId = await ctx.db.insert("appointments", {
+      doctorPatientId: args.doctorPatientId,
+      appointmentDateTime,
+      duration,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      appointmentType: args.appointmentType,
+      visitReason: args.visitReason,
+      location: args.location,
+      notes: args.notes,
+      insuranceVerified: args.insuranceVerified,
+      copayAmount: args.copayAmount,
+      status: "scheduled",
+      scheduledAt: now,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: doctor.userId,
+    });
+
+    // Book the time slot (atomic operation to prevent double booking)
+    await ctx.db.patch(args.slotId, {
+      slotType: "booked",
+      appointmentId,
+      updatedAt: now,
+    });
+
+    // Continue with notifications and email automation (same as original create function)
+    const patient = await ctx.db.get(doctorPatient.patientId);
+
+    if (doctor && patient) {
+      await ctx.db.insert("notifications", {
+        recipientId: patient.userId,
+        recipientType: "patient",
+        category: "administrative",
+        type: "appointment_scheduled",
+        priority: "medium",
+        title: "Appointment Scheduled",
+        message: `Your appointment with Dr. ${doctor.firstName} ${doctor.lastName} has been scheduled for ${new Date(appointmentDateTime).toLocaleDateString()}.`,
+        actionUrl: `/patient/appointments`,
+        relatedRecords: {
+          appointmentId,
+          patientId: doctorPatient.patientId,
+          doctorId: doctorPatient.doctorId,
+        },
+        channels: ["in_app", "email"],
+        isRead: false,
+        createdAt: now,
+      });
+
+      await ctx.db.insert("notifications", {
+        recipientId: doctor.userId,
+        recipientType: "doctor",
+        category: "administrative",
+        type: "appointment_scheduled",
+        priority: "medium",
+        title: "New Appointment Scheduled",
+        message: `Appointment scheduled with ${patient.firstName} ${patient.lastName} for ${new Date(appointmentDateTime).toLocaleDateString()}.`,
+        actionUrl: `/doctor/appointments`,
+        relatedRecords: {
+          appointmentId,
+          patientId: doctorPatient.patientId,
+          doctorId: doctorPatient.doctorId,
+        },
+        channels: ["in_app"],
+        isRead: false,
+        createdAt: now,
+      });
+
+      // Email automation (same as original)
+      const patientUser = await ctx.db.get(patient.userId);
+
+      if (patientUser?.email) {
+        const appointmentDate = new Date(appointmentDateTime);
+        const reminderTime24h = appointmentDateTime - (24 * 60 * 60 * 1000);
+        const reminderTime1h = appointmentDateTime - (60 * 60 * 1000);
+
+        if (reminderTime24h > now) {
+          await ctx.scheduler.runAfter(0, api.emailAutomation.scheduleEmail, {
+            userId: patient.userId,
+            emailType: "appointment_reminder_24h",
+            scheduledFor: reminderTime24h,
+            relatedRecordId: appointmentId,
+            relatedRecordType: "appointment",
+            emailData: {
+              to: patientUser.email,
+              subject: `Appointment Reminder - ${appointmentDate.toLocaleDateString()} at ${appointmentDate.toLocaleTimeString()}`,
+              templateData: {
+                patientName: `${patient.firstName} ${patient.lastName}`,
+                doctorName: `${doctor.firstName} ${doctor.lastName}`,
+                appointmentDetails: {
+                  date: appointmentDate.toLocaleDateString(),
+                  time: appointmentDate.toLocaleTimeString(),
+                  type: args.appointmentType,
+                  visitReason: args.visitReason,
+                  location: args.location,
+                  duration: duration,
+                },
+              },
+            },
+          });
+        }
+
+        if (reminderTime1h > now) {
+          await ctx.scheduler.runAfter(0, api.emailAutomation.scheduleEmail, {
+            userId: patient.userId,
+            emailType: "appointment_reminder_1h",
+            scheduledFor: reminderTime1h,
+            relatedRecordId: appointmentId,
+            relatedRecordType: "appointment",
+            emailData: {
+              to: patientUser.email,
+              subject: `URGENT: Appointment in 1 Hour - ${appointmentDate.toLocaleDateString()} at ${appointmentDate.toLocaleTimeString()}`,
+              templateData: {
+                patientName: `${patient.firstName} ${patient.lastName}`,
+                doctorName: `${doctor.firstName} ${doctor.lastName}`,
+                appointmentDetails: {
+                  date: appointmentDate.toLocaleDateString(),
+                  time: appointmentDate.toLocaleTimeString(),
+                  type: args.appointmentType,
+                  visitReason: args.visitReason,
+                  location: args.location,
+                  duration: duration,
+                },
+              },
+            },
+          });
+        }
+
+        const followupTime = appointmentDateTime + (24 * 60 * 60 * 1000);
+        await ctx.scheduler.runAfter(0, api.emailAutomation.scheduleEmail, {
+          userId: patient.userId,
+          emailType: "appointment_followup",
+          scheduledFor: followupTime,
+          relatedRecordId: appointmentId,
+          relatedRecordType: "appointment",
+          emailData: {
+            to: patientUser.email,
+            subject: "Follow-up: Your Recent Appointment",
+            templateData: {
+              patientName: `${patient.firstName} ${patient.lastName}`,
+              doctorName: `${doctor.firstName} ${doctor.lastName}`,
+              appointmentDetails: {
+                date: appointmentDate.toLocaleDateString(),
+                time: appointmentDate.toLocaleTimeString(),
+                type: args.appointmentType,
+                visitReason: args.visitReason,
+              },
+            },
+          },
+        });
+      }
+    }
+
+    return appointmentId;
+  },
+});
+
+// Legacy appointment creation (DEPRECATED - use createWithSlot instead)
 export const create = mutation({
   args: {
     doctorPatientId: v.id("doctorPatients"),
@@ -644,7 +863,193 @@ export const getWeekByDoctor = query({
   },
 });
 
-// Cancel appointment
+// Cancel appointment with slot release
+export const cancelWithSlotRelease = mutation({
+  args: {
+    appointmentId: v.id("appointments"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+
+    const now = Date.now();
+
+    // Find and release the associated time slot
+    const slot = await ctx.db
+      .query("timeSlots")
+      .withIndex("by_appointment", (q) => q.eq("appointmentId", args.appointmentId))
+      .first();
+
+    if (slot) {
+      await ctx.db.patch(slot._id, {
+        slotType: "available",
+        appointmentId: undefined,
+        updatedAt: now,
+      });
+    }
+
+    await ctx.db.patch(args.appointmentId, {
+      status: "cancelled",
+      notes: args.reason,
+      updatedAt: now,
+    });
+
+    // Notify both patient and doctor
+    const doctorPatient = await ctx.db.get(appointment.doctorPatientId);
+    if (!doctorPatient) {
+      throw new Error("Doctor-patient relationship not found");
+    }
+
+    const patient = await ctx.db.get(doctorPatient.patientId);
+    const doctor = await ctx.db.get(doctorPatient.doctorId);
+
+    if (patient && doctor) {
+      // Notify patient
+      await ctx.db.insert("notifications", {
+        recipientId: patient.userId,
+        recipientType: "patient",
+        category: "administrative",
+        type: "appointment_cancelled",
+        priority: "high",
+        title: "Appointment Cancelled",
+        message: `Your appointment with Dr. ${doctor.firstName} ${doctor.lastName} has been cancelled.`,
+        actionUrl: `/patient/appointments`,
+        relatedRecords: {
+          appointmentId: args.appointmentId,
+          patientId: doctorPatient.patientId,
+          doctorId: doctorPatient.doctorId,
+        },
+        channels: ["in_app", "email", "sms"],
+        isRead: false,
+        createdAt: now,
+      });
+
+      // Notify doctor
+      await ctx.db.insert("notifications", {
+        recipientId: doctor.userId,
+        recipientType: "doctor",
+        category: "administrative",
+        type: "appointment_cancelled",
+        priority: "medium",
+        title: "Appointment Cancelled",
+        message: `Appointment with ${patient.firstName} ${patient.lastName} has been cancelled.`,
+        actionUrl: `/doctor/appointments`,
+        relatedRecords: {
+          appointmentId: args.appointmentId,
+          patientId: doctorPatient.patientId,
+          doctorId: doctorPatient.doctorId,
+        },
+        channels: ["in_app"],
+        isRead: false,
+        createdAt: now,
+      });
+    }
+
+    return {
+      appointmentId: args.appointmentId,
+      releasedSlotId: slot?._id,
+    };
+  },
+});
+
+// Reschedule appointment with slot management
+export const rescheduleWithSlot = mutation({
+  args: {
+    appointmentId: v.id("appointments"),
+    newSlotId: v.id("timeSlots"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+
+    const newSlot = await ctx.db.get(args.newSlotId);
+    if (!newSlot) {
+      throw new Error("New time slot not found");
+    }
+
+    if (newSlot.slotType !== "available") {
+      throw new Error("New time slot is not available");
+    }
+
+    const now = Date.now();
+
+    // Release the old slot
+    const oldSlot = await ctx.db
+      .query("timeSlots")
+      .withIndex("by_appointment", (q) => q.eq("appointmentId", args.appointmentId))
+      .first();
+
+    if (oldSlot) {
+      await ctx.db.patch(oldSlot._id, {
+        slotType: "available",
+        appointmentId: undefined,
+        updatedAt: now,
+      });
+    }
+
+    // Book the new slot
+    await ctx.db.patch(args.newSlotId, {
+      slotType: "booked",
+      appointmentId: args.appointmentId,
+      updatedAt: now,
+    });
+
+    // Update appointment with new date/time
+    const newDateTime = new Date(`${newSlot.date}T${newSlot.time}`).getTime();
+
+    await ctx.db.patch(args.appointmentId, {
+      appointmentDateTime: newDateTime,
+      status: "rescheduled",
+      notes: args.reason ? `Rescheduled: ${args.reason}` : appointment.notes,
+      updatedAt: now,
+    });
+
+    // Create notification
+    const doctorPatient = await ctx.db.get(appointment.doctorPatientId);
+    if (!doctorPatient) {
+      throw new Error("Doctor-patient relationship not found");
+    }
+
+    const doctor = await ctx.db.get(doctorPatient.doctorId);
+    const patient = await ctx.db.get(doctorPatient.patientId);
+
+    if (doctor && patient) {
+      await ctx.db.insert("notifications", {
+        recipientId: patient.userId,
+        recipientType: "patient",
+        category: "administrative",
+        type: "appointment_rescheduled",
+        priority: "medium",
+        title: "Appointment Rescheduled",
+        message: `Your appointment with Dr. ${doctor.firstName} ${doctor.lastName} has been rescheduled to ${new Date(newDateTime).toLocaleDateString()}.`,
+        actionUrl: `/patient/appointments`,
+        relatedRecords: {
+          appointmentId: args.appointmentId,
+          patientId: doctorPatient.patientId,
+          doctorId: doctorPatient.doctorId,
+        },
+        channels: ["in_app", "email"],
+        isRead: false,
+        createdAt: now,
+      });
+    }
+
+    return {
+      appointmentId: args.appointmentId,
+      oldSlotId: oldSlot?._id,
+      newSlotId: args.newSlotId,
+      newDateTime,
+    };
+  },
+});
+
+// Legacy cancel appointment (DEPRECATED - use cancelWithSlotRelease instead)
 export const cancel = mutation({
   args: {
     appointmentId: v.id("appointments"),

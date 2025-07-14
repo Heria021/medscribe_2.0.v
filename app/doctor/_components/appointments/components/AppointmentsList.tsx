@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Plus } from "lucide-react";
 import { AppointmentCard } from "./AppointmentCard";
 import { useAppointmentActions } from "../hooks";
-import type { AppointmentsListProps } from "../types";
+import type { AppointmentsListProps, Appointment } from "../types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,11 +13,18 @@ import { cn } from "@/lib/utils";
  * Displays a list of appointments with empty state handling
  * Integrates with appointment actions automatically
  */
-export const AppointmentsList = React.memo<AppointmentsListProps>(({
+interface ExtendedAppointmentsListProps extends AppointmentsListProps {
+  onAppointmentSelect?: (appointment: Appointment) => void;
+  selectedAppointmentId?: string;
+}
+
+export const AppointmentsList = React.memo<ExtendedAppointmentsListProps>(({
   appointments,
   isLoading = false,
   emptyMessage = "No appointments found",
   onAppointmentAction,
+  onAppointmentSelect,
+  selectedAppointmentId,
   className = "",
 }) => {
   const {
@@ -142,12 +149,26 @@ export const AppointmentsList = React.memo<AppointmentsListProps>(({
   }
 
   return (
-    <div className={cn("h-full border rounded-xl flex flex-col", className)}>
-      <ScrollArea className="flex-1">
-        <div className="divide-y">
+    <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden", className)}>
+      {/* Header */}
+      <div className="flex-shrink-0 p-3 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+            <Calendar className="h-3 w-3 text-primary" />
+          </div>
+          <h3 className="text-sm font-medium">Today's Appointments</h3>
+          <span className="text-xs text-muted-foreground">
+            ({appointments.length})
+          </span>
+        </div>
+      </div>
+
+      {/* Appointments List */}
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="divide-y overflow-hidden">
           {appointments.map((appointment) => {
             const appointmentId = appointment._id;
-            const isActionLoading = Object.keys(loadingStates).some(key => 
+            const isActionLoading = Object.keys(loadingStates).some(key =>
               key.startsWith(appointmentId) && loadingStates[key]
             );
 
@@ -161,6 +182,8 @@ export const AppointmentsList = React.memo<AppointmentsListProps>(({
                 onComplete={handleComplete}
                 onJoinCall={handleJoinCall}
                 isLoading={isActionLoading}
+                onSelect={onAppointmentSelect}
+                isSelected={selectedAppointmentId === appointmentId}
               />
             );
           })}

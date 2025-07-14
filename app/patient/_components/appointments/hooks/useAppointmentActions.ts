@@ -20,9 +20,9 @@ import { UseAppointmentActionsReturn, ActionLoadingStates, ActionErrors } from "
  * @returns {UseAppointmentActionsReturn} Action handlers and states
  */
 export function useAppointmentActions(): UseAppointmentActionsReturn {
-  // Convex mutations
-  const cancelAppointmentMutation = useMutation(api.appointments.cancel);
-  const rescheduleAppointmentMutation = useMutation(api.appointments.reschedule);
+  // Convex mutations - using new slot-based functions
+  const cancelAppointmentMutation = useMutation(api.appointments.cancelWithSlotRelease);
+  const rescheduleAppointmentMutation = useMutation(api.appointments.rescheduleWithSlot);
 
   // Loading states for each action per appointment
   const [loadingStates, setLoadingStates] = useState<ActionLoadingStates>({
@@ -90,20 +90,22 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
     }
   }, [cancelAppointmentMutation, setLoading, setError]);
 
-  // Reschedule appointment action
+  // Reschedule appointment action (slot-based)
   const rescheduleAppointment = useCallback(async (
-    appointmentId: Id<"appointments">, 
-    newDateTime: number
+    appointmentId: Id<"appointments">,
+    newSlotId: Id<"timeSlots">,
+    reason?: string
   ) => {
     const appointmentIdStr = appointmentId.toString();
-    
+
     try {
       setLoading("reschedule", appointmentIdStr, true);
       setError("reschedule", appointmentIdStr, null);
 
       await rescheduleAppointmentMutation({
         appointmentId,
-        newDateTime,
+        newSlotId,
+        reason,
       });
 
       // Success - loading will be set to false automatically
