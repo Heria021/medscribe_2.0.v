@@ -64,29 +64,29 @@ export const AppointmentStats = React.memo<AppointmentStatsProps>(({
       label: "Total Appointments",
       value: stats.total,
       icon: <Calendar className="h-5 w-5" />,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       label: "Upcoming",
       value: stats.upcoming,
       icon: <Clock className="h-5 w-5" />,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      color: "text-foreground",
+      bgColor: "bg-muted",
     },
     {
       label: "Completed",
       value: stats.completed,
       icon: <CheckCircle className="h-5 w-5" />,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       label: "Cancelled",
       value: stats.cancelled,
       icon: <XCircle className="h-5 w-5" />,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      color: "text-destructive",
+      bgColor: "bg-destructive/10",
     },
   ], [stats]);
 
@@ -163,7 +163,7 @@ export const AppointmentStats = React.memo<AppointmentStatsProps>(({
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${Math.min(stats.completionRate, 100)}%` }}
               />
             </div>
@@ -200,15 +200,15 @@ export const CompactAppointmentStats = React.memo<AppointmentStatsProps>(({
   return (
     <div className={cn("flex gap-4", className)}>
       <div className="flex-1 text-center">
-        <div className="text-lg font-bold text-blue-600">{stats.upcoming}</div>
+        <div className="text-lg font-bold text-foreground">{stats.upcoming}</div>
         <div className="text-xs text-muted-foreground">Upcoming</div>
       </div>
       <div className="flex-1 text-center">
-        <div className="text-lg font-bold text-green-600">{stats.completed}</div>
+        <div className="text-lg font-bold text-primary">{stats.completed}</div>
         <div className="text-xs text-muted-foreground">Completed</div>
       </div>
       <div className="flex-1 text-center">
-        <div className="text-lg font-bold text-orange-600">{stats.thisMonth}</div>
+        <div className="text-lg font-bold text-foreground">{stats.thisMonth}</div>
         <div className="text-xs text-muted-foreground">This Month</div>
       </div>
     </div>

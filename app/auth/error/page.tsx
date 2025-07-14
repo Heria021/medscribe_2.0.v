@@ -6,7 +6,6 @@ import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 function AuthErrorContent() {
@@ -58,17 +57,17 @@ function AuthErrorContent() {
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md shadow-lg border-0 bg-card">
-        <CardHeader className="text-center space-y-2 pb-6">
+      <div className="w-full max-w-md">
+        <div className="text-center space-y-2 pb-6">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 mx-auto">
             <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
-          <CardTitle className="text-2xl font-semibold tracking-tight">{errorInfo.title}</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight">{errorInfo.title}</h1>
+          <p className="text-sm text-muted-foreground">
             {errorInfo.description}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </p>
+        </div>
+        <div className="space-y-6">
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
               {errorInfo.suggestion}
@@ -100,8 +99,8 @@ function AuthErrorContent() {
               Back to Home
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

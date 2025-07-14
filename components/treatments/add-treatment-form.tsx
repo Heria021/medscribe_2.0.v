@@ -430,11 +430,11 @@ export function AddTreatmentForm({
 
           {/* E-Prescribing Section */}
           {createdTreatmentPlanId && (
-            <div className="border rounded-xl p-4 bg-blue-50 dark:bg-blue-950/20">
+            <div className="border rounded-xl p-4 bg-muted/30">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Pill className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium text-blue-900 dark:text-blue-100">E-Prescribing</span>
+                  <Pill className="h-4 w-4 text-foreground" />
+                  <span className="font-medium text-foreground">E-Prescribing</span>
                 </div>
                 <Button
                   type="button"
@@ -464,7 +464,7 @@ export function AddTreatmentForm({
               )}
 
               {!showPrescriptionForm && (
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="text-sm text-muted-foreground">
                   Create electronic prescriptions for this treatment plan
                 </p>
               )}

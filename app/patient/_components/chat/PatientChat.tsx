@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePatientAuth } from "@/hooks/use-patient-auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 // Hooks
 import { usePatientProfile, useDoctorConversations } from "./hooks";
@@ -13,12 +15,73 @@ import { usePatientProfile, useDoctorConversations } from "./hooks";
 import {
   ChatPageHeader,
   ChatEmptyState,
-  ChatSkeleton,
   DoctorConversationList,
   DoctorChatInterface,
   ChatErrorBoundary,
-  ChatLoadingOverlay,
 } from "./components";
+
+// Individual skeleton components
+const DoctorConversationListSkeleton = () => (
+  <Card className="h-full flex flex-col">
+    <CardHeader className="pb-3 flex-shrink-0">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-4 w-24" />
+      </div>
+    </CardHeader>
+    <CardContent className="flex-1 min-h-0 p-0">
+      <div className="p-4 space-y-2 h-full overflow-y-auto">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+            <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-12 flex-shrink-0" />
+              </div>
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const DoctorChatInterfaceSkeleton = () => (
+  <Card className="h-full flex flex-col">
+    <CardHeader className="pb-3 flex-shrink-0">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-5 w-48" />
+      </div>
+    </CardHeader>
+    <CardContent className="flex-1 min-h-0 flex flex-col p-0">
+      {/* Messages Skeleton */}
+      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className={cn("flex gap-3", i % 2 === 0 ? "justify-start" : "justify-end")}>
+              {i % 2 === 0 && <Skeleton className="w-8 h-8 rounded-full" />}
+              <div className="max-w-[80%] space-y-2">
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              {i % 2 === 1 && <Skeleton className="w-8 h-8 rounded-full" />}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Input Skeleton */}
+      <div className="border-t border-border p-4 flex-shrink-0">
+        <div className="flex gap-2">
+          <Skeleton className="flex-1 h-10" />
+          <Skeleton className="h-10 w-10" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const PatientChat: React.FC = () => {
   const router = useRouter();
@@ -44,18 +107,10 @@ const PatientChat: React.FC = () => {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Memoize loading state
-  const isLoading = useMemo(() => {
-    return authLoading || (session?.user?.id && profileLoading);
-  }, [authLoading, session?.user?.id, profileLoading]);
 
-  // Show loading skeleton while session or profile is loading
-  if (isLoading) {
-    return <ChatSkeleton />;
-  }
 
   // Redirect if not authenticated
-  if (!isAuthenticated) {
+  if (authLoading || !isAuthenticated) {
     return null;
   }
 
@@ -96,27 +151,28 @@ const PatientChat: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
-          {/* Conversations List Sidebar */}
-          <div className="lg:col-span-1 flex flex-col space-y-4 min-h-0 h-full">
+          {/* Conversations List Sidebar - Fixed Height */}
+          <div className="lg:col-span-1 flex flex-col min-h-0 h-full">
             <ChatErrorBoundary>
-              <ChatLoadingOverlay
-                isLoading={conversationsLoading}
-                loadingText="Loading conversations..."
-              >
+              {conversationsLoading || profileLoading ? (
+                <DoctorConversationListSkeleton />
+              ) : (
                 <DoctorConversationList
                   conversations={conversations}
                   selectedDoctorId={selectedDoctorId}
                   onConversationSelect={selectDoctor}
-                  className="flex-1"
+                  className="h-full"
                   isLoading={conversationsLoading}
                 />
-              </ChatLoadingOverlay>
+              )}
             </ChatErrorBoundary>
           </div>
 
           {/* Chat Interface */}
           <div className="lg:col-span-3 min-h-0 h-full">
-            {selectedDoctorId && selectedDoctor && patientProfile ? (
+            {conversationsLoading || profileLoading ? (
+              <DoctorChatInterfaceSkeleton />
+            ) : selectedDoctorId && selectedDoctor && patientProfile ? (
               <ChatErrorBoundary>
                 <DoctorChatInterface
                   doctorId={selectedDoctorId}

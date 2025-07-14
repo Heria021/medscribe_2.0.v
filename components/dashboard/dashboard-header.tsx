@@ -37,7 +37,7 @@ export function DashboardHeader({ user, displayName }: DashboardHeaderProps) {
       <div className="flex items-center gap-2 h-10 px-2 py-1">
         <Avatar className="h-8 w-8 border border-border">
           <AvatarImage src="" alt={displayName || user.email} />
-          <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+          <AvatarFallback className="text-xs font-medium bg-muted text-muted-foreground">
             {getInitials(displayName)}
           </AvatarFallback>
         </Avatar>

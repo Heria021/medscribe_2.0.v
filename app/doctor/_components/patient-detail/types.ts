@@ -129,11 +129,10 @@ export interface UseAppointmentSchedulingReturn {
 // Component props types
 export interface PatientHeaderProps {
   patient: Patient;
-  activeTreatments: TreatmentPlan[];
-  activeMedications: Medication[];
   onChatToggle: () => void;
   onAppointmentClick: () => void;
   onAddTreatment: () => void;
+  onAddPrescription?: () => void;
   showChat: boolean;
   className?: string;
 }
@@ -155,6 +154,7 @@ export interface TreatmentDetailsProps {
   onAddMedication: () => void;
   onMedicationComplete: (id: string) => void;
   onShowPrescriptionForm: () => void;
+  onAddPrescription?: () => void;
   showPrescriptionForm: boolean;
   patientId: Id<"patients">;
   className?: string;

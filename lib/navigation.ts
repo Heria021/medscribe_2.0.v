@@ -3,8 +3,6 @@ import {
   Users,
   Calendar,
   FileText,
-  Settings,
-  Bell,
   Mic,
   History,
   Share,
@@ -103,16 +101,7 @@ export const doctorNavigation: NavSection[] = [
       },
     ],
   },
-  {
-    title: "Support",
-    items: [
-      {
-        title: "Settings",
-        href: "/doctor/settings",
-        icon: Settings,
-      },
-    ],
-  },
+
 ];
 
 // Patient Navigation Configuration
@@ -174,21 +163,6 @@ export const patientNavigation: NavSection[] = [
         title: "Messages",
         href: "/patient/chat",
         icon: MessageCircle,
-      },
-      {
-        title: "Notifications",
-        href: "/patient/notifications",
-        icon: Bell,
-      },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      {
-        title: "Settings",
-        href: "/patient/settings",
-        icon: Settings,
       },
     ],
   },

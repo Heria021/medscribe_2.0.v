@@ -6,16 +6,18 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import {
   usePatientAuth,
   usePatientTreatments,
-  TreatmentList,
-  TreatmentDetails,
-  TreatmentStats,
-  TreatmentFilters,
   type TreatmentFilters as TreatmentFiltersType,
   type TreatmentPlan,
 } from "@/app/patient/_components/treatments";
+import { TreatmentList } from "@/app/patient/_components/treatments/components/TreatmentList";
+import { TreatmentDetails } from "@/app/patient/_components/treatments/components/TreatmentDetails";
+import { TreatmentStats } from "@/app/patient/_components/treatments/components/TreatmentStats";
+import { TreatmentFilters } from "@/app/patient/_components/treatments/components/TreatmentFilters";
 
 /**
  * Profile Completion Component
@@ -45,14 +47,13 @@ const ProfileCompletionContent = React.memo(({ patientProfile }: { patientProfil
     });
   }, [patientProfile, requiredFields]);
 
-  const requiredCompletion = (completedRequired.length / requiredFields.length) * 100;
   const missingRequired = requiredFields.length - completedRequired.length;
 
   return (
     <div className="h-full w-full flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-lg bg-background border-border">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Complete Your Profile to Access Treatments</CardTitle>
+          <CardTitle className="text-2xl text-foreground">Complete Your Profile to Access Treatments</CardTitle>
           <p className="text-muted-foreground">
             {!patientProfile
               ? "Set up your profile to view your treatment plans and medications."
@@ -75,6 +76,98 @@ const ProfileCompletionContent = React.memo(({ patientProfile }: { patientProfil
 
 ProfileCompletionContent.displayName = "ProfileCompletionContent";
 
+// Individual skeleton components
+const TreatmentListSkeleton = () => (
+  <Card className="flex-1 min-h-0 flex flex-col">
+    <CardHeader className="pb-2 flex-shrink-0">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-5 w-6" />
+      </div>
+    </CardHeader>
+    <CardContent className="flex-1 min-h-0 p-0">
+      <div className="p-3 space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-3 space-y-2 border border-border rounded-lg bg-muted/50">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-5 w-12" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const TreatmentDetailsSkeleton = () => (
+  <Card className="flex-1 min-h-0 flex flex-col">
+    <CardHeader className="pb-3 flex-shrink-0">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3 flex-1">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-64" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-6 w-16" />
+      </div>
+    </CardHeader>
+    <CardContent className="flex-1 min-h-0 p-0">
+      <div className="p-4 space-y-5">
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-32" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-3 space-y-2 border border-border rounded-lg bg-muted/50">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const TreatmentStatsSkeleton = () => (
+  <div className="flex items-center gap-3">
+    <div className="text-right">
+      <Skeleton className="h-8 w-8 mb-1" />
+      <Skeleton className="h-3 w-16" />
+    </div>
+    <div className="w-px h-8 bg-border" />
+    <div className="text-right">
+      <Skeleton className="h-8 w-8 mb-1" />
+      <Skeleton className="h-3 w-20" />
+    </div>
+  </div>
+);
+
+const TreatmentFiltersSkeleton = () => (
+  <div className="flex-shrink-0">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="relative flex-1 max-w-sm">
+        <Skeleton className="h-9 w-full" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-12" />
+        <div className="flex gap-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-16" />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 /**
  * Patient Treatments Page - Refactored with performance optimizations
  *
@@ -84,6 +177,7 @@ ProfileCompletionContent.displayName = "ProfileCompletionContent";
  * - Reusable components for maintainability
  * - Comprehensive error handling
  * - Accessibility support
+ * - Individual skeleton loading states
  */
 const PatientTreatmentsPage = React.memo(() => {
   // State for selected treatment and filters
@@ -107,12 +201,6 @@ const PatientTreatmentsPage = React.memo(() => {
     isLoading: treatmentsLoading,
     stats,
   } = usePatientTreatments(patientProfile?._id);
-
-  // Memoized loading state
-  const isLoading = useMemo(() =>
-    authLoading || treatmentsLoading,
-    [authLoading, treatmentsLoading]
-  );
 
   // Memoized authentication check
   const isAuthorized = useMemo(() =>
@@ -165,17 +253,8 @@ const PatientTreatmentsPage = React.memo(() => {
     setFilters(newFilters);
   }, []);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
   // Authentication check
-  if (!isAuthorized) {
+  if (authLoading || !isAuthorized) {
     return null;
   }
 
@@ -190,37 +269,53 @@ const PatientTreatmentsPage = React.memo(() => {
       <div className="flex-shrink-0 space-y-1">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Treatment Overview</h1>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Treatment Overview</h1>
             <p className="text-muted-foreground text-sm">View and manage your treatment plans and medications</p>
           </div>
-          <TreatmentStats stats={stats} isLoading={isLoading} />
+          {treatmentsLoading ? (
+            <TreatmentStatsSkeleton />
+          ) : (
+            <TreatmentStats stats={stats} isLoading={treatmentsLoading} />
+          )}
         </div>
       </div>
 
       {/* Search and Filter Bar */}
-      <TreatmentFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        stats={stats}
-      />
+      {treatmentsLoading ? (
+        <TreatmentFiltersSkeleton />
+      ) : (
+        <TreatmentFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          stats={stats}
+        />
+      )}
 
       {/* Main Content Grid - Reverse Layout */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Treatment List - Small on large screens (1/4 width) */}
         <div className="lg:col-span-1 lg:order-1 order-2 flex flex-col min-h-0">
-          <TreatmentList
-            treatments={filteredTreatments}
-            selectedTreatment={selectedTreatment}
-            onSelectTreatment={handleSelectTreatment}
-          />
+          {treatmentsLoading ? (
+            <TreatmentListSkeleton />
+          ) : (
+            <TreatmentList
+              treatments={filteredTreatments}
+              selectedTreatment={selectedTreatment}
+              onSelectTreatment={handleSelectTreatment}
+            />
+          )}
         </div>
 
         {/* Treatment Details - Large on large screens (3/4 width) */}
         <div className="lg:col-span-3 lg:order-2 order-1 flex flex-col min-h-0">
-          <TreatmentDetails
-            treatment={selectedTreatment}
-            standaloneMedications={standaloneMedications}
-          />
+          {treatmentsLoading ? (
+            <TreatmentDetailsSkeleton />
+          ) : (
+            <TreatmentDetails
+              treatment={selectedTreatment}
+              standaloneMedications={standaloneMedications}
+            />
+          )}
         </div>
       </div>
     </div>

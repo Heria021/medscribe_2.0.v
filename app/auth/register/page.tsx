@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MultiStepRegistration } from "@/app/auth/_components/multi-step-registration";
+import { StreamlinedRegistration } from "@/app/auth/_components/streamlined-registration";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { type UserRole } from "@/lib/validations/auth";
 
@@ -33,13 +33,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
 
-      <MultiStepRegistration role={selectedRole} />
+      <StreamlinedRegistration role={selectedRole} />
     </div>
   );
 }

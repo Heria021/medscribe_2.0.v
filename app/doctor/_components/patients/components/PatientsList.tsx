@@ -39,70 +39,20 @@ export const PatientsList = React.memo<PatientsListProps>(({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className={cn("h-full border rounded-xl flex flex-col", className)}>
-        <div className="divide-y">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {/* Avatar Skeleton */}
-                  <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
-
-                  {/* Patient Info Skeleton */}
-                  <div className="space-y-2">
-                    {/* Name and Badge */}
-                    <div className="flex items-center gap-2">
-                      <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-                      <div className="h-5 w-16 bg-muted rounded animate-pulse" />
-                    </div>
-
-                    {/* Details Row */}
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <div className="h-3 w-3 bg-muted rounded animate-pulse" />
-                        <div className="h-3 w-12 bg-muted rounded animate-pulse" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="h-3 w-3 bg-muted rounded animate-pulse" />
-                        <div className="h-3 w-24 bg-muted rounded animate-pulse" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="h-3 w-3 bg-muted rounded animate-pulse" />
-                        <div className="h-3 w-32 bg-muted rounded animate-pulse" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="h-3 w-3 bg-muted rounded animate-pulse" />
-                        <div className="h-3 w-16 bg-muted rounded animate-pulse" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Button Skeleton */}
-                <div className="flex gap-2">
-                  <div className="h-7 w-8 bg-muted rounded animate-pulse" />
-                  <div className="h-7 w-16 bg-muted rounded animate-pulse" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Remove the inline skeleton since we now use individual skeleton loading
 
   if (patients.length === 0) {
     return (
-      <div className={cn("h-full border rounded-xl flex items-center justify-center p-8", className)}>
+      <div className={cn("h-full border border-border rounded-xl flex items-center justify-center p-8 bg-background", className)}>
         <div className="text-center">
-          <Users className="h-10 w-10 text-muted-foreground mb-3 mx-auto" />
-          <h3 className="font-semibold mb-1">No Patients Found</h3>
-          <p className="text-muted-foreground text-sm mb-3">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4 mx-auto">
+            <Users className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="font-semibold mb-2 text-foreground">No Patients Found</h3>
+          <p className="text-muted-foreground text-sm mb-4 max-w-sm">
             {emptyMessage}
           </p>
-          <Button className="rounded-lg" size="sm">
+          <Button size="sm">
             <UserPlus className="h-4 w-4 mr-2" />
             Add Patient
           </Button>
@@ -112,12 +62,12 @@ export const PatientsList = React.memo<PatientsListProps>(({
   }
 
   return (
-    <div className={cn("h-full border rounded-xl flex flex-col", className)}>
+    <div className={cn("h-full border border-border rounded-xl flex flex-col bg-background", className)}>
       <ScrollArea className="flex-1">
-        <div className="divide-y">
+        <div className="divide-y divide-border">
           {patients.map((relationship) => {
             const relationshipId = relationship._id;
-            const isActionLoading = Object.keys(loadingStates).some(key => 
+            const isActionLoading = Object.keys(loadingStates).some(key =>
               key.includes(relationshipId) && loadingStates[key]
             );
 

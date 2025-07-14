@@ -18,20 +18,21 @@ export const DoctorChatInput: React.FC<DoctorChatInputProps> = React.memo(({
   }, [onChange]);
 
   return (
-    <div className="border-t p-4 flex-shrink-0">
-      <div className="flex gap-2">
+    <div className="border-t border-border px-4 pt-4 pb-4 flex-shrink-0 bg-muted/20">
+      <div className="flex gap-3">
         <Input
           value={value}
           onChange={handleInputChange}
           onKeyDown={onKeyPress}
           placeholder={placeholder}
           disabled={isLoading || disabled}
-          className="flex-1"
+          className="flex-1 bg-background border-border"
         />
         <Button
           onClick={onSend}
           disabled={!value.trim() || isLoading || disabled}
           size="icon"
+          className="h-10 w-10"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

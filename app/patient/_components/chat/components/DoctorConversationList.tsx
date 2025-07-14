@@ -55,12 +55,28 @@ export const DoctorConversationList: React.FC<DoctorConversationListProps> = Rea
 
   return (
     <div className={cn("flex flex-col min-h-0", className)}>
-      <Card className="flex-1 min-h-0 flex flex-col">
-        <CardHeader className="pb-3 flex-shrink-0">
-          <CardTitle className="text-base flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            Your Doctors
-          </CardTitle>
+      <Card className="h-full flex flex-col bg-background border-border">
+        <CardHeader className="p-0 flex-shrink-0">
+          <div className="relative overflow-hidden rounded-t-lg">
+            <div className="relative px-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
+                  <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
+                    <MessageCircle className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base font-semibold text-foreground tracking-tight">
+                    Your Doctors
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Active conversations
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="flex-1 min-h-0 p-0">
           <ScrollArea className="h-full">

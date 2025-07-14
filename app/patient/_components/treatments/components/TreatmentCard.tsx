@@ -23,26 +23,26 @@ export const TreatmentCard = React.memo<TreatmentCardProps>(({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "active":
-        return <CheckCircle className="h-3 w-3 text-green-600" />;
+        return <CheckCircle className="h-3 w-3 text-primary" />;
       case "completed":
-        return <CheckCircle className="h-3 w-3 text-blue-600" />;
+        return <CheckCircle className="h-3 w-3 text-primary" />;
       case "discontinued":
-        return <XCircle className="h-3 w-3 text-red-600" />;
+        return <XCircle className="h-3 w-3 text-destructive" />;
       default:
-        return <Pause className="h-3 w-3 text-gray-600" />;
+        return <Pause className="h-3 w-3 text-muted-foreground" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-50 text-green-700 border-green-200";
+        return "bg-primary/10 text-primary border-primary/20";
       case "completed":
-        return "bg-blue-50 text-blue-700 border-blue-200";
+        return "bg-primary/10 text-primary border-primary/20";
       case "discontinued":
-        return "bg-red-50 text-red-700 border-red-200";
+        return "bg-destructive/10 text-destructive border-destructive/20";
       default:
-        return "bg-gray-50 text-gray-700 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 

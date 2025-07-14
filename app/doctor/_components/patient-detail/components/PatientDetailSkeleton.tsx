@@ -142,7 +142,7 @@ export const PatientDetailSkeleton = React.memo(() => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {[1, 2].map((i) => (
-                        <div key={i} className="p-3 bg-blue-50/50 rounded-lg border">
+                        <div key={i} className="p-3 bg-muted/30 rounded-lg border border-border">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1 min-w-0">
                               <Skeleton className="h-4 w-32 mb-1" />
@@ -161,7 +161,7 @@ export const PatientDetailSkeleton = React.memo(() => {
                   </div>
 
                   {/* E-Prescribing Skeleton */}
-                  <div className="border rounded-xl p-4 bg-blue-50">
+                  <div className="border border-border rounded-xl p-4 bg-muted/30">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <Skeleton className="h-4 w-4" />

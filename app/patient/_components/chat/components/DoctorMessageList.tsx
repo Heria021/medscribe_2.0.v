@@ -52,7 +52,7 @@ export const DoctorMessageList: React.FC<DoctorMessageListProps> = React.memo(({
             >
               {!isPatient && (
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarFallback className="bg-blue-500 text-white text-xs">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     <Stethoscope className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
@@ -67,7 +67,12 @@ export const DoctorMessageList: React.FC<DoctorMessageListProps> = React.memo(({
                 )}
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
-                <div className="mt-2 pt-2 border-t border-border/50 text-xs opacity-70">
+                <div className={cn(
+                  "mt-2 pt-2 text-xs opacity-70",
+                  isPatient
+                    ? "border-t border-primary-foreground/30"
+                    : "border-t border-border/50"
+                )}>
                   <div className="flex items-center justify-between">
                     <span>
                       {isPatient ? (patientName || "You") : `Dr. ${doctorName}`}
@@ -96,7 +101,7 @@ export const DoctorMessageList: React.FC<DoctorMessageListProps> = React.memo(({
         {isLoading && (
           <div className="flex gap-3 justify-start">
             <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarFallback className="bg-blue-500 text-white text-xs">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 <Stethoscope className="h-4 w-4" />
               </AvatarFallback>
             </Avatar>

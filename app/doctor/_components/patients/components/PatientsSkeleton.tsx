@@ -28,9 +28,9 @@ export const PatientsSkeleton = React.memo<PatientsSkeletonProps>(({
       {showFilters && (
         <div className="flex items-center gap-4">
           <div className="relative flex-1">
-            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-10 w-full" />
           </div>
-          <Skeleton className="h-10 w-28 rounded-lg" />
+          <Skeleton className="h-10 w-28" />
         </div>
       )}
 
@@ -38,7 +38,7 @@ export const PatientsSkeleton = React.memo<PatientsSkeletonProps>(({
       {showStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="border rounded-lg p-4">
+            <div key={i} className="border border-border rounded-lg p-4 bg-background">
               <Skeleton className="h-4 w-16 mb-2" />
               <Skeleton className="h-8 w-12" />
             </div>
@@ -47,17 +47,17 @@ export const PatientsSkeleton = React.memo<PatientsSkeletonProps>(({
       )}
 
       {/* Patients List Skeleton */}
-      <div className="border rounded-xl">
-        <div className="divide-y">
+      <div className="border border-border rounded-xl bg-background">
+        <div className="divide-y divide-border">
           {Array.from({ length: patientCount }).map((_, i) => (
             <div key={i} className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {/* Avatar Skeleton */}
-                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-12 w-12 rounded-full" />
 
                   {/* Patient Info Skeleton */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex-1">
                     {/* Name and Badge */}
                     <div className="flex items-center gap-2">
                       <Skeleton className="h-4 w-32" />
@@ -65,31 +65,19 @@ export const PatientsSkeleton = React.memo<PatientsSkeletonProps>(({
                     </div>
 
                     {/* Details Row */}
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Skeleton className="h-3 w-3" />
-                        <Skeleton className="h-3 w-12" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Skeleton className="h-3 w-3" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Skeleton className="h-3 w-3" />
-                        <Skeleton className="h-3 w-32" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Skeleton className="h-3 w-3" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                      <Skeleton className="h-6 w-full rounded-md" />
+                      <Skeleton className="h-6 w-full rounded-md" />
+                      <Skeleton className="h-6 w-full rounded-md" />
+                      <Skeleton className="h-6 w-full rounded-md" />
                     </div>
                   </div>
                 </div>
 
                 {/* Action Button Skeleton */}
                 <div className="flex gap-2">
-                  <Skeleton className="h-7 w-8" />
-                  <Skeleton className="h-7 w-16" />
+                  <Skeleton className="h-8 w-8" />
+                  <Skeleton className="h-8 w-16" />
                 </div>
               </div>
             </div>

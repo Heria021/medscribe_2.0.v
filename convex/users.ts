@@ -119,6 +119,8 @@ export const getUserById = query({
   },
 });
 
+
+
 // Update user
 export const updateUser = mutation({
   args: {
@@ -200,6 +202,40 @@ export const createPasswordResetToken = mutation({
     });
 
     return { token, email: user.email };
+  },
+});
+
+// Generate password reset token and send email (action)
+export const generatePasswordResetToken = action({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      // Create the password reset token
+      const result = await ctx.runMutation(api.users.createPasswordResetToken, {
+        email: args.email,
+      });
+
+      // Get user details for personalized email
+      const user = await ctx.runQuery(api.users.getUserByEmail, { email: args.email });
+
+      // Generate password reset email using template
+      const { generateEmailContent, sendEmail } = await import("./emailService");
+      const emailOptions = generateEmailContent("password_reset", {
+        email: result.email,
+        firstName: user?.name?.split(' ')[0] || "",
+        resetToken: result.token
+      });
+
+      // Send email using the email service
+      const emailSent = await sendEmail(emailOptions);
+
+      // Always return success for security reasons
+
+      return { success: true };
+    } catch (error: any) {
+      // For security, don't reveal if user exists or not - always return success
+      return { success: true };
+    }
   },
 });
 

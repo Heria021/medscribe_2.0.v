@@ -3,14 +3,68 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useDoctorAuth,
   useDoctorPatients,
   PatientsList,
   PatientFilters,
-  PatientsSkeleton,
   AddPatientDialog,
 } from "@/app/doctor/_components/patients";
+
+// Individual skeleton components
+const PatientFiltersSkeletonComponent = () => (
+  <div className="flex items-center gap-4">
+    <div className="relative flex-1">
+      <Skeleton className="h-10 w-full rounded-xl" />
+    </div>
+    <Skeleton className="h-10 w-28 rounded-lg" />
+  </div>
+);
+
+const PatientsListSkeletonComponent = () => (
+  <div className="h-full border border-border rounded-xl flex flex-col bg-background">
+    <div className="divide-y divide-border">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-7 w-8" />
+              <Skeleton className="h-7 w-16" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 /**
  * Doctor Patients Page - Refactored with performance optimizations
@@ -21,6 +75,7 @@ import {
  * - Reusable components for maintainability
  * - Comprehensive error handling
  * - Accessibility support
+ * - Individual skeleton loading states
  */
 const DoctorPatientsPage = React.memo(() => {
   const router = useRouter();
@@ -59,13 +114,8 @@ const DoctorPatientsPage = React.memo(() => {
     console.log("Patient added successfully!");
   }, []);
 
-  // Show loading skeleton while data is loading
-  if (authLoading || patientsLoading) {
-    return <PatientsSkeleton />;
-  }
-
   // Redirect if not authenticated (handled by useDoctorAuth)
-  if (!isAuthenticated || !isDoctor) {
+  if (authLoading || !isAuthenticated || !isDoctor) {
     return null;
   }
 
@@ -73,7 +123,7 @@ const DoctorPatientsPage = React.memo(() => {
     <div className="h-full flex flex-col space-y-4">
       {/* Header */}
       <div className="flex-shrink-0 space-y-1">
-        <h1 className="text-xl font-bold tracking-tight">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
           My Patients
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -83,25 +133,33 @@ const DoctorPatientsPage = React.memo(() => {
 
       {/* Filters */}
       <div className="flex-shrink-0">
-        <PatientFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onAddPatient={handleAddPatient}
-        />
+        {patientsLoading ? (
+          <PatientFiltersSkeletonComponent />
+        ) : (
+          <PatientFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onAddPatient={handleAddPatient}
+          />
+        )}
       </div>
 
       {/* Patients List - Takes remaining height */}
       <div className="flex-1 min-h-0">
-        <PatientsList
-          patients={filteredPatients}
-          isLoading={patientsLoading}
-          emptyMessage={
-            searchTerm
-              ? "No patients match your search criteria."
-              : "You don't have any assigned patients yet."
-          }
-          onPatientAction={handlePatientAction}
-        />
+        {patientsLoading ? (
+          <PatientsListSkeletonComponent />
+        ) : (
+          <PatientsList
+            patients={filteredPatients}
+            isLoading={false}
+            emptyMessage={
+              searchTerm
+                ? "No patients match your search criteria."
+                : "You don't have any assigned patients yet."
+            }
+            onPatientAction={handlePatientAction}
+          />
+        )}
       </div>
 
       {/* Add Patient Dialog */}

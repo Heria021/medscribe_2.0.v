@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Stethoscope, UserCheck, LogOut } from "lucide-react";
+import { LogOut, ChevronRight, HelpCircle, Settings, Bell } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +16,6 @@ import {
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { NavSection } from "@/lib/navigation";
 
 interface DashboardSidebarProps {
@@ -33,12 +30,8 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-sm">
-            {userRole === "doctor" ? (
-              <Stethoscope className="h-5 w-5 text-primary-foreground" />
-            ) : (
-              <UserCheck className="h-5 w-5 text-primary-foreground" />
-            )}
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
+            <div className="text-lg font-bold text-primary">M</div>
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-sidebar-foreground">MedScribe</span>
@@ -65,13 +58,29 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className="transition-all duration-200 h-11 rounded-lg hover:bg-sidebar-accent/50"
+                        className={`
+                          relative transition-all duration-200 h-9 rounded-lg group
+                          ${isActive
+                            ? 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                          }
+                        `}
                       >
-                        <Link href={item.href} className="flex items-center gap-3">
-                          <item.icon className="h-5 w-5" />
-                          <span className="font-medium text-sm">{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge className="ml-auto bg-primary text-primary-foreground">
+                        <Link href={item.href} className="flex items-center gap-3 w-full px-3">
+                          <item.icon className={`h-5 w-5 ${isActive ? 'text-secondary-foreground' : 'text-sidebar-foreground'}`} />
+                          <span className={`font-medium text-sm flex-1 ${isActive ? 'text-secondary-foreground' : 'text-sidebar-foreground'}`}>
+                            {item.title}
+                          </span>
+                          {isActive && (
+                            <ChevronRight className="h-4 w-4 text-secondary-foreground ml-auto" />
+                          )}
+                          {item.badge && !isActive && (
+                            <SidebarMenuBadge className="ml-auto bg-muted text-muted-foreground">
+                              {item.badge}
+                            </SidebarMenuBadge>
+                          )}
+                          {item.badge && isActive && (
+                            <SidebarMenuBadge className="ml-auto mr-6 bg-background text-foreground">
                               {item.badge}
                             </SidebarMenuBadge>
                           )}
@@ -86,19 +95,67 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
         </SidebarGroup>
       </SidebarContent>
 
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-1">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className="transition-all duration-200 h-9 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              >
+                <Link href={`/${userRole}/settings`} className="flex items-center gap-3 w-full px-3">
+                  <Settings className="h-4 w-4 text-sidebar-foreground" />
+                  <span className="font-medium text-sm text-sidebar-foreground">Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className="transition-all duration-200 h-9 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              >
+                <Link href={`/${userRole}/notifications`} className="flex items-center gap-3 w-full px-3">
+                  <Bell className="h-4 w-4 text-sidebar-foreground" />
+                  <span className="font-medium text-sm text-sidebar-foreground">Notifications</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className="transition-all duration-200 h-9 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              >
+                <Link href="/help" className="flex items-center gap-3 w-full px-3">
+                  <HelpCircle className="h-4 w-4 text-sidebar-foreground" />
+                  <span className="font-medium text-sm text-sidebar-foreground">Help Center</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
       <Separator />
 
       <SidebarFooter>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => signOut({ callbackUrl: "/auth/login" })}
-          className="w-full h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign out
-        </Button>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              className="transition-all duration-200 h-9 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <button
+                onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                className="flex items-center gap-3 w-full px-3"
+              >
+                <LogOut className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm text-muted-foreground">Sign Out</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );
 }
+

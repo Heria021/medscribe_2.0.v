@@ -18,7 +18,7 @@ export const PatientChat = React.memo<PatientChatProps>(({
   className = "",
 }) => {
   return (
-    <div className={cn("flex flex-col min-h-0", className)}>
+    <div className={cn("h-full flex flex-col", className)}>
       <DoctorPatientChat
         doctorId={doctorId}
         patientId={patientId}

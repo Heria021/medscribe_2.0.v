@@ -144,10 +144,8 @@ export const authOptions: NextAuthOptions = {
             user.role = existingUser.role;
             return true;
           } else {
-            // For new OAuth users, allow sign-in but mark as needing role selection
-            user.id = "pending";
-            user.role = "pending";
-            return true;
+            // For new OAuth users, redirect to registration
+            return false; // This will prevent sign-in and redirect to registration
           }
         } catch (error) {
           console.error("OAuth sign-in error:", error);
@@ -178,24 +176,12 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.userId as string || token.sub!;
         session.user.role = token.role as string;
-
-        // If user has pending role, redirect to role selection
-        if (token.role === "pending" && token.provider === "google") {
-          session.user.needsRoleSelection = true;
-          session.user.oauthData = {
-            email: token.email!,
-            name: token.name as string,
-            image: token.picture as string,
-            provider: "google",
-            providerId: token.providerId as string,
-          };
-        }
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Handle OAuth role selection redirect
-      if (url.includes("/auth/oauth-role-selection")) {
+      // Handle registration redirect
+      if (url.includes("/auth/register")) {
         return url;
       }
 
@@ -223,14 +209,6 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: string;
-      needsRoleSelection?: boolean;
-      oauthData?: {
-        email: string;
-        name: string;
-        image: string;
-        provider: string;
-        providerId: string;
-      };
     };
   }
 }

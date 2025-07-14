@@ -8,7 +8,6 @@ import { ArrowLeft, Mail, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -68,23 +67,25 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
         {/* Theme Toggle */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-6 right-6">
           <ThemeToggle />
         </div>
 
-        <Card className="w-full max-w-md shadow-lg border-0 bg-card">
-          <CardHeader className="text-center space-y-2 pb-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mx-auto">
-              <Mail className="h-6 w-6 text-primary" />
+        <div className="w-full max-w-md">
+          <div className="text-center space-y-3 pb-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
+              <div className="text-2xl font-bold text-primary">M</div>
             </div>
-            <CardTitle className="text-2xl font-semibold tracking-tight">Check Your Email</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              We've sent a password reset link to your email address if an account exists.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight">Check Your Email</h1>
+              <p className="text-muted-foreground">
+                We've sent a password reset link to your email address if an account exists.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-6">
             <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
                 Didn't receive the email? Check your spam folder or try again.
@@ -107,30 +108,32 @@ export default function ForgotPasswordPage() {
                 Back to Login
               </Link>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md shadow-lg border-0 bg-card">
-        <CardHeader className="text-center space-y-2 pb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mx-auto">
-            <Mail className="h-6 w-6 text-primary" />
+      <div className="w-full max-w-md">
+        <div className="text-center space-y-3 pb-8">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
+            <div className="text-2xl font-bold text-primary">M</div>
           </div>
-          <CardTitle className="text-2xl font-semibold tracking-tight">Forgot Password?</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Enter your email address and we'll send you a link to reset your password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Forgot Password?</h1>
+            <p className="text-muted-foreground">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -178,8 +181,8 @@ export default function ForgotPasswordPage() {
               Back to Login
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -152,20 +152,27 @@ export function DoctorPatientChat({
   })) || [];
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            <CardTitle className="text-sm font-medium">
-              Chat with {patientName}
-            </CardTitle>
+    <Card className="h-full flex flex-col bg-background border-border">
+      <CardHeader className="p-0 flex-shrink-0">
+        <div className="relative overflow-hidden rounded-t-lg">
+          <div className="relative px-4">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
+                <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
+                  <MessageCircle className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-base font-semibold text-foreground tracking-tight">
+                  Chat with {patientName}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Direct messaging
+                </p>
+              </div>
+            </div>
           </div>
-          {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </CardHeader>
 
@@ -174,11 +181,13 @@ export function DoctorPatientChat({
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-4 space-y-4">
             {chatMessages.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                <h3 className="font-medium mb-2">Start a conversation</h3>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold mb-2 text-foreground">Start a conversation</h3>
                 <p className="text-sm text-muted-foreground">
-                  Send a message to start chatting with {patientName}.
+                  Send a message to start chatting with {patientName}
                 </p>
               </div>
             ) : (
@@ -192,7 +201,7 @@ export function DoctorPatientChat({
                 >
                   {message.senderType === "patient" && (
                     <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
+                      <AvatarFallback className="bg-muted text-muted-foreground">
                         <User className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
@@ -214,7 +223,7 @@ export function DoctorPatientChat({
 
                   {message.senderType === "doctor" && (
                     <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="bg-green-100 text-green-600">
+                      <AvatarFallback className="bg-primary/10 text-primary">
                         <Stethoscope className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
@@ -227,20 +236,21 @@ export function DoctorPatientChat({
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t p-4 flex-shrink-0">
-          <div className="flex gap-2">
+        <div className="border-t border-border px-4 pt-4 pb-4 flex-shrink-0 bg-muted/20">
+          <div className="flex gap-3">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Type your message..."
+              placeholder={`Message ${patientName}...`}
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 bg-background border-border"
             />
             <Button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isLoading}
               size="icon"
+              className="h-10 w-10"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

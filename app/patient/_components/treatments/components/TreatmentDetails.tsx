@@ -80,7 +80,7 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {treatment.medications.map((med: any) => (
-                    <div key={med._id} className="p-3 bg-blue-50/50 dark:bg-blue-950/10 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                    <div key={med._id} className="p-3 bg-muted/50 rounded-lg border border-border">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-sm text-foreground">{med.medicationName}</h4>
@@ -162,13 +162,13 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
             {standaloneMedications.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Pill className="h-4 w-4 text-orange-600" />
+                  <Pill className="h-4 w-4 text-primary" />
                   <h3 className="font-semibold text-base">Independent Medications</h3>
                   <Badge variant="outline">{standaloneMedications.length}</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {standaloneMedications.map((medication) => (
-                    <div key={medication._id} className="p-3 bg-orange-50/50 dark:bg-orange-950/10 rounded-lg border border-orange-200/50 dark:border-orange-800/50">
+                    <div key={medication._id} className="p-3 bg-muted/50 rounded-lg border border-border">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-foreground">

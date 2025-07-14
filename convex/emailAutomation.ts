@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, action } from "./_generated/server";
 import { api } from "./_generated/api";
-import { generateEmailContent, sendEmailProduction } from "./emailService";
+import { generateEmailContent, sendEmail } from "./emailService";
 
 // Create email automation entry
 export const scheduleEmail = mutation({
@@ -116,12 +116,14 @@ export const sendScheduledEmail = action({
       // Generate email content using our email service
       const emailOptions = generateEmailContent(
         email.emailType,
-        email.emailData.to,
-        email.emailData.templateData
+        {
+          email: email.emailData.to,
+          ...email.emailData.templateData
+        }
       );
 
-      // Send email directly via existing Gmail API
-      const success = await sendEmailProduction(emailOptions);
+      // Send email directly via Gmail API
+      const success = await sendEmail(emailOptions);
 
       if (success) {
         // Mark email as sent

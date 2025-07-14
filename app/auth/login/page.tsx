@@ -9,7 +9,6 @@ import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -101,23 +100,25 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md shadow-lg border-0 bg-card">
-        <CardHeader className="text-center space-y-2 pb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mx-auto">
-            <LogIn className="h-6 w-6 text-primary" />
+      <div className="w-full max-w-md">
+        <div className="text-center space-y-3 pb-8">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
+            <div className="text-2xl font-bold text-primary">M</div>
           </div>
-          <CardTitle className="text-2xl font-semibold tracking-tight">Welcome Back</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Sign in to your MedScribe account
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Welcome Back</h1>
+            <p className="text-muted-foreground">
+              Sign in to your MedScribe account
+            </p>
+          </div>
+        </div>
+        <div className="space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -242,8 +243,8 @@ export default function LoginPage() {
               Don't have an account? Sign up
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { DoctorMessageList } from "./DoctorMessageList";
 import { DoctorChatInput } from "./DoctorChatInput";
 import { DoctorChatInterfaceProps } from "../types";
@@ -34,20 +33,27 @@ export const DoctorChatInterface: React.FC<DoctorChatInterfaceProps> = React.mem
     : 'You';
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            <CardTitle className="text-sm font-medium">
-              Chat with Dr. {doctorName}
-            </CardTitle>
+    <Card className="h-full flex flex-col bg-background border-border">
+      <CardHeader className="p-0 flex-shrink-0">
+        <div className="relative overflow-hidden rounded-t-lg">
+          <div className="relative px-4">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
+                <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
+                  <MessageCircle className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-base font-semibold text-foreground tracking-tight">
+                  Chat with Dr. {doctorName}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Direct messaging
+                </p>
+              </div>
+            </div>
           </div>
-          {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </CardHeader>
 

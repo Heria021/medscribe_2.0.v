@@ -56,7 +56,7 @@ export function AddMedicationForm({
         status: "active"
       });
 
-      toast.success("Medication added successfully!");
+      toast.success("Current medication added successfully!");
       
       // Reset form
       setMedicationName("");
@@ -79,13 +79,16 @@ export function AddMedicationForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-purple-100 rounded-lg">
-          <Pill className="h-5 w-5 text-purple-600" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
+          <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
+            <Pill className="h-5 w-5 text-primary" />
+          </div>
         </div>
         <div>
-          <h3 className="text-lg font-semibold">Add New Medication</h3>
+          <h3 className="text-lg font-semibold">Add Current Medication</h3>
           <p className="text-sm text-muted-foreground">
-            Add a medication to the patient's treatment plan
+            Add a medication that the patient is currently taking
           </p>
         </div>
       </div>
@@ -213,8 +216,8 @@ export function AddMedicationForm({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-3 pt-4">
-        <Button type="submit" disabled={isSubmitting} className="bg-purple-600 hover:bg-purple-700">
-          {isSubmitting ? "Adding..." : "Add Medication"}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Adding..." : "Add Current Medication"}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

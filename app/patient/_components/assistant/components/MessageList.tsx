@@ -30,8 +30,8 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
             )}
           >
             {message.sender === "assistant" && (
-              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-white" />
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                <Bot className="h-4 w-4 text-primary-foreground" />
               </div>
             )}
             <div
@@ -72,8 +72,8 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
 
         {isLoading && (
           <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <Bot className="h-4 w-4 text-white" />
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+              <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
             <div className="bg-muted rounded-lg p-3 text-sm">
               <div className="flex items-center gap-2">

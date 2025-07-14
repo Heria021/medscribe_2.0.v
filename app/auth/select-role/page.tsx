@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { UserCheck, Stethoscope, Loader2, ArrowRight, Building2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -44,20 +43,19 @@ export default function SelectRolePage() {
       </div>
 
       <div className="w-full max-w-md">
-        <Card className="border-border/40 bg-card/95 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-3 pb-8">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
-              <div className="text-2xl font-bold text-primary">M</div>
-            </div>
-            <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold tracking-tight">Welcome to MedScribe</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Choose your role to get started
-              </CardDescription>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
+        <div className="text-center space-y-3 pb-8">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/20">
+            <div className="text-2xl font-bold text-primary">M</div>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Welcome to MedScribe</h1>
+            <p className="text-muted-foreground">
+              Choose your role to get started
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -207,8 +205,7 @@ export default function SelectRolePage() {
                 </Button>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );

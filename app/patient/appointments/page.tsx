@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Plus } from "lucide-react";
 import Link from "next/link";
 import {
@@ -17,8 +18,59 @@ import {
   CancelDialog,
   RescheduleDialog,
   QuickActionsGrid,
-  AppointmentStats,
 } from "@/app/patient/_components/appointments";
+
+// Individual skeleton components
+const AppointmentListSkeleton = () => (
+  <div className="p-4 space-y-3">
+    {Array.from({ length: 3 }).map((_, i) => (
+      <Card key={i} className="bg-background border-border">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32 bg-muted" />
+              <Skeleton className="h-3 w-48 bg-muted" />
+              <Skeleton className="h-3 w-24 bg-muted" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-16 bg-muted" />
+              <Skeleton className="h-8 w-16 bg-muted" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
+
+const CompactAppointmentListSkeleton = () => (
+  <div className="p-4 space-y-2">
+    {Array.from({ length: 4 }).map((_, i) => (
+      <div key={i} className="p-2 space-y-1">
+        <Skeleton className="h-3 w-full bg-muted" />
+        <Skeleton className="h-3 w-2/3 bg-muted" />
+      </div>
+    ))}
+  </div>
+);
+
+const QuickActionsGridSkeleton = () => (
+  <Card className="flex-shrink-0 bg-background border-border">
+    <CardHeader className="pb-2">
+      <Skeleton className="h-4 w-24 bg-muted" />
+    </CardHeader>
+    <CardContent className="p-3 pt-0">
+      <div className="grid grid-cols-3 gap-1">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-2 space-y-1">
+            <Skeleton className="h-6 w-6 bg-muted mx-auto" />
+            <Skeleton className="h-3 w-full bg-muted" />
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 /**
  * Patient Appointments Page - Refactored with performance optimizations
@@ -29,6 +81,7 @@ import {
  * - Reusable components for maintainability
  * - Comprehensive error handling
  * - Accessibility support
+ * - Individual skeleton loading states
  */
 const PatientAppointmentsPage = React.memo(() => {
   // Custom hooks for clean separation of concerns
@@ -43,15 +96,12 @@ const PatientAppointmentsPage = React.memo(() => {
     upcomingAppointments,
     pastAppointments,
     isLoading: appointmentsLoading,
-    stats,
   } = usePatientAppointments(patientProfile?._id);
 
   const {
     cancelAppointment,
-    rescheduleAppointment,
     joinCall,
     loadingStates,
-    errors,
   } = useAppointmentActions();
 
   const {
@@ -62,12 +112,6 @@ const PatientAppointmentsPage = React.memo(() => {
     openRescheduleDialog,
     closeRescheduleDialog,
   } = useAppointmentDialogs();
-
-  // Memoized loading state
-  const isLoading = React.useMemo(() =>
-    authLoading || appointmentsLoading,
-    [authLoading, appointmentsLoading]
-  );
 
   // Memoized authentication check
   const isAuthorized = React.useMemo(() =>
@@ -81,7 +125,7 @@ const PatientAppointmentsPage = React.memo(() => {
     closeCancelDialog();
   }, [cancelAppointment, closeCancelDialog]);
 
-  const handleRescheduleAppointment = React.useCallback(async (appointmentId: any) => {
+  const handleRescheduleAppointment = React.useCallback(async () => {
     // For now, just close the dialog and redirect to booking
     closeRescheduleDialog();
     window.location.href = '/patient/appointments/book';
@@ -92,17 +136,8 @@ const PatientAppointmentsPage = React.memo(() => {
   const memoizedOpenRescheduleDialog = React.useCallback(openRescheduleDialog, [openRescheduleDialog]);
   const memoizedJoinCall = React.useCallback(joinCall, [joinCall]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
   // Authentication check
-  if (!isAuthorized) {
+  if (authLoading || !isAuthorized) {
     return null;
   }
 
@@ -142,22 +177,24 @@ const PatientAppointmentsPage = React.memo(() => {
               </CardHeader>
               <CardContent className="flex-1 min-h-0 p-0">
                 <ScrollArea className="h-full scrollbar-hide">
-                  <div className="p-4">
-                    {!upcomingAppointments || upcomingAppointments.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <Calendar className="h-8 w-8 text-muted-foreground mb-3" />
-                        <h3 className="font-medium mb-2">No upcoming appointments</h3>
-                        <p className="text-muted-foreground text-sm mb-3">
-                          Schedule your next appointment with your healthcare provider
-                        </p>
-                        <Link href="/patient/appointments/book">
-                          <Button size="sm" className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Book Appointment
-                          </Button>
-                        </Link>
-                      </div>
-                    ) : (
+                  {appointmentsLoading ? (
+                    <AppointmentListSkeleton />
+                  ) : !upcomingAppointments || upcomingAppointments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Calendar className="h-8 w-8 text-muted-foreground mb-3" />
+                      <h3 className="font-medium mb-2">No upcoming appointments</h3>
+                      <p className="text-muted-foreground text-sm mb-3">
+                        Schedule your next appointment with your healthcare provider
+                      </p>
+                      <Link href="/patient/appointments/book">
+                        <Button size="sm" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          Book Appointment
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="p-4">
                       <AppointmentList
                         appointments={upcomingAppointments}
                         showActions={true}
@@ -165,8 +202,8 @@ const PatientAppointmentsPage = React.memo(() => {
                         onReschedule={memoizedOpenRescheduleDialog}
                         onJoin={memoizedJoinCall}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>
@@ -188,31 +225,39 @@ const PatientAppointmentsPage = React.memo(() => {
               </CardHeader>
               <CardContent className="flex-1 min-h-0 p-0">
                 <ScrollArea className="h-full scrollbar-hide">
-                  <div className="p-4">
-                    <CompactAppointmentList
-                      appointments={pastAppointments || []}
-                      maxItems={8}
-                      showActions={false}
-                    />
-                    {pastAppointments && pastAppointments.length > 8 && (
-                      <div className="pt-2 border-t">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full h-6 text-xs"
-                          onClick={() => window.location.href = "/patient/appointments/history"}
-                        >
-                          View all {pastAppointments.length} appointments
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {appointmentsLoading ? (
+                    <CompactAppointmentListSkeleton />
+                  ) : (
+                    <div className="p-4">
+                      <CompactAppointmentList
+                        appointments={pastAppointments || []}
+                        maxItems={8}
+                        showActions={false}
+                      />
+                      {pastAppointments && pastAppointments.length > 8 && (
+                        <div className="pt-2 border-t border-border">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full h-6 text-xs"
+                            onClick={() => window.location.href = "/patient/appointments/history"}
+                          >
+                            View all {pastAppointments.length} appointments
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
-            <QuickActionsGrid variant="compact" />
+            {appointmentsLoading ? (
+              <QuickActionsGridSkeleton />
+            ) : (
+              <QuickActionsGrid variant="compact" />
+            )}
           </div>
         </div>
       </div>

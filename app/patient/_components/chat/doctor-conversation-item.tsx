@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Stethoscope } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -25,16 +24,16 @@ interface DoctorConversationItemProps {
   className?: string;
 }
 
-export function DoctorConversationItem({ 
-  conversation, 
-  isSelected, 
-  onClick, 
-  className = "" 
+export function DoctorConversationItem({
+  conversation,
+  isSelected,
+  onClick,
+  className = ""
 }: DoctorConversationItemProps) {
   return (
     <div
       className={cn(
-        "p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/50",
+        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:bg-muted/50",
         isSelected
           ? 'border-primary bg-primary/5'
           : 'border-border hover:border-primary/50',
@@ -42,32 +41,24 @@ export function DoctorConversationItem({
       )}
       onClick={() => onClick(conversation.doctorId)}
     >
-      <div className="flex items-center gap-3">
-        <Avatar className="h-10 w-10">
-          <AvatarFallback className="bg-green-100 text-green-600">
-            <Stethoscope className="h-5 w-5" />
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm truncate">
-              Dr. {conversation.doctor?.firstName} {conversation.doctor?.lastName}
-            </h4>
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {new Date(conversation.lastMessageAt).toLocaleDateString()}
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground truncate">
-            {conversation.doctor?.primarySpecialty}
-          </p>
-          <div className="flex items-center justify-between mt-1">
-            <Badge variant="outline" className="text-xs h-5">
-              Active
-            </Badge>
-          </div>
+      <Avatar className="h-10 w-10 flex-shrink-0">
+        <AvatarFallback className="bg-primary/10 text-primary">
+          <Stethoscope className="h-5 w-5" />
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-sm truncate text-foreground">
+            Dr. {conversation.doctor?.firstName} {conversation.doctor?.lastName}
+          </h4>
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            {new Date(conversation.lastMessageAt).toLocaleDateString()}
+          </span>
         </div>
+        <p className="text-xs text-muted-foreground truncate">
+          {conversation.doctor?.primarySpecialty || "General Practice"}
+        </p>
       </div>
     </div>
   );

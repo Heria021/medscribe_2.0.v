@@ -26,14 +26,14 @@ export const PatientFilters = React.memo<PatientFiltersProps>(({
           placeholder="Search patients by name, email, phone, or MRN..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 rounded-xl"
+          className="pl-10 h-10 bg-background border-border text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
       {/* Add Patient Button */}
-      <Button 
-        className="rounded-lg"
+      <Button
         onClick={onAddPatient}
+        className="h-10"
       >
         <UserPlus className="h-4 w-4 mr-2" />
         Add Patient

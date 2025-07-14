@@ -4,19 +4,257 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useQuery } from "convex/react";
-import { Users, Calendar, FileText, Brain, MessageCircle, Settings } from "lucide-react";
-
-import { ScheduledAppointments } from "@/components/doctor/scheduled-appointments";
 import {
-  DoctorFeatureCard,
-  PatientListCard,
-  DoctorQuickActions,
-  DoctorDashboardSkeleton,
-  type DoctorQuickAction,
-  type PatientRelationship
-} from "@/app/doctor/_components/dashboard";
+  Users,
+  Calendar,
+  Brain,
+  ArrowRight,
+  Sparkles,
+  FileText,
+  Activity,
+  Clock,
+  Phone
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Link from "next/link";
 
 import { api } from "@/convex/_generated/api";
+
+// Individual skeleton components matching patient dashboard structure
+
+const PatientListSkeleton = () => (
+  <Card className="h-full flex flex-col">
+    <CardHeader className="pb-3 flex-shrink-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <Skeleton className="h-4 w-16" />
+      </div>
+    </CardHeader>
+    <CardContent className="flex-1 min-h-0 p-0">
+      <div className="p-3 space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-3" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-16 rounded-md" />
+                <Skeleton className="h-5 w-20 rounded-md" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const AppointmentsSkeleton = () => (
+  <Card className="h-full flex flex-col">
+    <CardHeader className="pb-3 flex-shrink-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <Skeleton className="h-4 w-16" />
+      </div>
+    </CardHeader>
+    <CardContent className="flex-1 min-h-0 p-0">
+      <div className="p-4 space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-3 rounded-lg border border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Patient List Component (simplified, no gradients)
+const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: boolean }) => {
+  if (isLoading) return <PatientListSkeleton />;
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-3 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base text-foreground">My Patients</CardTitle>
+          </div>
+          <Link href="/doctor/patients">
+            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              View All
+            </Button>
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 min-h-0 p-0">
+        <ScrollArea className="h-full">
+          {!patients || patients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
+                <Users className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="font-medium text-sm mb-1 text-foreground">No Patients Yet</h3>
+              <p className="text-xs mb-3 max-w-[180px] text-muted-foreground">
+                Patients will appear here once assigned to you
+              </p>
+              <Link href="/doctor/patients">
+                <Button size="sm" className="h-7 px-3 text-xs">View Patients</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="p-3 space-y-3">
+              {patients.slice(0, 6).map((relationship) => {
+                const patient = relationship.patient;
+                const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
+
+                return (
+                  <div
+                    key={relationship._id}
+                    className="group flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/50 border border-border hover:border-primary/30 hover:shadow-sm"
+                    onClick={() => window.location.href = `/doctor/patients/${patient._id}`}
+                  >
+                    <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-background group-hover:ring-primary/20 transition-all">
+                      <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary group-hover:bg-primary/20">
+                        {patient.firstName[0]}{patient.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-semibold text-sm truncate text-foreground group-hover:text-primary transition-colors">
+                          {patient.firstName} {patient.lastName}
+                        </h4>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ArrowRight className="h-3 w-3 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md">
+                          <Calendar className="h-3 w-3" />
+                          {age} years old
+                        </span>
+                        <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md truncate">
+                          <Phone className="h-3 w-3" />
+                          {patient.primaryPhone}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Appointments Component (simplified, no gradients)
+const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefined, isLoading: boolean }) => {
+  const weekAppointments = useQuery(api.appointments.getWeekByDoctor,
+    doctorId ? { doctorId: doctorId as any } : "skip"
+  );
+
+  if (isLoading || !doctorId || weekAppointments === undefined) return <AppointmentsSkeleton />;
+
+  const appointments = weekAppointments || [];
+  // Fix: Check if appointments have the correct structure
+  const sortedAppointments = appointments
+    .filter((appointment: any) => appointment.scheduledFor) // Only include valid appointments
+    .sort((a: any, b: any) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
+    .slice(0, 5);
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-3 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base text-foreground">Upcoming Appointments</CardTitle>
+          </div>
+          <Link href="/doctor/appointments">
+            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              View All
+            </Button>
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 min-h-0 p-0">
+        <ScrollArea className="h-full">
+          {sortedAppointments.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-center">
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-muted">
+                  <Calendar className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">No appointments this week</p>
+                <Link href="/doctor/appointments">
+                  <Button variant="outline" size="sm" className="h-6 px-3 text-xs">
+                    Schedule Appointment
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 space-y-2">
+              {sortedAppointments.map((appointment: any) => (
+                <div
+                  key={appointment._id}
+                  className="flex items-center gap-2 p-2 rounded transition-colors bg-muted/50 border border-border hover:bg-muted"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
+                  <Avatar className="h-6 w-6 flex-shrink-0">
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {appointment.patient?.firstName?.[0] || 'P'}{appointment.patient?.lastName?.[0] || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <h4 className="text-xs font-medium truncate text-foreground">
+                        {appointment.patient?.firstName || 'Patient'} {appointment.patient?.lastName || 'Appointment'}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        }) : 'Time TBD'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function DoctorDashboard() {
   const { data: session, status } = useSession();
@@ -35,7 +273,7 @@ export default function DoctorDashboard() {
   );
 
   useEffect(() => {
-    if (status === "loading") return; // Still loading
+    if (status === "loading") return;
 
     if (!session) {
       router.push("/auth/login");
@@ -48,46 +286,13 @@ export default function DoctorDashboard() {
     }
   }, [session, status, router]);
 
-  // Show loading skeleton while session or profile is loading
-  if (status === "loading" || (session?.user?.id && doctorProfile === undefined)) {
-    return <DoctorDashboardSkeleton />;
-  }
-
   // Redirect if not authenticated or wrong role
   if (!session || session.user.role !== "doctor") {
     return null;
   }
 
-  // Prepare data for components
-  const quickActions: DoctorQuickAction[] = [
-    {
-      title: "Chat with Patients",
-      description: "Direct messaging",
-      icon: <MessageCircle className="h-4 w-4" />,
-      href: "/doctor/chat"
-    },
-    {
-      title: "View Appointments",
-      description: "Check schedule",
-      icon: <Calendar className="h-4 w-4" />,
-      href: "/doctor/appointments"
-    },
-    {
-      title: "SOAP Notes",
-      description: "Shared records",
-      icon: <FileText className="h-4 w-4" />,
-      href: "/doctor/shared-soap"
-    },
-    {
-      title: "Profile Settings",
-      description: "Update info",
-      icon: <Settings className="h-4 w-4" />,
-      href: "/doctor/settings/profile"
-    }
-  ];
-
   // Convert patients to the expected format
-  const patients: PatientRelationship[] = assignedPatients?.filter(p => p.patient).map(relationship => ({
+  const patients = assignedPatients?.filter(p => p.patient).map(relationship => ({
     _id: relationship._id,
     patient: {
       _id: relationship.patient!._id,
@@ -98,128 +303,209 @@ export default function DoctorDashboard() {
     }
   })) || [];
 
-  // Show main dashboard - profiles are complete after registration
+  const isLoading = !doctorProfile;
+
   return (
-    <>
-      {doctorProfile ? (
-        <div className="h-full flex flex-col space-y-4">
-          {/* Header */}
-          <div className="flex-shrink-0 space-y-1">
-            <h1 className="text-xl font-bold tracking-tight">
-              Welcome back, {doctorProfile?.title ? `${doctorProfile.title} ` : "Dr. "}{doctorProfile?.lastName || "Doctor"}!
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Manage your patients, appointments, and medical records
-            </p>
-          </div>
+    <div className="h-full flex flex-col space-y-4">
+      {/* Header */}
+      <div className="flex-shrink-0 space-y-1">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          Welcome back, {doctorProfile?.title ? `${doctorProfile.title} ` : "Dr. "}{doctorProfile?.lastName || "Doctor"}!
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your patients, appointments, and medical records with AI-powered insights
+        </p>
+      </div>
 
-          {/* Main Content Grid - 2/3 Schedule + 1/3 Sidebar */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-            {/* Left Section - Weekly Schedule (Takes 2 columns) */}
-            <div className="lg:col-span-2 flex flex-col h-full overflow-hidden">
-              <div className="flex-1 overflow-y-auto">
-                {doctorProfile && (
-                  <ScheduledAppointments
-                    doctorId={doctorProfile._id}
-                    gradient={{
-                      from: "from-blue-50",
-                      to: "to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20",
-                      border: "border-blue-200 dark:border-blue-800",
-                      iconBg: "bg-blue-500",
-                      textColor: "text-blue-900 dark:text-blue-100",
-                      itemBg: "bg-blue-100/50 dark:bg-blue-900/20",
-                      itemBorder: "border-blue-200 dark:border-blue-700"
-                    }}
-                    className="h-full"
-                  />
-                )}
-              </div>
-            </div>
+      {/* Main Features Layout: 1/2 Patient Management + 1/4 AI Assistant + 1/4 SOAP Review */}
+      <div className="flex-shrink-0 grid gap-4 lg:grid-cols-4">
+        {/* Patient Management - Takes 2 columns (1/2) */}
+        <div className="lg:col-span-2">
+          {isLoading ? (
+            <Card className="h-48 bg-background border-border p-0">
+              <CardContent className="p-4 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-20 mt-1" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-3/4 mb-4 flex-1" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-9 flex-1" />
+                    <Skeleton className="h-9 flex-1" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="h-48 bg-background border-border p-0">
+              <CardContent className="p-4 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary">
+                      <Users className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Patient Management Hub
+                      </h3>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        <Activity className="h-3 w-3 mr-1" />
+                        Comprehensive Care
+                      </Badge>
+                    </div>
+                  </div>
 
-            {/* Right Sidebar - AI Assistant + Patient List + Quick Actions */}
-            <div className="flex flex-col h-full overflow-hidden space-y-4">
-              {/* AI Assistant */}
-              <div className="flex-shrink-0">
-                <DoctorFeatureCard
-                  title="AI Medical Assistant"
-                  description="Get AI-powered insights about patients, SOAP notes, and medical records."
-                  icon={<Brain className="h-4 w-4 text-white" />}
-                  badge="Smart Chat"
-                  size="compact"
-                  gradient={{
-                    from: "from-purple-50",
-                    to: "to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20",
-                    border: "border-purple-200 dark:border-purple-800",
-                    iconBg: "bg-purple-500",
-                    textColor: "text-purple-900 dark:text-purple-100",
-                    badgeColor: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                  }}
-                  actions={{
-                    primary: {
-                      label: "Chat with Assistant",
-                      href: "/doctor/assistant",
-                      icon: <Brain className="h-3 w-3 mr-2" />
-                    }
-                  }}
-                />
-              </div>
+                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                    Manage your patient roster, view medical histories, track treatment progress, and coordinate care plans all in one centralized location.
+                  </p>
 
-              {/* Patient List */}
-              <div className="flex-1 overflow-hidden">
-                <PatientListCard
-                  title="My Patients"
-                  description="Recently assigned patients"
-                  patients={patients}
-                  gradient={{
-                    from: "from-green-50",
-                    to: "to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20",
-                    border: "border-green-200 dark:border-green-800",
-                    iconBg: "bg-green-500",
-                    textColor: "text-green-900 dark:text-green-100",
-                    itemBg: "bg-green-100/50 dark:bg-green-900/20",
-                    itemBorder: "border-green-200 dark:border-green-700"
-                  }}
-                  maxItems={6}
-                  viewAllHref="/doctor/patients"
-                  emptyState={{
-                    icon: <Users className="h-6 w-6" />,
-                    message: "No Patients Yet",
-                    actionLabel: "View Patients",
-                    actionHref: "/doctor/patients"
-                  }}
-                  className="h-full"
-                />
-              </div>
-
-              {/* Quick Actions */}
-              <div className="flex-shrink-0">
-                <DoctorQuickActions
-                  title="Quick Actions"
-                  actions={quickActions}
-                  gradient={{
-                    from: "from-orange-50",
-                    to: "to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20",
-                    border: "border-orange-200 dark:border-orange-800",
-                    iconBg: "bg-orange-500",
-                    textColor: "text-orange-900 dark:text-orange-100",
-                    itemBg: "bg-orange-100/50 dark:bg-orange-900/20",
-                    itemBorder: "border-orange-200 dark:border-orange-700"
-                  }}
-                  columns={2}
-                  variant="compact"
-                />
-              </div>
-            </div>
-          </div>
+                  <div className="flex gap-2 flex-col sm:flex-row">
+                    <Button variant="outline" size="sm" asChild className="flex-1">
+                      <Link href="/doctor/patients">
+                        <Users className="h-4 w-4 mr-2" />
+                        View Patients
+                      </Link>
+                    </Button>
+                    <Button size="sm" asChild className="flex-1">
+                      <Link href="/doctor/patients">
+                        <Activity className="h-4 w-4 mr-2" />
+                        Manage Care
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      ) : (
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground">Loading your profile...</p>
-          </div>
+
+        {/* AI Assistant - Takes 1 column (1/4) */}
+        <div className="lg:col-span-1">
+          {isLoading ? (
+            <Card className="h-48 bg-background border-border p-0">
+              <CardContent className="p-4 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-16 mt-1" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-3 w-full mb-2" />
+                  <Skeleton className="h-3 w-3/4 mb-4 flex-1" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="h-48 bg-background border-border p-0">
+              <CardContent className="p-4 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                      <Brain className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        AI Medical Assistant
+                      </h3>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Smart Chat
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                    Chat with AI about patient records, SOAP notes, and medical insights.
+                  </p>
+
+                  <Button size="sm" asChild className="w-full">
+                    <Link href="/doctor/assistant">
+                      <Brain className="h-3 w-3 mr-2" />
+                      Chat with Assistant
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
-    </>
+
+        {/* SOAP Review - Takes 1 column (1/4) */}
+        <div className="lg:col-span-1">
+          {isLoading ? (
+            <Card className="h-48 bg-background border-border p-0">
+              <CardContent className="p-4 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-16 mt-1" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-3 w-full mb-2" />
+                  <Skeleton className="h-3 w-3/4 mb-4 flex-1" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="h-48 bg-background border-border p-0">
+              <CardContent className="p-4 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                      <FileText className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        SOAP Notes Review
+                      </h3>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        <FileText className="h-3 w-3 mr-1" />
+                        Clinical Records
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                    Review and manage patient SOAP notes and clinical documentation.
+                  </p>
+
+                  <Button size="sm" asChild className="w-full">
+                    <Link href="/doctor/shared-soap">
+                      <FileText className="h-3 w-3 mr-2" />
+                      Review Notes
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Section - 2 Column Grid */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Left Column - Patient List */}
+        <div className="flex flex-col min-h-0">
+          <PatientList patients={patients} isLoading={isLoading} />
+        </div>
+
+        {/* Right Column - Appointments */}
+        <div className="flex flex-col min-h-0">
+          <AppointmentsList doctorId={doctorProfile?._id} isLoading={isLoading} />
+        </div>
+      </div>
+    </div>
   );
 }
