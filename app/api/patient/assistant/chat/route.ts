@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { searchRAG } from "@/lib/rag";
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,62 +47,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Search RAG system for relevant information
-    try {
-      const searchResponse = await searchRAG({
-        patient_id,
-        query: message.trim(),
-        similarity_threshold: 0.2,
-        max_results: 5,
-        include_context: true
-      });
+    // TODO: Implement new RAG system integration here
+    // For now, provide intelligent fallback responses based on message content
+    const patientName = patientProfile.firstName || "there";
+    const lowerMessage = message.toLowerCase();
 
-      console.log("RAG Response:", JSON.stringify(searchResponse, null, 2));
+    let response = "";
 
-      if (searchResponse.success && searchResponse.response && searchResponse.response.length > 0) {
-        // Return the RAG response in the expected format
-        return NextResponse.json({
-          success: true,
-          data: {
-            message: searchResponse.response,
-            relevant_documents: searchResponse.relevant_documents || [],
-            relevant_documents_count: searchResponse.relevant_documents_count || 0,
-            context_used: searchResponse.context_used || false,
-            similarity_threshold: searchResponse.similarity_threshold,
-            processing_time: searchResponse.processing_time_seconds,
-            timestamp: new Date().toISOString()
-          }
-        });
-      } else {
-        // Fallback response when no RAG results or response is empty
-        const patientName = patientProfile.firstName || "there";
-        return NextResponse.json({
-          success: true,
-          data: {
-            message: `Hello ${patientName}! I don't have enough information about "${message}" in your medical records yet. As you continue to use the system and generate more SOAP notes, I'll be able to provide more detailed assistance. Is there anything specific about your current health status or medical records you'd like to discuss?`,
-            relevant_documents: [],
-            relevant_documents_count: 0,
-            context_used: false,
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-    } catch (ragError) {
-      console.error("RAG search error:", ragError);
+    // Provide contextual responses based on common medical queries
+    if (lowerMessage.includes("soap") || lowerMessage.includes("notes")) {
+      response = `Hello ${patientName}! I can help you understand your SOAP notes and medical records. Once you generate SOAP notes using our audio recording feature, I'll be able to provide detailed insights about your medical history, symptoms, and treatment plans. Would you like me to guide you through creating your first SOAP note?`;
+    } else if (lowerMessage.includes("medication") || lowerMessage.includes("medicine") || lowerMessage.includes("drug")) {
+      response = `Hello ${patientName}! I can assist you with medication-related questions. As you build your medical history in the system, I'll be able to provide information about your prescriptions, drug interactions, and medication schedules. Is there a specific medication question I can help you with?`;
+    } else if (lowerMessage.includes("appointment") || lowerMessage.includes("schedule")) {
+      response = `Hello ${patientName}! I can help you with appointment-related questions. You can schedule, reschedule, or view your appointments through the appointments section. Is there something specific about your appointments you'd like to know?`;
+    } else if (lowerMessage.includes("symptom") || lowerMessage.includes("pain") || lowerMessage.includes("feel")) {
+      response = `Hello ${patientName}! I understand you're asking about symptoms or how you're feeling. While I can provide general health information, it's important to discuss specific symptoms with your healthcare provider. You can use our SOAP note feature to record your symptoms for your next appointment. Would you like me to help you with that?`;
+    } else if (lowerMessage.includes("test") || lowerMessage.includes("result") || lowerMessage.includes("lab")) {
+      response = `Hello ${patientName}! I can help you understand test results and lab reports once they're added to your medical records. Your healthcare provider can share test results with you through the system. Is there something specific about medical tests you'd like to know?`;
+    } else {
+      response = `Hello ${patientName}! I'm your AI medical assistant. I can help you with:
 
-      // Fallback response on RAG error
-      const patientName = patientProfile.firstName || "there";
-      return NextResponse.json({
-        success: true,
-        data: {
-          message: `Hello ${patientName}! I'm having trouble accessing your medical records right now. Please try again in a moment, or contact support if the issue persists.`,
-          relevant_documents: [],
-          relevant_documents_count: 0,
-          context_used: false,
-          timestamp: new Date().toISOString()
-        }
-      });
+• Understanding your SOAP notes and medical records
+• Medication information and schedules
+• Appointment scheduling and management
+• General health information and guidance
+• Recording symptoms for your healthcare provider
+
+As you use the system more and generate medical records, I'll be able to provide more personalized assistance. What would you like to know about?`;
     }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: response,
+        relevant_documents: [],
+        relevant_documents_count: 0,
+        context_used: false,
+        timestamp: new Date().toISOString()
+      }
+    });
 
   } catch (error) {
     console.error("Assistant chat API error:", error);

@@ -10,6 +10,7 @@ import {
   SharedSOAPNotesList,
   TakeActionDialog,
 } from "@/app/doctor/_components/shared-soap";
+import { SOAPViewer } from "@/components/ui/soap-viewer";
 
 /**
  * SharedSOAPPage - Refactored with clean separation of concerns
@@ -48,6 +49,7 @@ const SharedSOAPPage = React.memo(() => {
     handleTakeAction,
     handleDownloadNote,
     closeActionModal,
+    soapViewer,
   } = useSharedSOAPActions();
 
   // Date formatting utility
@@ -121,6 +123,30 @@ const SharedSOAPPage = React.memo(() => {
           onOpenChange={closeActionModal}
           note={selectedNote}
           doctorId={doctorProfile._id}
+        />
+      )}
+
+      {/* SOAP Viewer for full-screen document view */}
+      {soapViewer.selectedNote && (
+        <SOAPViewer
+          note={soapViewer.selectedNote}
+          open={soapViewer.isOpen}
+          onOpenChange={soapViewer.setOpen}
+          config={{
+            showBackButton: true,
+            showActions: true,
+            showPatientInfo: true,
+            backButtonText: "Back to Shared Notes"
+          }}
+          actions={{
+            onBack: soapViewer.closeViewer,
+            onDownload: () => {
+              // Create a simplified version of SharedSOAPNote for download
+              if (selectedNote) {
+                handleDownloadNote(selectedNote);
+              }
+            }
+          }}
         />
       )}
     </div>

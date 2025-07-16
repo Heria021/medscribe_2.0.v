@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useSOAPViewer } from "@/components/ui/soap-viewer";
 import type { UseSharedSOAPActionsReturn, SharedSOAPNote } from "../types";
 
 /**
@@ -21,24 +22,41 @@ export function useSharedSOAPActions(): UseSharedSOAPActionsReturn {
   const [selectedNote, setSelectedNote] = useState<SharedSOAPNote | null>(null);
   const [actionModalOpen, setActionModalOpen] = useState(false);
 
+  // SOAP Viewer state
+  const soapViewer = useSOAPViewer();
+
   // Mark as read mutation
   const markAsRead = useMutation(api.sharedSoapNotes.markAsRead);
 
   /**
    * Handle viewing a SOAP note
-   * Marks the note as read and navigates to the SOAP view page
+   * Marks the note as read and opens the SOAP viewer
    */
-  const handleViewSOAP = useCallback(async (sharedSOAPId: string, soapNoteId: string) => {
+  const handleViewSOAP = useCallback(async (note: SharedSOAPNote) => {
     try {
       // Mark as read
-      await markAsRead({ sharedSoapNoteId: sharedSOAPId as any });
+      await markAsRead({ sharedSoapNoteId: note._id as any });
     } catch (error) {
       console.error("Error marking as read:", error);
     }
 
-    // Navigate to SOAP view route
-    router.push(`/doctor/soap/view/${soapNoteId}`);
-  }, [markAsRead, router]);
+    // Convert SharedSOAPNote to SOAPNote format for viewer
+    const soapNote = {
+      _id: note.soapNote._id,
+      subjective: note.soapNote.subjective,
+      objective: note.soapNote.objective,
+      assessment: note.soapNote.assessment,
+      plan: note.soapNote.plan,
+      qualityScore: note.soapNote.qualityScore,
+      createdAt: note.createdAt,
+      updatedAt: note.createdAt, // Use createdAt as fallback
+      patientName: `${note.patient.firstName} ${note.patient.lastName}`,
+      patientId: note.patient._id,
+    };
+
+    // Open SOAP viewer
+    soapViewer.openViewer(soapNote);
+  }, [markAsRead, soapViewer]);
 
   /**
    * Handle taking action on a SOAP note
@@ -111,5 +129,6 @@ Shared On: ${new Date(note.createdAt).toLocaleString()}`;
     handleTakeAction,
     handleDownloadNote,
     closeActionModal,
+    soapViewer, // Expose SOAP viewer state
   };
 }

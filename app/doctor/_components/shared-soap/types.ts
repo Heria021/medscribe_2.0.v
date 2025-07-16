@@ -1,4 +1,5 @@
 import { Id } from "@/convex/_generated/dataModel";
+import { UseSOAPViewerReturn } from "@/components/ui/soap-viewer";
 
 // Base types from the database
 export interface Patient {
@@ -73,10 +74,11 @@ export interface UseSharedSOAPNotesReturn {
 export interface UseSharedSOAPActionsReturn {
   selectedNote: SharedSOAPNote | null;
   actionModalOpen: boolean;
-  handleViewSOAP: (sharedSOAPId: string, soapNoteId: string) => Promise<void>;
+  handleViewSOAP: (note: SharedSOAPNote) => Promise<void>;
   handleTakeAction: (note: SharedSOAPNote) => Promise<void>;
   handleDownloadNote: (note: SharedSOAPNote) => void;
   closeActionModal: () => void;
+  soapViewer: UseSOAPViewerReturn;
 }
 
 // Component props types
@@ -93,7 +95,7 @@ export interface SharedSOAPFiltersProps {
 export interface SharedSOAPNotesListProps {
   notes: SharedSOAPNote[];
   isLoading: boolean;
-  onViewSOAP: (sharedSOAPId: string, soapNoteId: string) => Promise<void>;
+  onViewSOAP: (note: SharedSOAPNote) => Promise<void>;
   onTakeAction: (note: SharedSOAPNote) => Promise<void>;
   onDownloadNote: (note: SharedSOAPNote) => void;
   formatDate: (timestamp: number) => string;
@@ -103,7 +105,7 @@ export interface SharedSOAPNotesListProps {
 
 export interface SharedSOAPNoteCardProps {
   note: SharedSOAPNote;
-  onViewSOAP: (sharedSOAPId: string, soapNoteId: string) => Promise<void>;
+  onViewSOAP: (note: SharedSOAPNote) => Promise<void>;
   onTakeAction: (note: SharedSOAPNote) => Promise<void>;
   onDownloadNote: (note: SharedSOAPNote) => void;
   formatDate: (timestamp: number) => string;

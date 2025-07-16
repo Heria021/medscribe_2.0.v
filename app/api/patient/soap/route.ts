@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { embedToRAG } from "@/lib/rag";
 
 export async function POST(request: NextRequest) {
   try {
@@ -139,37 +138,9 @@ export async function POST(request: NextRequest) {
 
     const soapNoteId = await convex.mutation(api.soapNotes.create, soapData);
 
-    // Store SOAP note in RAG system for chatbot
-    try {
-      // Format SOAP note data for embedding
-      const embeddingData = `SOAP Note - Date: ${new Date().toLocaleDateString()}
-Subjective: ${soapData.subjective}
-Objective: ${soapData.objective}
-Assessment: ${soapData.assessment}
-Plan: ${soapData.plan}`;
-
-      const embedResponse = await embedToRAG({
-        patient_id: patientId,
-        event_type: "soap",
-        data: embeddingData,
-        metadata: {
-          soap_note_id: soapNoteId,
-          date: new Date().toISOString(),
-          source: "audio_transcription",
-          quality_score: qualityScore,
-          processing_time: result.total_processing_time,
-          has_recommendations: !!(result.recommendations && result.recommendations.length > 0),
-          external_record_id: result.deliverables.ehr_record_id
-        }
-      });
-
-      if (!embedResponse.success) {
-        console.error("RAG embedding failed:", embedResponse.error);
-      }
-    } catch (ragError) {
-      console.error("Failed to embed SOAP note in RAG system:", ragError);
-      // Don't fail the entire request if RAG embedding fails
-    }
+    // TODO: Implement new RAG system integration here
+    // This will be replaced with the new RAG hooks system
+    console.log("SOAP note created successfully:", soapNoteId);
 
     // Return the processed result
     return NextResponse.json({

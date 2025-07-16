@@ -1,0 +1,257 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Stethoscope,
+  ArrowRight,
+  Users,
+  Bot,
+  FileText,
+  Calendar,
+  Pill,
+  ClipboardList,
+  MessageCircle,
+  Activity,
+  Brain,
+  Shield,
+  Zap,
+  CheckCircle,
+  Star,
+  TrendingUp,
+  Clock,
+  Award,
+  Mic,
+  BarChart3,
+  HeartHandshake
+} from "lucide-react";
+import Link from "next/link";
+
+export default function ForDoctorsPage() {
+  const doctorFeatures = [
+    {
+      icon: Users,
+      title: "Intelligent Patient Management",
+      description: "Comprehensive patient roster with AI-driven insights, treatment tracking, and automated care coordination workflows.",
+      benefits: ["Patient analytics dashboard", "Care coordination tools", "Risk assessment alerts", "Automated workflow triggers"],
+      gradient: "from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30",
+      borderColor: "border-blue-200 dark:border-blue-800",
+      iconBg: "bg-blue-500"
+    },
+    {
+      icon: FileText,
+      title: "AI-Powered Documentation",
+      description: "Generate professional SOAP notes from voice recordings with medical accuracy and automated quality scoring.",
+      benefits: ["Voice-to-text transcription", "Medical terminology accuracy", "Quality scoring system", "Template customization"],
+      gradient: "from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30",
+      borderColor: "border-green-200 dark:border-green-800",
+      iconBg: "bg-green-500"
+    },
+    {
+      icon: Bot,
+      title: "Clinical AI Assistant",
+      description: "Advanced medical AI that provides clinical decision support, drug interaction checks, and evidence-based recommendations.",
+      benefits: ["Clinical decision support", "Drug interaction alerts", "Evidence-based insights", "Diagnostic assistance"],
+      gradient: "from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30",
+      borderColor: "border-purple-200 dark:border-purple-800",
+      iconBg: "bg-purple-500"
+    },
+    {
+      icon: Calendar,
+      title: "Advanced Scheduling System",
+      description: "Manage complex schedules, handle reschedule requests, and optimize appointment slots with intelligent automation.",
+      benefits: ["Schedule optimization", "Conflict resolution", "Automated reminders", "Slot management"],
+      gradient: "from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30",
+      borderColor: "border-orange-200 dark:border-orange-800",
+      iconBg: "bg-orange-500"
+    },
+    {
+      icon: Pill,
+      title: "E-Prescribing Platform",
+      description: "Digital prescription management with drug interaction checks, pharmacy integration, and automated refill tracking.",
+      benefits: ["Digital prescriptions", "Pharmacy integration", "Interaction checks", "Refill automation"],
+      gradient: "from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30",
+      borderColor: "border-indigo-200 dark:border-indigo-800",
+      iconBg: "bg-indigo-500"
+    },
+    {
+      icon: ClipboardList,
+      title: "Clinical Analytics",
+      description: "Advanced reporting and analytics for patient outcomes, treatment effectiveness, and practice performance metrics.",
+      benefits: ["Outcome tracking", "Performance metrics", "Custom reports", "Trend analysis"],
+      gradient: "from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30",
+      borderColor: "border-red-200 dark:border-red-800",
+      iconBg: "bg-red-500"
+    }
+  ];
+
+  const stats = [
+    { icon: Clock, value: "75%", label: "Time Saved", description: "Average reduction in documentation time" },
+    { icon: TrendingUp, value: "95%", label: "Accuracy Rate", description: "AI transcription accuracy for medical notes" },
+    { icon: Users, value: "10,000+", label: "Doctors", description: "Healthcare professionals using MedScribe" },
+    { icon: Award, value: "4.9/5", label: "Rating", description: "Average user satisfaction score" }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-sm">
+                <Stethoscope className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-foreground">MedScribe</span>
+                <span className="text-xs text-muted-foreground font-medium">v2.0</span>
+              </div>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/for-patients" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                For Patients
+              </Link>
+              <ThemeToggle />
+              <Link href="/auth/select-role">
+                <Button size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50/50 via-background to-blue-100/50 dark:from-blue-950/20 dark:via-background dark:to-blue-900/20">
+        <div className="container mx-auto max-w-6xl text-center">
+          <Badge variant="secondary" className="px-6 py-3 text-base font-medium mb-8 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            <Stethoscope className="h-5 w-5 mr-2" />
+            Built for Healthcare Professionals
+          </Badge>
+          
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
+            Transform Your Practice with{" "}
+            <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+              AI-Powered Medicine
+            </span>
+          </h1>
+          
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
+            MedScribe empowers doctors with intelligent patient management, voice-powered documentation, 
+            and AI-driven clinical insights to deliver exceptional patient care while saving valuable time.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+            <Link href="/auth/select-role">
+              <Button size="lg" className="px-10 py-6 text-lg font-semibold">
+                <Stethoscope className="h-6 w-6 mr-3" />
+                Start Free Trial
+                <ArrowRight className="h-6 w-6 ml-3" />
+              </Button>
+            </Link>
+            <Link href="#features">
+              <Button variant="outline" size="lg" className="px-10 py-6 text-lg font-semibold">
+                Explore Features
+              </Button>
+            </Link>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="flex justify-center mb-3">
+                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <stat.icon className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                <div className="text-sm font-semibold text-foreground">{stat.label}</div>
+                <div className="text-xs text-muted-foreground">{stat.description}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-20">
+            <Badge variant="outline" className="px-4 py-2 text-sm font-medium mb-6">
+              <Brain className="h-4 w-4 mr-2" />
+              Comprehensive Doctor Platform
+            </Badge>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+              Everything You Need for Modern Medical Practice
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Streamline your workflow with AI-powered tools designed specifically for healthcare professionals
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {doctorFeatures.map((feature, index) => (
+              <Card
+                key={index}
+                className={`p-8 bg-gradient-to-br ${feature.gradient} ${feature.borderColor} border-2 hover:shadow-lg transition-all duration-300`}
+              >
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className={`w-16 h-16 ${feature.iconBg} rounded-2xl flex items-center justify-center`}>
+                      <feature.icon className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold">{feature.title}</h3>
+                  </div>
+                  
+                  <p className="text-lg mb-6 text-muted-foreground">
+                    {feature.description}
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {feature.benefits.map((benefit, benefitIndex) => (
+                      <div key={benefitIndex} className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="text-sm font-medium">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-4xl font-bold tracking-tight mb-6">
+            Ready to Transform Your Practice?
+          </h2>
+          <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Join thousands of doctors who trust MedScribe for their daily practice. 
+            Start your free trial today and experience the future of healthcare.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <Link href="/auth/select-role">
+              <Button size="lg" className="px-10 py-6 text-lg font-semibold">
+                <Stethoscope className="h-6 w-6 mr-3" />
+                Start Free Trial
+                <ArrowRight className="h-6 w-6 ml-3" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span>30-day free trial • No credit card required</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

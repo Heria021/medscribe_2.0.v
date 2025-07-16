@@ -101,7 +101,7 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
               <div className="flex items-center gap-1.5">
                 <Button
                   size="sm"
-                  onClick={() => onViewSOAP(note._id, note.soapNote!._id)}
+                  onClick={() => onViewSOAP(note)}
                   className="h-7 px-2 text-xs"
                 >
                   <Eye className="h-3 w-3 mr-1" />

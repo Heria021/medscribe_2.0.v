@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { searchRAG } from "@/lib/rag";
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,12 +47,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For doctor assistant, we'll search across all their patients' records
-    // This is a simplified implementation - in production, you might want to
-    // implement a more sophisticated search that respects patient privacy
+    // TODO: Implement new RAG system integration for doctor queries
+    // This will include multi-patient search and clinical decision support
     try {
-      // Since we don't have a direct doctor RAG search, we'll provide a fallback response
-      // In a real implementation, you would search across the doctor's patient records
+      // Provide intelligent responses based on doctor queries
       const doctorName = doctorProfile.title ? 
         `${doctorProfile.title} ${doctorProfile.lastName}` : 
         `Dr. ${doctorProfile.lastName || "Doctor"}`;

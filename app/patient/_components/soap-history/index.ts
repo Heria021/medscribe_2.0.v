@@ -20,6 +20,9 @@ export {
   SOAPNotesDisplay,
 } from "./components";
 
+// Universal SOAP Viewer (new)
+export { SOAPViewer, useSOAPViewer } from "@/components/ui/soap-viewer";
+
 // Main exports - hooks (simplified approach)
 export {
   useSOAPStats,

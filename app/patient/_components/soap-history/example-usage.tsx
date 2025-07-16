@@ -15,6 +15,8 @@ import {
   useSOAPNoteDialogComponent,
   SOAPDocumentViewerWrapper,
   useSOAPDocumentViewerComponent,
+  SOAPViewer,
+  useSOAPViewer,
   type SOAPNote,
 } from "./index";
 
@@ -34,6 +36,9 @@ export function BasicSOAPHistoryExample({ patientId }: { patientId: string }) {
     loading,
     patientProfile,
   } = useSOAPHistory(patientId);
+
+  // New Universal SOAP Viewer
+  const soapViewer = useSOAPViewer();
 
   return (
     <SOAPErrorBoundary>
@@ -472,6 +477,98 @@ export function SOAPDocumentViewerHookExample({ notes }: { notes: SOAPNote[] }) 
             </Button>
           ))}
         </div>
+      </div>
+    </SOAPErrorBoundary>
+  );
+}
+
+/**
+ * Example 9: Using the New Universal SOAP Viewer
+ * Shows how to use the new full-screen overlay SOAP viewer
+ */
+export function UniversalSOAPViewerExample({ notes }: { notes: SOAPNote[] }) {
+  const soapViewer = useSOAPViewer();
+
+  const handleDownload = useCallback((note: SOAPNote) => {
+    const content = `SOAP Note - ${new Date(note.createdAt).toLocaleDateString()}
+
+SUBJECTIVE: ${note.subjective}
+OBJECTIVE: ${note.objective}
+ASSESSMENT: ${note.assessment}
+PLAN: ${note.plan}`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `soap-note-${new Date(note.createdAt).toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleShare = useCallback((note: SOAPNote) => {
+    console.log("Share note:", note._id);
+    // Implement share functionality
+  }, []);
+
+  return (
+    <SOAPErrorBoundary>
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Universal SOAP Viewer</h3>
+        <p className="text-sm text-muted-foreground">
+          Full-screen overlay with document-like layout, enhanced features, and professional presentation
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {notes.map(note => (
+            <div
+              key={note._id}
+              className="p-4 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+              onClick={() => soapViewer.openViewer(note)}
+            >
+              <h4 className="font-medium">📋 SOAP Clinical Note</h4>
+              <p className="text-sm text-muted-foreground">
+                {new Date(note.createdAt).toLocaleDateString()}
+              </p>
+              {note.qualityScore && (
+                <div className="mt-2">
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                    Quality: {note.qualityScore}%
+                  </span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                {note.subjective.substring(0, 100)}...
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Universal SOAP Viewer - Full Screen Overlay (No Dialog Constraints) */}
+        <SOAPViewer
+          note={soapViewer.selectedNote}
+          open={soapViewer.isOpen}
+          onOpenChange={soapViewer.setOpen}
+          config={{
+            showBackButton: true,
+            showActions: true,
+            showPatientInfo: false, // Patient context - no need to show patient info
+            showMetadata: true,
+            allowPrint: true,
+            allowDownload: true,
+            allowCopy: true,
+            allowShare: true,
+            backButtonText: "Back to History",
+            documentTitle: "SOAP Clinical Note"
+          }}
+          actions={{
+            onBack: soapViewer.closeViewer,
+            onDownload: handleDownload,
+            onShare: handleShare,
+          }}
+        />
       </div>
     </SOAPErrorBoundary>
   );
