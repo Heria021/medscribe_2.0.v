@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { UseAppointmentActionsReturn, ActionLoadingStates, ActionErrors } from "../types";
+import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 /**
  * Custom hook for handling appointment actions (cancel, reschedule, join)
@@ -67,11 +68,12 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
 
   // Cancel appointment action
   const cancelAppointment = useCallback(async (
-    appointmentId: Id<"appointments">, 
-    reason: string = "Cancelled by patient"
+    appointmentId: Id<"appointments">,
+    reason: string = "Cancelled by patient",
+    appointmentData?: any // Optional: for RAG embedding
   ) => {
     const appointmentIdStr = appointmentId.toString();
-    
+
     try {
       setLoading("cancel", appointmentIdStr, true);
       setError("cancel", appointmentIdStr, null);
@@ -80,6 +82,20 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
         appointmentId,
         reason,
       });
+
+      // 🔥 Embed cancellation into RAG system (production-ready)
+      if (appointmentData) {
+        appointmentRAGHooks.onAppointmentCancelled({
+          appointmentId: appointmentIdStr,
+          doctorId: appointmentData.doctor?._id || appointmentData.doctorId,
+          patientId: appointmentData.patient?._id || appointmentData.patientId,
+          appointmentDateTime: appointmentData.appointmentDateTime,
+          appointmentType: appointmentData.appointmentType,
+          visitReason: appointmentData.visitReason,
+          location: appointmentData.location,
+          notes: appointmentData.notes,
+        }, reason, 'patient');
+      }
 
       // Success - loading will be set to false automatically
     } catch (error) {

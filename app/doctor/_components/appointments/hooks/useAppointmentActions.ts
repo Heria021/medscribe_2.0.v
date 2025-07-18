@@ -3,6 +3,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { UseAppointmentActionsReturn, Appointment } from "../types";
+import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 /**
  * Custom hook for handling appointment actions (UPDATED for new slot-based system)
@@ -60,12 +61,29 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
   }, [cancelWithSlotRelease, withLoading]);
 
   // Confirm appointment
-  const confirmAppointment = useCallback(async (appointmentId: Id<"appointments">) => {
+  const confirmAppointment = useCallback(async (
+    appointmentId: Id<"appointments">,
+    appointmentData?: any // Optional: for RAG embedding
+  ) => {
     await withLoading(appointmentId, "confirm", async () => {
       await updateAppointmentStatus({
         appointmentId,
         status: "confirmed"
       });
+
+      // 🔥 Embed confirmation into RAG system (production-ready)
+      if (appointmentData) {
+        appointmentRAGHooks.onAppointmentConfirmed({
+          appointmentId: appointmentId,
+          doctorId: appointmentData.doctor?._id || appointmentData.doctorId,
+          patientId: appointmentData.patient?._id || appointmentData.patientId,
+          appointmentDateTime: appointmentData.appointmentDateTime,
+          appointmentType: appointmentData.appointmentType,
+          visitReason: appointmentData.visitReason,
+          location: appointmentData.location,
+          notes: appointmentData.notes,
+        }, 'doctor');
+      }
     });
   }, [updateAppointmentStatus, withLoading]);
 
@@ -80,12 +98,32 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
   }, [updateAppointmentStatus, withLoading]);
 
   // Complete appointment
-  const completeAppointment = useCallback(async (appointmentId: Id<"appointments">) => {
+  const completeAppointment = useCallback(async (
+    appointmentId: Id<"appointments">,
+    appointmentData?: any, // Optional: for RAG embedding
+    duration?: number,
+    notes?: string
+  ) => {
     await withLoading(appointmentId, "complete", async () => {
       await updateAppointmentStatus({
         appointmentId,
-        status: "completed"
+        status: "completed",
+        notes
       });
+
+      // 🔥 Embed completion into RAG system (production-ready)
+      if (appointmentData) {
+        appointmentRAGHooks.onAppointmentCompleted({
+          appointmentId: appointmentId,
+          doctorId: appointmentData.doctor?._id || appointmentData.doctorId,
+          patientId: appointmentData.patient?._id || appointmentData.patientId,
+          appointmentDateTime: appointmentData.appointmentDateTime,
+          appointmentType: appointmentData.appointmentType,
+          visitReason: appointmentData.visitReason,
+          location: appointmentData.location,
+          notes: appointmentData.notes,
+        }, duration, notes);
+      }
     });
   }, [updateAppointmentStatus, withLoading]);
 
