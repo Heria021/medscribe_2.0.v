@@ -28,6 +28,59 @@ export const create = mutation({
   },
 });
 
+// Create an enhanced SOAP note with AI analysis data
+export const createEnhanced = mutation({
+  args: {
+    patientId: v.id("patients"),
+    audioRecordingId: v.optional(v.id("audioRecordings")),
+    // Legacy SOAP fields (required for backward compatibility)
+    subjective: v.string(),
+    objective: v.string(),
+    assessment: v.string(),
+    plan: v.string(),
+    highlightedHtml: v.optional(v.string()),
+    qualityScore: v.optional(v.number()),
+    processingTime: v.optional(v.string()),
+    recommendations: v.optional(v.array(v.string())),
+    externalRecordId: v.optional(v.string()),
+    googleDocUrl: v.optional(v.string()),
+    // Enhanced fields
+    sessionId: v.optional(v.string()),
+    specialty: v.optional(v.string()),
+    specialtyConfidence: v.optional(v.number()),
+    focusAreas: v.optional(v.array(v.string())),
+    // Quality metrics
+    completenessScore: v.optional(v.number()),
+    clinicalAccuracy: v.optional(v.number()),
+    documentationQuality: v.optional(v.number()),
+    redFlags: v.optional(v.array(v.string())),
+    missingInformation: v.optional(v.array(v.string())),
+    // Safety assessment
+    isSafe: v.optional(v.boolean()),
+    safetyRedFlags: v.optional(v.array(v.string())),
+    criticalItems: v.optional(v.array(v.string())),
+    // Transcription data
+    transcriptionText: v.optional(v.string()),
+    transcriptionConfidence: v.optional(v.number()),
+    transcriptionLanguage: v.optional(v.string()),
+    transcriptionDuration: v.optional(v.number()),
+    // Enhanced structured data (JSON strings)
+    structuredSubjective: v.optional(v.string()),
+    structuredObjective: v.optional(v.string()),
+    structuredAssessment: v.optional(v.string()),
+    structuredPlan: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    return await ctx.db.insert("soapNotes", {
+      ...args,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 // Get SOAP notes by patient ID
 export const getByPatientId = query({
   args: { patientId: v.id("patients") },

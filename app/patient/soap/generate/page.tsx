@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import {
-  SOAPGenerateHeader,
   SOAPGenerateContent,
   SOAPGenerateSkeleton,
   SOAPErrorBoundary,
@@ -73,18 +72,8 @@ export default function GenerateSOAPPage() {
 
   return (
     <SOAPErrorBoundary>
-      <div className="flex flex-col h-full w-full overflow-hidden gap-4">
-        {/* Header - Mobile First */}
-        <div className="flex-shrink-0">
-          <SOAPGenerateHeader patientProfile={patientProfile} />
-        </div>
-
-        {/* Main Content - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="pb-4 sm:pb-6">
-            <SOAPGenerateContent patientProfile={patientProfile} />
-          </div>
-        </div>
+      <div className="h-full w-full flex flex-col min-h-0">
+        <SOAPGenerateContent patientProfile={patientProfile} className="h-full" />
       </div>
     </SOAPErrorBoundary>
   );

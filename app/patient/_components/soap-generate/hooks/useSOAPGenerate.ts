@@ -1,239 +1,406 @@
-"use client";
+/**
+ * Main hook for SOAP generation functionality
+ * Handles both audio and text processing with the new enhanced API
+ */
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { PatientProfile, UseSOAPGenerateReturn, ProcessingState } from "../types";
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMutation } from 'convex/react';
+import { toast } from 'sonner';
+import { api } from '@/convex/_generated/api';
+import { medscribeAPI } from '@/lib/api/medscribe-api';
+import {
+  UseSOAPGenerateReturn,
+  SOAPGenerationState,
+  PatientProfile,
+  SOAPGenerationError,
+} from '../types';
+import {
+  ProcessingState,
+  SOAPProcessingResponse,
+} from '@/lib/types/soap-api';
+
+const initialProcessingState: ProcessingState = {
+  isProcessing: false,
+  progress: 0,
+  stage: 'uploading',
+  message: '',
+};
+
+const initialState: SOAPGenerationState = {
+  isProcessing: false,
+  processingState: initialProcessingState,
+  audioBlob: null,
+  fileName: '',
+  textInput: '',
+  mode: 'audio',
+  error: null,
+  result: null,
+};
 
 export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerateReturn {
   const router = useRouter();
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [fileName, setFileName] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<SOAPGenerationState>(initialState);
   
-  const [processingState, setProcessingState] = useState<ProcessingState>({
-    isProcessing: false,
-    progress: 0,
-    stage: 'uploading',
-    message: ''
-  });
+  // Convex mutation for saving SOAP notes
+  const createSOAPNote = useMutation(api.soapNotes.createEnhanced);
 
-  const handleAudioReady = useCallback((blob: Blob, name: string) => {
-    setAudioBlob(blob);
-    setFileName(name);
-    setError(null);
+  // ============================================================================
+  // STATE MANAGEMENT ACTIONS
+  // ============================================================================
+
+  const setMode = useCallback((mode: 'audio' | 'text' | 'conversation') => {
+    setState(prev => ({ ...prev, mode, error: null }));
+  }, []);
+
+  const setTextInput = useCallback((textInput: string) => {
+    setState(prev => ({ ...prev, textInput, error: null }));
+  }, []);
+
+  const handleAudioReady = useCallback((blob: Blob, fileName: string) => {
+    setState(prev => ({
+      ...prev,
+      audioBlob: blob,
+      fileName,
+      error: null,
+    }));
   }, []);
 
   const handleAudioRemove = useCallback(() => {
-    setAudioBlob(null);
-    setFileName("");
-    setError(null);
+    setState(prev => ({
+      ...prev,
+      audioBlob: null,
+      fileName: '',
+      error: null,
+    }));
   }, []);
 
-  const handleGenerateSOAP = useCallback(async () => {
-    if (!audioBlob || !patientProfile) {
-      toast.error("Please record or upload an audio file first");
+  const clearError = useCallback(() => {
+    setState(prev => ({ ...prev, error: null }));
+  }, []);
+
+  const reset = useCallback(() => {
+    setState(initialState);
+  }, []);
+
+  // ============================================================================
+  // PROCESSING ACTIONS
+  // ============================================================================
+
+  const updateProcessingState = useCallback((processingState: ProcessingState) => {
+    setState(prev => ({
+      ...prev,
+      isProcessing: processingState.isProcessing,
+      processingState,
+    }));
+  }, []);
+
+  const handleError = useCallback((error: unknown, type: SOAPGenerationError['type'] = 'unknown') => {
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    
+    const soapError: SOAPGenerationError = {
+      type,
+      message: errorMessage,
+      details: error instanceof Error ? error.stack : undefined,
+      timestamp: Date.now(),
+    };
+
+    setState(prev => ({
+      ...prev,
+      isProcessing: false,
+      processingState: {
+        ...prev.processingState,
+        isProcessing: false,
+        stage: 'error',
+        message: errorMessage,
+        error: errorMessage,
+      },
+      error: errorMessage,
+    }));
+
+    toast.error(errorMessage);
+    console.error('SOAP Generation Error:', soapError);
+  }, []);
+
+  const handleTextProcess = useCallback(async () => {
+    if (!patientProfile) {
+      handleError(new Error('Patient profile is required'), 'validation');
       return;
     }
 
-    setIsProcessing(true);
-    setError(null);
-    setProcessingState({
-      isProcessing: true,
-      progress: 0,
-      stage: 'uploading',
-      message: 'Uploading audio file...'
-    });
+    if (!state.textInput.trim()) {
+      handleError(new Error('Please enter medical text to process'), 'validation');
+      return;
+    }
+
+    // Validate text input
+    const validation = medscribeAPI.validateText(state.textInput);
+    if (!validation.valid) {
+      handleError(new Error(validation.error || 'Invalid text input'), 'validation');
+      return;
+    }
 
     try {
-      // Simulate processing stages with delays
-      setProcessingState(prev => ({
+      setState(prev => ({ ...prev, isProcessing: true, error: null }));
+
+      const result = await medscribeAPI.processText(
+        state.textInput,
+        patientProfile._id,
+        updateProcessingState
+      );
+
+      if (result.status === 'error') {
+        throw new Error(result.message);
+      }
+
+      setState(prev => ({
         ...prev,
-        progress: 25,
-        stage: 'transcribing',
-        message: 'Transcribing audio...'
+        result,
+        isProcessing: false,
+        processingState: {
+          ...prev.processingState,
+          isProcessing: false,
+          stage: 'complete',
+          message: 'SOAP notes generated successfully!',
+        },
       }));
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success('SOAP notes generated successfully!');
 
-      setProcessingState(prev => ({
+    } catch (error) {
+      handleError(error, 'processing');
+    }
+  }, [patientProfile, state.textInput, updateProcessingState, handleError]);
+
+  const handleAudioProcess = useCallback(async () => {
+    if (!patientProfile) {
+      handleError(new Error('Patient profile is required'), 'validation');
+      return;
+    }
+
+    if (!state.audioBlob) {
+      handleError(new Error('Please record or upload an audio file'), 'validation');
+      return;
+    }
+
+    // Convert blob to file for validation
+    const audioFile = new File([state.audioBlob], state.fileName, {
+      type: state.audioBlob.type,
+    });
+
+    // Validate audio file
+    const validation = medscribeAPI.validateAudioFile(audioFile);
+    if (!validation.valid) {
+      handleError(new Error(validation.error || 'Invalid audio file'), 'validation');
+      return;
+    }
+
+    try {
+      setState(prev => ({ ...prev, isProcessing: true, error: null }));
+
+      const result = await medscribeAPI.processAudio(
+        audioFile,
+        patientProfile._id,
+        updateProcessingState
+      );
+
+      if (result.status === 'error') {
+        throw new Error(result.message);
+      }
+
+      setState(prev => ({
         ...prev,
-        progress: 75,
+        result,
+        isProcessing: false,
+        processingState: {
+          ...prev.processingState,
+          isProcessing: false,
+          stage: 'complete',
+          message: 'SOAP notes generated successfully!',
+        },
+      }));
+
+      toast.success('SOAP notes generated successfully!');
+
+    } catch (error) {
+      handleError(error, 'processing');
+    }
+  }, [patientProfile, state.audioBlob, state.fileName, updateProcessingState, handleError]);
+
+  const handleConversationProcess = useCallback(async () => {
+    if (!patientProfile) {
+      handleError(new Error('Patient profile is required'), 'validation');
+      return;
+    }
+
+    try {
+      setState(prev => ({ ...prev, isProcessing: true, error: null }));
+
+      // Simulate conversation processing with mock data
+      updateProcessingState({
+        isProcessing: true,
+        progress: 20,
+        stage: 'analyzing',
+        message: 'Analyzing conversation...'
+      });
+
+      // Mock delay for processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      updateProcessingState({
+        isProcessing: true,
+        progress: 60,
         stage: 'generating',
-        message: 'Generating SOAP notes...'
-      }));
+        message: 'Generating SOAP notes from conversation...'
+      });
 
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Create a detailed default SOAP note
-      const defaultSOAPNote = {
-        subjective: `Chief Complaint: Patient presents with persistent cough and shortness of breath for the past 2 weeks.
-
-History of Present Illness: ${patientProfile.firstName} ${patientProfile.lastName} is a ${patientProfile.dateOfBirth ? calculateAge(patientProfile.dateOfBirth) : 'adult'}-year-old ${patientProfile.gender || 'patient'} who reports developing a dry, persistent cough approximately 2 weeks ago. The cough is worse at night and interferes with sleep. Patient also notes mild shortness of breath with exertion, which is new for them. No fever, chills, or chest pain reported. Patient denies recent travel, sick contacts, or known allergen exposure.
-
-Review of Systems:
-- Constitutional: Denies fever, chills, night sweats, or unintentional weight loss
-- Respiratory: Positive for dry cough and mild dyspnea on exertion, negative for chest pain, wheezing, or hemoptysis
-- Cardiovascular: Denies chest pain, palpitations, or lower extremity edema
-- GI: Denies nausea, vomiting, or changes in appetite
-- Other systems reviewed and negative
-
-Past Medical History: ${patientProfile.medicalHistory?.conditions?.join(', ') || 'No significant past medical history reported'}
-Medications: ${patientProfile.medicalHistory?.medications?.join(', ') || 'No current medications reported'}
-Allergies: ${patientProfile.medicalHistory?.allergies?.join(', ') || 'NKDA (No Known Drug Allergies)'}
-Social History: Patient denies tobacco use, occasional alcohol consumption, no illicit drug use
-Family History: Non-contributory`,
-
-        objective: `Vital Signs:
-- Temperature: 98.6°F (37.0°C)
-- Blood Pressure: 128/82 mmHg
-- Heart Rate: 88 bpm, regular
-- Respiratory Rate: 18 breaths/min
-- Oxygen Saturation: 96% on room air
-- BMI: 24.2 kg/m²
-
-Physical Examination:
-General Appearance: Patient appears well-developed, well-nourished, and in no acute distress. Alert and oriented x3.
-
-HEENT:
-- Head: Normocephalic, atraumatic
-- Eyes: PERRL, EOMI, conjunctivae clear
-- Ears: TMs clear bilaterally, no erythema or effusion
-- Nose: Nasal passages clear, no discharge
-- Throat: Oropharynx clear, no erythema or exudate
-
-Neck: Supple, no lymphadenopathy, no thyromegaly, no JVD
-
-Cardiovascular: Regular rate and rhythm, S1 and S2 normal, no murmurs, rubs, or gallops. No peripheral edema.
-
-Respiratory: Lungs clear to auscultation bilaterally, no wheezes, rales, or rhonchi. Good air movement throughout. Mild occasional dry cough noted during examination.
-
-Abdomen: Soft, non-tender, non-distended, bowel sounds present in all quadrants, no organomegaly
-
-Extremities: No clubbing, cyanosis, or edema. Pulses 2+ bilaterally.
-
-Neurological: Alert and oriented x3, cranial nerves II-XII grossly intact, motor strength 5/5 in all extremities
-
-Skin: Warm, dry, no rashes or lesions noted`,
-
-        assessment: `Primary Diagnosis:
-1. Acute bronchitis (J20.9) - Most likely viral etiology given the clinical presentation of persistent dry cough and mild dyspnea without fever or purulent sputum production.
-
-Differential Diagnoses Considered:
-2. Upper respiratory tract infection - Less likely given the duration and lack of upper respiratory symptoms
-3. Allergic rhinitis with post-nasal drip - Possible but patient denies known allergen exposure
-4. Early pneumonia - Less likely given clear lung sounds and absence of fever
-5. Asthma exacerbation - Possible but no known history of asthma and no wheezing present
-
-Clinical Reasoning:
-The patient's presentation of a 2-week persistent dry cough with mild exertional dyspnea, in the absence of fever, purulent sputum, or abnormal lung sounds, is most consistent with acute bronchitis. The viral etiology is supported by the gradual onset, dry nature of the cough, and the patient's overall well appearance. The clear lung fields on physical examination help rule out pneumonia, while the absence of wheezing makes asthma less likely.
-
-Risk Stratification: Low risk given stable vital signs, clear lung examination, and absence of concerning symptoms.`,
-
-        plan: `Immediate Management:
-1. Symptomatic treatment for acute bronchitis:
-   - Recommend over-the-counter dextromethorphan 15mg every 4 hours as needed for cough suppression
-   - Honey and warm tea for throat soothing and cough relief
-   - Adequate hydration (8-10 glasses of water daily)
-   - Humidifier use, especially at night
-
-2. Patient Education:
-   - Explained that acute bronchitis is typically viral and self-limiting (7-14 days)
-   - Discussed when to seek immediate medical attention (fever >101°F, worsening shortness of breath, chest pain, blood in sputum)
-   - Advised rest and gradual return to normal activities as tolerated
-
-3. Follow-up Care:
-   - Return to clinic in 1 week if symptoms persist or worsen
-   - Sooner if develops fever, chest pain, or significant worsening of dyspnea
-   - Consider chest X-ray if symptoms persist beyond 3 weeks
-
-4. Preventive Measures:
-   - Hand hygiene education
-   - Avoid close contact with sick individuals
-   - Consider annual influenza vaccination if not up to date
-
-5. Monitoring:
-   - Patient advised to monitor symptoms daily
-   - Keep a symptom diary noting cough frequency and any changes in sputum production
-   - Return if no improvement in 7-10 days or if symptoms worsen
-
-Prognosis: Excellent with expected full recovery within 2-3 weeks with conservative management.
-
-Next Appointment: Scheduled for 1 week follow-up or PRN if symptoms worsen.`
+      // Mock SOAP result from conversation
+      const mockResult = {
+        status: 'success' as const,
+        message: 'SOAP notes generated successfully from conversation',
+        timestamp: new Date().toISOString(),
+        data: {
+          status: 'completed' as const,
+          message: 'Conversation analysis complete',
+          session_id: `conv_${Date.now()}`,
+          transcription: {
+            text: 'Conversation-based medical interview completed',
+            confidence: 0.95,
+            language: 'en',
+            duration: 300
+          },
+          validation: {
+            validated_text: 'Validated conversation content',
+            corrections: [],
+            flags: [],
+            confidence: 0.95
+          },
+          specialty_detection: {
+            detected_specialty: 'Emergency Medicine',
+            confidence: 0.92,
+            focus_areas: ['Acute Coronary Syndrome', 'Chest Pain Evaluation']
+          },
+          soap_notes: {
+            subjective: '58-year-old male with acute onset chest pain x 2 hours. Pain described as heavy pressure in center of chest, radiating to left arm and jaw. Associated with shortness of breath, diaphoresis, and nausea. Onset while mowing lawn.',
+            objective: 'Vital Signs: BP 160/95, HR 95, O2 sat 96%. Patient appears uncomfortable, diaphoretic. EKG shows acute changes consistent with ACS.',
+            assessment: 'Acute coronary syndrome/STEMI. Multiple cardiac risk factors including HTN, DM, smoking history, and strong family history of premature CAD.',
+            plan: 'ACS protocol initiated, cardiology consultation, plan for cardiac catheterization. Patient education provided, family notification arranged.',
+            icd_codes: ['I21.9', 'I25.10']
+          },
+          quality_metrics: {
+            completeness_score: 0.92,
+            clinical_accuracy: 0.95,
+            documentation_quality: 0.88,
+            red_flags: ['Acute chest pain with radiation', 'Multiple cardiac risk factors'],
+            missing_information: ['Allergies confirmation', 'Current medications dosages']
+          },
+          safety_check: {
+            is_safe: false,
+            red_flags: ['Acute coronary syndrome', 'High-risk chest pain'],
+            critical_items: ['Immediate cardiology consultation required', 'Continuous cardiac monitoring']
+          },
+          enhanced_pipeline: true
+        }
       };
 
-      // Import Convex client and create SOAP note
-      const { ConvexHttpClient } = await import("convex/browser");
-      const { api } = await import("@/convex/_generated/api");
-
-      const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
-      const soapNoteId = await convex.mutation(api.soapNotes.create, {
-        patientId: patientProfile._id as any,
-        subjective: defaultSOAPNote.subjective,
-        objective: defaultSOAPNote.objective,
-        assessment: defaultSOAPNote.assessment,
-        plan: defaultSOAPNote.plan,
-        qualityScore: 92,
-        processingTime: "2.3 seconds",
-        recommendations: [
-          "Consider chest X-ray if symptoms persist beyond 3 weeks",
-          "Monitor for signs of bacterial superinfection",
-          "Ensure patient is up to date with preventive care including influenza vaccination"
-        ]
-      });
-
-      setProcessingState(prev => ({
+      setState(prev => ({
         ...prev,
-        progress: 100,
-        stage: 'complete',
-        message: 'SOAP notes generated successfully!'
+        result: mockResult,
+        isProcessing: false,
+        processingState: {
+          ...prev.processingState,
+          isProcessing: false,
+          stage: 'complete',
+          message: 'SOAP notes generated successfully from conversation!',
+        },
       }));
 
-      toast.success("Default SOAP note generated successfully!");
-
-      // Redirect to the generated SOAP note
-      router.push(`/patient/soap/view/${soapNoteId}`);
+      toast.success('SOAP notes generated successfully from conversation!');
 
     } catch (error) {
-      console.error('Error generating SOAP:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to generate SOAP note. Please try again.";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsProcessing(false);
-      setProcessingState(prev => ({
-        ...prev,
-        isProcessing: false
-      }));
+      handleError(error, 'processing');
     }
-  }, [audioBlob, patientProfile, fileName, router]);
+  }, [patientProfile, updateProcessingState, handleError]);
 
-  // Helper function to calculate age from date of birth
-  const calculateAge = (dateOfBirth: string): number => {
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
+  // ============================================================================
+  // SAVE SOAP NOTE (will be implemented after database schema update)
+  // ============================================================================
 
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  const saveSOAPNote = useCallback(async (result: SOAPProcessingResponse) => {
+    if (!patientProfile || !result.data) {
+      throw new Error('Missing required data for saving SOAP note');
     }
 
-    return age;
-  };
+    try {
+      // Use the enhanced create mutation with full data structure
+      const soapNoteId = await createSOAPNote({
+        patientId: patientProfile._id,
+        // Legacy SOAP fields (for backward compatibility)
+        subjective: result.data.soap_notes.subjective,
+        objective: result.data.soap_notes.objective,
+        assessment: result.data.soap_notes.assessment,
+        plan: result.data.soap_notes.plan,
+        qualityScore: Math.round(result.data.quality_metrics.completeness_score * 100),
+        processingTime: `${result.data.transcription?.duration || 0} seconds`,
+        recommendations: result.data.quality_metrics.missing_information || [],
+        // Enhanced fields
+        sessionId: result.data.session_id,
+        specialty: result.data.specialty_detection.detected_specialty,
+        specialtyConfidence: result.data.specialty_detection.confidence,
+        focusAreas: result.data.specialty_detection.focus_areas,
+        // Quality metrics
+        completenessScore: result.data.quality_metrics.completeness_score,
+        clinicalAccuracy: result.data.quality_metrics.clinical_accuracy,
+        documentationQuality: result.data.quality_metrics.documentation_quality,
+        redFlags: result.data.quality_metrics.red_flags,
+        missingInformation: result.data.quality_metrics.missing_information,
+        // Safety assessment
+        isSafe: result.data.safety_check.is_safe,
+        safetyRedFlags: result.data.safety_check.red_flags,
+        criticalItems: result.data.safety_check.critical_items,
+        // Transcription data
+        transcriptionText: result.data.transcription?.text,
+        transcriptionConfidence: result.data.transcription?.confidence,
+        transcriptionLanguage: result.data.transcription?.language,
+        transcriptionDuration: result.data.transcription?.duration,
+        // Enhanced structured data (serialize complex objects as JSON)
+        structuredSubjective: JSON.stringify(result.data.soap_notes.soap_notes?.subjective || {}),
+        structuredObjective: JSON.stringify(result.data.soap_notes.soap_notes?.objective || {}),
+        structuredAssessment: JSON.stringify(result.data.soap_notes.soap_notes?.assessment || {}),
+        structuredPlan: JSON.stringify(result.data.soap_notes.soap_notes?.plan || {}),
+      });
+
+      toast.success('SOAP note saved successfully!');
+
+      // Navigate to the saved SOAP note
+      router.push(`/patient/soap/view/${soapNoteId}`);
+
+      return soapNoteId;
+    } catch (error) {
+      handleError(error, 'processing');
+      throw error;
+    }
+  }, [patientProfile, createSOAPNote, router, handleError]);
+
+  // ============================================================================
+  // RETURN HOOK INTERFACE
+  // ============================================================================
 
   return {
-    patientProfile,
-    audioBlob,
-    fileName,
-    isProcessing,
-    processingState,
-    handleAudioReady,
-    handleAudioRemove,
-    handleGenerateSOAP,
-    loading: false,
-    error,
+    state,
+    actions: {
+      setMode,
+      setTextInput,
+      handleAudioReady,
+      handleAudioRemove,
+      handleTextProcess,
+      handleAudioProcess,
+      handleConversationProcess,
+      clearError,
+      reset,
+      saveSOAPNote,
+    },
   };
 }

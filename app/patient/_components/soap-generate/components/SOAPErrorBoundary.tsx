@@ -1,71 +1,196 @@
+/**
+ * SOAP Error Boundary Component
+ * Catches and handles errors in the SOAP generation interface
+ */
+
 "use client";
 
 import * as React from "react";
-import { Component, ReactNode } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
-}
-
-interface State {
+interface SOAPErrorBoundaryState {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
 }
 
-export class SOAPErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+interface SOAPErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ComponentType<{
+    error: Error;
+    resetError: () => void;
+  }>;
+}
+
+export class SOAPErrorBoundary extends React.Component<
+  SOAPErrorBoundaryProps,
+  SOAPErrorBoundaryState
+> {
+  constructor(props: SOAPErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): Partial<SOAPErrorBoundaryState> {
+    return {
+      hasError: true,
+      error,
+    };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('SOAP Generate Error:', error, errorInfo);
+    console.error('SOAP Generation Error:', error, errorInfo);
+    this.setState({
+      error,
+      errorInfo,
+    });
   }
 
-  handleRetry = () => {
-    this.setState({ hasError: false, error: undefined });
+  resetError = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
   };
 
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return this.props.fallback;
+        const FallbackComponent = this.props.fallback;
+        return (
+          <FallbackComponent
+            error={this.state.error!}
+            resetError={this.resetError}
+          />
+        );
       }
 
-      return (
-        <div className="h-full flex items-center justify-center p-4">
-          <Card className="max-w-md w-full">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              <CardTitle className="text-lg">Something went wrong</CardTitle>
-              <CardDescription>
-                An error occurred while loading the SOAP generation interface.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {this.state.error?.message || "An unexpected error occurred"}
-              </p>
-              <Button onClick={this.handleRetry} className="w-full">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
+      return <DefaultErrorFallback error={this.state.error!} resetError={this.resetError} />;
     }
 
     return this.props.children;
   }
+}
+
+// ============================================================================
+// DEFAULT ERROR FALLBACK
+// ============================================================================
+
+interface DefaultErrorFallbackProps {
+  error: Error;
+  resetError: () => void;
+}
+
+function DefaultErrorFallback({ error, resetError }: DefaultErrorFallbackProps) {
+  const handleReload = () => {
+    window.location.reload();
+  };
+
+  const handleGoHome = () => {
+    window.location.href = '/patient/dashboard';
+  };
+
+  return (
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-3 bg-destructive/10 rounded-full w-fit">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl">Something went wrong</CardTitle>
+            <CardDescription>
+              An error occurred while loading the SOAP generation interface.
+              This might be a temporary issue.
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            {/* Error Details (in development) */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="p-3 bg-muted rounded-lg">
+                <h4 className="font-medium text-sm mb-2">Error Details:</h4>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {error.message}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={resetError}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
+              
+              <Button
+                onClick={handleReload}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reload Page
+              </Button>
+              
+              <Button
+                onClick={handleGoHome}
+                className="flex items-center gap-2"
+              >
+                <Home className="h-4 w-4" />
+                Go to Dashboard
+              </Button>
+            </div>
+
+            {/* Help Text */}
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                If the problem persists, please contact support or try again later.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// HOOK FOR FUNCTIONAL COMPONENTS
+// ============================================================================
+
+export function useErrorHandler() {
+  const [error, setError] = React.useState<Error | null>(null);
+
+  const resetError = React.useCallback(() => {
+    setError(null);
+  }, []);
+
+  const handleError = React.useCallback((error: Error | string) => {
+    const errorObj = typeof error === 'string' ? new Error(error) : error;
+    setError(errorObj);
+    console.error('SOAP Generation Error:', errorObj);
+  }, []);
+
+  React.useEffect(() => {
+    if (error) {
+      throw error;
+    }
+  }, [error]);
+
+  return {
+    error,
+    resetError,
+    handleError,
+  };
 }

@@ -1,2 +1,7 @@
+/**
+ * SOAP Generate Hooks Index
+ * Exports all hooks for the new SOAP generation interface
+ */
+
 export { useSOAPGenerate } from './useSOAPGenerate';
-export { useAudioRecording } from './useAudioRecording';
+export { useAudioRecorder } from './useAudioRecorder';

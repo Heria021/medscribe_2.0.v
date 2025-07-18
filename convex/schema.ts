@@ -193,6 +193,7 @@ export default defineSchema({
   soapNotes: defineTable({
     patientId: v.id("patients"),
     audioRecordingId: v.optional(v.id("audioRecordings")),
+    // Legacy SOAP fields (for backward compatibility)
     subjective: v.string(),
     objective: v.string(),
     assessment: v.string(),
@@ -203,6 +204,31 @@ export default defineSchema({
     recommendations: v.optional(v.array(v.string())),
     externalRecordId: v.optional(v.string()),
     googleDocUrl: v.optional(v.string()),
+    // Enhanced SOAP fields
+    sessionId: v.optional(v.string()),
+    specialty: v.optional(v.string()),
+    specialtyConfidence: v.optional(v.number()),
+    focusAreas: v.optional(v.array(v.string())),
+    // Quality metrics
+    completenessScore: v.optional(v.number()),
+    clinicalAccuracy: v.optional(v.number()),
+    documentationQuality: v.optional(v.number()),
+    redFlags: v.optional(v.array(v.string())),
+    missingInformation: v.optional(v.array(v.string())),
+    // Safety assessment
+    isSafe: v.optional(v.boolean()),
+    safetyRedFlags: v.optional(v.array(v.string())),
+    criticalItems: v.optional(v.array(v.string())),
+    // Transcription data
+    transcriptionText: v.optional(v.string()),
+    transcriptionConfidence: v.optional(v.number()),
+    transcriptionLanguage: v.optional(v.string()),
+    transcriptionDuration: v.optional(v.number()),
+    // Enhanced structured data (stored as JSON strings for complex objects)
+    structuredSubjective: v.optional(v.string()),
+    structuredObjective: v.optional(v.string()),
+    structuredAssessment: v.optional(v.string()),
+    structuredPlan: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -545,33 +571,6 @@ export default defineSchema({
     }))),
     relevantDocumentsCount: v.optional(v.number()),
     processingTime: v.optional(v.number()),
-    // Enhanced RAG fields
-    ragResponseData: v.optional(v.object({
-      role_type: v.optional(v.string()),
-      role_id: v.optional(v.string()),
-      query: v.optional(v.string()),
-      response: v.optional(v.string()),
-      similarity_threshold: v.optional(v.number()),
-      max_results: v.optional(v.number()),
-      generated_at: v.optional(v.string()),
-    })),
-    structuredResponse: v.optional(v.object({
-      type: v.string(),
-      summary: v.string(),
-      data: v.any(),
-      timestamp: v.string(),
-    })),
-    enhancedRelevantDocuments: v.optional(v.array(v.object({
-      id: v.string(),
-      role_type: v.string(),
-      role_id: v.string(),
-      event_type: v.string(),
-      content: v.string(),
-      content_chunk: v.optional(v.string()),
-      metadata: v.any(),
-      created_at: v.string(),
-      similarity_score: v.number(),
-    }))),
     createdAt: v.number(),
   })
     .index("by_session_id", ["sessionId"])

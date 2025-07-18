@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 export interface SOAPNote {
   _id: string;
+  // Legacy SOAP fields
   subjective: string;
   objective: string;
   assessment: string;
@@ -27,6 +28,31 @@ export interface SOAPNote {
   updatedAt: number;
   patientName?: string;
   patientId?: string;
+  // Enhanced fields
+  sessionId?: string;
+  specialty?: string;
+  specialtyConfidence?: number;
+  focusAreas?: string[];
+  // Quality metrics
+  completenessScore?: number;
+  clinicalAccuracy?: number;
+  documentationQuality?: number;
+  redFlags?: string[];
+  missingInformation?: string[];
+  // Safety assessment
+  isSafe?: boolean;
+  safetyRedFlags?: string[];
+  criticalItems?: string[];
+  // Transcription data
+  transcriptionText?: string;
+  transcriptionConfidence?: number;
+  transcriptionLanguage?: string;
+  transcriptionDuration?: number;
+  // Enhanced structured data (JSON strings)
+  structuredSubjective?: string;
+  structuredObjective?: string;
+  structuredAssessment?: string;
+  structuredPlan?: string;
 }
 
 export interface SOAPViewerConfig {
@@ -717,6 +743,135 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
                     </div>
                   </div>
 
+                  {/* Enhanced AI Analysis Section */}
+                  {(note.specialty || note.completenessScore || note.isSafe !== undefined) && (
+                    <div className="space-y-6 p-6 bg-muted/30 rounded-lg border border-border">
+                      <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
+                        AI Analysis & Quality Metrics
+                      </h2>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Specialty Detection */}
+                        {note.specialty && (
+                          <div className="space-y-2">
+                            <h3 className="font-semibold text-foreground flex items-center gap-2">
+                              <Stethoscope className="h-4 w-4" />
+                              Detected Specialty
+                            </h3>
+                            <div className="space-y-1">
+                              <Badge variant="default" className="text-sm">
+                                {note.specialty}
+                              </Badge>
+                              {note.specialtyConfidence && (
+                                <div className="text-xs text-muted-foreground">
+                                  {Math.round(note.specialtyConfidence * 100)}% confidence
+                                </div>
+                              )}
+                              {note.focusAreas && note.focusAreas.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {note.focusAreas.map((area, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {area}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Quality Metrics */}
+                        {(note.completenessScore || note.clinicalAccuracy || note.documentationQuality) && (
+                          <div className="space-y-2">
+                            <h3 className="font-semibold text-foreground flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              Quality Scores
+                            </h3>
+                            <div className="space-y-1 text-sm">
+                              {note.completenessScore && (
+                                <div className="flex justify-between">
+                                  <span>Completeness:</span>
+                                  <Badge variant="secondary">{Math.round(note.completenessScore * 100)}%</Badge>
+                                </div>
+                              )}
+                              {note.clinicalAccuracy && (
+                                <div className="flex justify-between">
+                                  <span>Clinical Accuracy:</span>
+                                  <Badge variant="secondary">{Math.round(note.clinicalAccuracy * 100)}%</Badge>
+                                </div>
+                              )}
+                              {note.documentationQuality && (
+                                <div className="flex justify-between">
+                                  <span>Documentation:</span>
+                                  <Badge variant="secondary">{Math.round(note.documentationQuality * 100)}%</Badge>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Safety Assessment */}
+                        {note.isSafe !== undefined && (
+                          <div className="space-y-2">
+                            <h3 className="font-semibold text-foreground flex items-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              Safety Assessment
+                            </h3>
+                            <div className="space-y-2">
+                              <Badge variant={note.isSafe ? "default" : "destructive"}>
+                                {note.isSafe ? "Safe" : "Needs Review"}
+                              </Badge>
+                              {note.safetyRedFlags && note.safetyRedFlags.length > 0 && (
+                                <div className="text-xs">
+                                  <div className="font-medium text-destructive mb-1">Red Flags:</div>
+                                  <ul className="list-disc list-inside space-y-1 text-destructive">
+                                    {note.safetyRedFlags.map((flag, index) => (
+                                      <li key={index}>{flag}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {note.criticalItems && note.criticalItems.length > 0 && (
+                                <div className="text-xs">
+                                  <div className="font-medium text-orange-600 mb-1">Critical Items:</div>
+                                  <ul className="list-disc list-inside space-y-1 text-orange-600">
+                                    {note.criticalItems.map((item, index) => (
+                                      <li key={index}>{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Missing Information */}
+                      {note.missingInformation && note.missingInformation.length > 0 && (
+                        <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                          <h4 className="font-medium text-orange-800 dark:text-orange-200 mb-2">Missing Information:</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm text-orange-700 dark:text-orange-300">
+                            {note.missingInformation.map((item, index) => (
+                              <li key={index}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Red Flags */}
+                      {note.redFlags && note.redFlags.length > 0 && (
+                        <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">Clinical Red Flags:</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
+                            {note.redFlags.map((flag, index) => (
+                              <li key={index}>{flag}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Recommendations if available */}
                   {note.recommendations && note.recommendations.length > 0 && (
                     <div className="space-y-4">
@@ -767,6 +922,24 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
                           <div className="flex items-center gap-1">
                             <span className="w-2 h-2 bg-primary rounded-full"></span>
                             <span className="font-medium">Processing Time: {note.processingTime}</span>
+                          </div>
+                        )}
+                        {note.sessionId && (
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-primary rounded-full"></span>
+                            <span className="font-medium">Session: {note.sessionId.slice(-8)}</span>
+                          </div>
+                        )}
+                        {note.transcriptionDuration && (
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-primary rounded-full"></span>
+                            <span className="font-medium">Audio Duration: {note.transcriptionDuration}s</span>
+                          </div>
+                        )}
+                        {note.transcriptionConfidence && (
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-primary rounded-full"></span>
+                            <span className="font-medium">Transcription Confidence: {Math.round(note.transcriptionConfidence * 100)}%</span>
                           </div>
                         )}
                       </div>

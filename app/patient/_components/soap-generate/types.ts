@@ -1,51 +1,64 @@
-import { ReactNode } from "react";
+/**
+ * Types for the new SOAP Generation interface
+ */
 
-// Core types
+import { Id } from "@/convex/_generated/dataModel";
+import {
+  SOAPProcessingResponse,
+  ProcessingState,
+  EnhancedSOAPNotes,
+  QualityMetrics,
+  SpecialtyDetection,
+  SafetyCheck,
+} from "@/lib/types/soap-api";
+
+// ============================================================================
+// PATIENT PROFILE TYPES
+// ============================================================================
+
 export interface PatientProfile {
-  _id: string;
+  _id: Id<"patients">;
   firstName: string;
   lastName: string;
-  userId: string;
-  dateOfBirth?: string;
-  gender?: string;
-  phone?: string;
   email?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-  };
-  emergencyContact?: {
-    name?: string;
-    relationship?: string;
-    phone?: string;
-  };
-  medicalHistory?: {
-    allergies?: string[];
-    medications?: string[];
-    conditions?: string[];
-    surgeries?: string[];
-  };
-  createdAt: number;
-  updatedAt: number;
+  mrn?: string;
+  gender: string;
+  dateOfBirth: string;
+  primaryPhone?: string;
 }
 
-export interface AudioRecordingState {
+// ============================================================================
+// SOAP GENERATION TYPES
+// ============================================================================
+
+export interface SOAPGenerationState {
+  isProcessing: boolean;
+  processingState: ProcessingState;
   audioBlob: Blob | null;
   fileName: string;
-  isRecording: boolean;
-  duration: number;
+  textInput: string;
+  mode: 'audio' | 'text' | 'conversation';
+  error: string | null;
+  result: SOAPProcessingResponse | null;
 }
 
-export interface ProcessingState {
-  isProcessing: boolean;
-  progress: number;
-  stage: 'uploading' | 'transcribing' | 'analyzing' | 'generating' | 'complete';
-  message: string;
+export interface SOAPGenerationActions {
+  setMode: (mode: 'audio' | 'text' | 'conversation') => void;
+  setTextInput: (text: string) => void;
+  handleAudioReady: (blob: Blob, fileName: string) => void;
+  handleAudioRemove: () => void;
+  handleTextProcess: () => Promise<void>;
+  handleAudioProcess: () => Promise<void>;
+  handleConversationProcess: () => Promise<void>;
+  clearError: () => void;
+  reset: () => void;
+  saveSOAPNote: (result: SOAPProcessingResponse) => Promise<any>;
 }
 
-// Component prop types
+// ============================================================================
+// COMPONENT PROP TYPES
+// ============================================================================
+
 export interface SOAPGenerateHeaderProps {
   patientProfile?: PatientProfile;
   className?: string;
@@ -60,10 +73,10 @@ export interface SOAPGenerateSkeletonProps {
   className?: string;
 }
 
-export interface AudioRecordingSectionProps {
+export interface AudioInputSectionProps {
   onAudioReady: (blob: Blob, fileName: string) => void;
   onAudioRemove: () => void;
-  onGenerateSOAP: () => void;
+  onProcess: () => Promise<void>;
   audioBlob: Blob | null;
   fileName: string;
   isProcessing: boolean;
@@ -71,42 +84,126 @@ export interface AudioRecordingSectionProps {
   className?: string;
 }
 
-export interface RecordingTipsSectionProps {
+export interface TextInputSectionProps {
+  value: string;
+  onChange: (value: string) => void;
+  onProcess: () => Promise<void>;
+  isProcessing: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
-export interface HowItWorksSectionProps {
+export interface ConversationInputSectionProps {
+  onProcess: () => Promise<void>;
+  isProcessing: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
 export interface ProcessingIndicatorProps {
-  isProcessing: boolean;
   processingState: ProcessingState;
   className?: string;
 }
 
-// Hook return types
-export interface UseSOAPGenerateReturn {
-  patientProfile?: PatientProfile;
-  audioBlob: Blob | null;
-  fileName: string;
-  isProcessing: boolean;
-  processingState: ProcessingState;
-  handleAudioReady: (blob: Blob, fileName: string) => void;
-  handleAudioRemove: () => void;
-  handleGenerateSOAP: () => Promise<void>;
-  loading: boolean;
-  error: string | null;
+export interface QualityMetricsDisplayProps {
+  metrics: QualityMetrics;
+  specialty: SpecialtyDetection;
+  safety: SafetyCheck;
+  className?: string;
 }
 
-export interface UseAudioRecordingReturn {
-  audioBlob: Blob | null;
-  fileName: string;
-  isRecording: boolean;
-  duration: number;
-  handleAudioReady: (blob: Blob, fileName: string) => void;
-  handleAudioRemove: () => void;
-  startRecording: () => void;
-  stopRecording: () => void;
-  resetRecording: () => void;
+export interface SOAPResultPreviewProps {
+  result: SOAPProcessingResponse;
+  onViewFull: () => void;
+  onSave: () => Promise<void>;
+  className?: string;
 }
+
+// ============================================================================
+// HOOK RETURN TYPES
+// ============================================================================
+
+export interface UseSOAPGenerateReturn {
+  state: SOAPGenerationState;
+  actions: SOAPGenerationActions;
+}
+
+export interface UseAudioRecorderReturn {
+  isRecording: boolean;
+  isPaused: boolean;
+  recordingTime: number;
+  audioBlob: Blob | null;
+  hasPermission: boolean | null;
+  startRecording: () => Promise<void>;
+  stopRecording: () => void;
+  pauseRecording: () => void;
+  resumeRecording: () => void;
+  removeAudio: () => void;
+  formatTime: (seconds: number) => string;
+  getTimeRemaining: () => number;
+  isNearMaxDuration: () => boolean;
+  requestPermission: () => Promise<boolean>;
+}
+
+// ============================================================================
+// UTILITY TYPES
+// ============================================================================
+
+export type InputMode = 'audio' | 'text' | 'conversation';
+
+export interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+}
+
+export interface FileValidationResult extends ValidationResult {
+  file?: File;
+}
+
+export interface TextValidationResult extends ValidationResult {
+  text?: string;
+}
+
+// ============================================================================
+// ERROR TYPES
+// ============================================================================
+
+export interface SOAPGenerationError {
+  type: 'validation' | 'network' | 'processing' | 'unknown';
+  message: string;
+  details?: string;
+  timestamp: number;
+}
+
+// ============================================================================
+// EXPORT ALL TYPES
+// ============================================================================
+
+export type {
+  // Core types
+  PatientProfile,
+  SOAPGenerationState,
+  SOAPGenerationActions,
+  
+  // Component prop types
+  SOAPGenerateHeaderProps,
+  SOAPGenerateContentProps,
+  SOAPGenerateSkeletonProps,
+  AudioInputSectionProps,
+  TextInputSectionProps,
+  ConversationInputSectionProps,
+  ProcessingIndicatorProps,
+  QualityMetricsDisplayProps,
+  SOAPResultPreviewProps,
+  
+  // Hook return types
+  UseSOAPGenerateReturn,
+  UseAudioRecorderReturn,
+  
+  // Utility types
+  InputMode,
+  ValidationResult,
+  FileValidationResult,
+  TextValidationResult,
+  SOAPGenerationError,
+};
