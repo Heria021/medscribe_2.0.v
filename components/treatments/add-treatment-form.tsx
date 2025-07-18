@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { medicalRAGHooks } from "@/lib/services/medical-rag-hooks";
 import { toast } from "sonner";
 import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
 
@@ -153,8 +154,9 @@ export function AddTreatmentForm({
       });
 
       // Create medications if any
+      const createdMedications = [];
       for (const medication of medications) {
-        await createMedication({
+        const medicationId = await createMedication({
           treatmentPlanId,
           medicationName: medication.medicationName,
           dosage: medication.dosage,
@@ -164,6 +166,46 @@ export function AddTreatmentForm({
           startDate: medication.startDate,
           endDate: medication.endDate || undefined,
         });
+        createdMedications.push({ ...medication, medicationId });
+      }
+
+      // 🔥 Embed treatment plan into RAG system (production-ready)
+      if (doctorPatientRelation && treatmentPlanId) {
+        medicalRAGHooks.onTreatmentPlanCreated({
+          treatmentId: treatmentPlanId,
+          doctorId: doctorPatientRelation.doctorId,
+          patientId: doctorPatientRelation.patientId,
+          appointmentId: undefined, // Could be linked if created from appointment
+          diagnosis: treatmentForm.diagnosis,
+          treatmentType: treatmentForm.title,
+          description: treatmentForm.plan,
+          goals: treatmentForm.goals,
+          duration: treatmentForm.endDate ? `${treatmentForm.startDate} to ${treatmentForm.endDate}` : undefined,
+          followUpRequired: treatmentForm.status === 'active',
+          notes: undefined,
+          createdAt: Date.now(),
+        });
+
+        // 🔥 Embed each medication into RAG system
+        for (const medication of createdMedications) {
+          if (medication.medicationId) {
+            medicalRAGHooks.onMedicationPrescribed({
+              medicationId: medication.medicationId,
+              doctorId: doctorPatientRelation.doctorId,
+              patientId: doctorPatientRelation.patientId,
+              appointmentId: undefined,
+              medicationName: medication.medicationName,
+              dosage: medication.dosage,
+              frequency: medication.frequency,
+              duration: medication.endDate ? `${medication.startDate} to ${medication.endDate}` : 'Ongoing',
+              instructions: medication.instructions,
+              sideEffects: undefined,
+              interactions: undefined,
+              notes: undefined,
+              createdAt: Date.now(),
+            });
+          }
+        }
       }
 
       // Store the treatment plan ID for potential prescription creation

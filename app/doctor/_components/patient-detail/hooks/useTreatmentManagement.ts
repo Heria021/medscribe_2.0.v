@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { UseTreatmentManagementReturn, TreatmentPlan } from "../types";
+import { medicalRAGHooks } from "@/lib/services/medical-rag-hooks";
 
 /**
  * Custom hook for managing treatment plans
@@ -48,14 +49,34 @@ export function useTreatmentManagement(
 
   // Handle treatment status update
   const handleTreatmentStatusUpdate = useCallback(async (
-    treatmentId: string, 
-    status: string
+    treatmentId: string,
+    status: string,
+    treatmentData?: any // Optional: for RAG embedding
   ): Promise<void> => {
     try {
       await updateTreatment({
         id: treatmentId as any,
         status: status as "active" | "completed" | "discontinued"
       });
+
+      // 🔥 Embed treatment status update into RAG system (production-ready)
+      if (treatmentData && (status === 'completed' || status === 'discontinued')) {
+        medicalRAGHooks.onTreatmentPlanCreated({
+          treatmentId,
+          doctorId: treatmentData.doctor?._id || treatmentData.doctorId,
+          patientId: treatmentData.patient?._id || treatmentData.patientId,
+          appointmentId: treatmentData.appointmentId,
+          diagnosis: treatmentData.diagnosis,
+          treatmentType: treatmentData.title,
+          description: `Treatment ${status}: ${treatmentData.plan}`,
+          goals: treatmentData.goals || [],
+          duration: treatmentData.endDate ? `${treatmentData.startDate} to ${treatmentData.endDate}` : undefined,
+          followUpRequired: status === 'active',
+          notes: `Treatment status updated to ${status}`,
+          createdAt: Date.now(),
+        });
+      }
+
       toast.success(`Treatment ${status} successfully`);
     } catch (error) {
       console.error("Failed to update treatment status:", error);

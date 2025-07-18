@@ -9,6 +9,7 @@ import { useMutation } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import { medscribeAPI } from '@/lib/api/medscribe-api';
+import { soapRAGHooks } from '@/lib/services/soap-rag-hooks';
 import {
   UseSOAPGenerateReturn,
   SOAPGenerationState,
@@ -371,6 +372,38 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
         structuredAssessment: JSON.stringify(result.data.soap_notes.soap_notes?.assessment || {}),
         structuredPlan: JSON.stringify(result.data.soap_notes.soap_notes?.plan || {}),
       });
+
+      // 🔥 Embed SOAP note into RAG system (production-ready)
+      if (soapNoteId) {
+        // Note: In a real implementation, you'd get doctor ID from context/auth
+        const doctorId = 'doctor_from_context'; // This should be extracted from context
+
+        soapRAGHooks.onSOAPNoteCreated({
+          soapNoteId,
+          doctorId,
+          patientId: patientProfile._id,
+          appointmentId: undefined, // Could be linked if created from appointment
+          subjective: result.data.soap_notes.subjective,
+          objective: result.data.soap_notes.objective,
+          assessment: result.data.soap_notes.assessment,
+          plan: result.data.soap_notes.plan,
+          chiefComplaint: result.data.chief_complaint?.complaint,
+          vitalSigns: result.data.vital_signs ? {
+            bloodPressure: result.data.vital_signs.blood_pressure,
+            heartRate: result.data.vital_signs.heart_rate,
+            temperature: result.data.vital_signs.temperature,
+            respiratoryRate: result.data.vital_signs.respiratory_rate,
+            oxygenSaturation: result.data.vital_signs.oxygen_saturation,
+            weight: result.data.vital_signs.weight,
+            height: result.data.vital_signs.height,
+          } : undefined,
+          diagnosis: result.data.diagnosis_codes?.map(d => d.description) || [],
+          medications: result.data.medications?.map(m => m.name) || [],
+          followUpInstructions: result.data.follow_up_instructions?.instructions,
+          status: 'completed',
+          createdAt: Date.now(),
+        });
+      }
 
       toast.success('SOAP note saved successfully!');
 

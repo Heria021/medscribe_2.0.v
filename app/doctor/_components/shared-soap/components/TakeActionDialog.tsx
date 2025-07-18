@@ -31,6 +31,7 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 import type { SharedSOAPNote } from "../types";
+import { soapRAGHooks } from "@/lib/services/soap-rag-hooks";
 
 interface TakeActionDialogProps {
   open: boolean;
@@ -120,6 +121,18 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
             actionStatus: "assistance_provided",
             actionDetails: `Medical assistance provided: ${assistanceText.trim().substring(0, 100)}...`,
           });
+
+          // 🔥 Embed SOAP action into RAG system (production-ready)
+          soapRAGHooks.onSOAPNoteAction({
+            actionId: note._id,
+            soapNoteId: note.soapNote._id,
+            doctorId,
+            patientId: note.patient._id,
+            actionType: 'reviewed',
+            comments: assistanceText.trim(),
+            reason: 'Medical assistance provided to patient',
+            createdAt: Date.now(),
+          });
         }
 
         toast.success("Assistance provided successfully!");
@@ -159,6 +172,18 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
             actionStatus: "appointment_scheduled",
             actionDetails: `Appointment scheduled: ${visitReason}`,
           });
+
+          // 🔥 Embed SOAP action into RAG system (production-ready)
+          soapRAGHooks.onSOAPNoteAction({
+            actionId: note._id,
+            soapNoteId: note.soapNote._id,
+            doctorId,
+            patientId: note.patient._id,
+            actionType: 'accepted',
+            comments: `Appointment scheduled: ${visitReason}`,
+            reason: 'Appointment scheduled based on shared SOAP note',
+            createdAt: Date.now(),
+          });
         }
 
         toast.success("Appointment scheduled successfully!");
@@ -187,6 +212,18 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
             sharedSoapNoteId: note._id,
             actionStatus: "referral_created",
             actionDetails: `Referral created: ${referralReason.trim().substring(0, 100)}...`,
+          });
+
+          // 🔥 Embed SOAP action into RAG system (production-ready)
+          soapRAGHooks.onSOAPNoteAction({
+            actionId: note._id,
+            soapNoteId: note.soapNote._id,
+            doctorId,
+            patientId: note.patient._id,
+            actionType: 'accepted',
+            comments: referralReason.trim(),
+            reason: 'Referral created based on shared SOAP note',
+            createdAt: Date.now(),
           });
         }
 

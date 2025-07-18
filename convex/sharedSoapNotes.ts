@@ -71,6 +71,9 @@ export const shareSOAPNote = mutation({
       });
     }
 
+    // Note: RAG embedding for SOAP sharing will be handled by frontend hooks
+    // to avoid cloud/localhost connectivity issues
+
     return sharedSoapId;
   },
 });

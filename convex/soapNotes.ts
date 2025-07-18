@@ -116,7 +116,10 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    
+
+    // Note: RAG embedding for SOAP updates will be handled by frontend hooks
+    // to avoid cloud/localhost connectivity issues
+
     return await ctx.db.patch(id, {
       ...updates,
       updatedAt: Date.now(),
