@@ -97,12 +97,32 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
   }, []);
 
   const handleError = useCallback((error: unknown, type: SOAPGenerationError['type'] = 'unknown') => {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    
+    // Extract error message with better handling
+    let errorMessage = 'An unexpected error occurred';
+    let errorDetails = undefined;
+
+    if (error instanceof Error) {
+      errorMessage = error.message || 'An unexpected error occurred';
+      errorDetails = error.stack;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      // Handle API error responses
+      const errorObj = error as any;
+      if (errorObj.message) {
+        errorMessage = errorObj.message;
+      } else if (errorObj.error) {
+        errorMessage = errorObj.error;
+      } else {
+        errorMessage = 'An unexpected error occurred';
+        errorDetails = JSON.stringify(error, null, 2);
+      }
+    }
+
     const soapError: SOAPGenerationError = {
       type,
       message: errorMessage,
-      details: error instanceof Error ? error.stack : undefined,
+      details: errorDetails,
       timestamp: Date.now(),
     };
 
@@ -120,7 +140,15 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
     }));
 
     toast.error(errorMessage);
-    console.error('SOAP Generation Error:', soapError);
+
+    // Better error logging with serialization
+    console.error('SOAP Generation Error:', {
+      type: soapError.type,
+      message: soapError.message,
+      details: soapError.details,
+      timestamp: new Date(soapError.timestamp).toISOString(),
+      originalError: error
+    });
   }, []);
 
   const handleTextProcess = useCallback(async () => {

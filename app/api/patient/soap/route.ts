@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     externalFormData.append("patient_id", patientId);
 
     // Call external SOAP generation API
-    const externalApiUrl = process.env.SOAP_API_URL || "http://localhost:8000/api/v1/process";
+    const externalApiUrl = process.env.SOAP_API_URL || "http://localhost:8000/api/v1/process-audio";
     
     const response = await fetch(externalApiUrl, {
       method: "POST",
@@ -59,11 +59,34 @@ export async function POST(request: NextRequest) {
     console.log(response);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("External API error:", errorText);
+      let errorMessage = "Failed to process audio file";
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch {
+        // If we can't parse JSON, try to get text
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+      }
+
+      console.error("External API error:", errorMessage);
       return NextResponse.json(
-        { error: "Failed to process audio file" },
-        { status: 500 }
+        {
+          status: "error",
+          message: errorMessage,
+          timestamp: new Date().toISOString()
+        },
+        { status: response.status }
       );
     }
 
@@ -74,8 +97,9 @@ export async function POST(request: NextRequest) {
     if (result.status === 'quality_assurance_failed') {
       return NextResponse.json(
         {
-          success: false,
-          error: "Quality assurance failed",
+          status: "error",
+          message: "Quality assurance failed",
+          timestamp: new Date().toISOString(),
           details: {
             message: result.message,
             qa_results: result.qa_results,
@@ -87,12 +111,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate response structure for successful responses
-    if (result.status !== "success" || !result.deliverables?.clinical_notes) {
+    // Check for error status in result
+    if (result.status === 'error') {
       return NextResponse.json(
         {
-          success: false,
-          error: "Invalid response from SOAP generation service"
+          status: "error",
+          message: result.message || "Audio processing failed",
+          timestamp: new Date().toISOString(),
+          error: result.error
+        },
+        { status: 500 }
+      );
+    }
+
+    // Validate response structure for successful responses
+    if (result.status !== "success") {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Invalid response from SOAP generation service",
+          timestamp: new Date().toISOString()
         },
         { status: 500 }
       );
@@ -142,20 +180,23 @@ export async function POST(request: NextRequest) {
     // This will be replaced with the new RAG hooks system
     console.log("SOAP note created successfully:", soapNoteId);
 
-    // Return the processed result
+    // Return the processed result in the expected SOAPProcessingResponse format
     return NextResponse.json({
-      success: true,
+      status: "success",
+      message: result.message || "Audio processed successfully",
+      timestamp: result.timestamp || new Date().toISOString(),
       data: {
+        ...result.data,
         soap_note_id: soapNoteId,
-        patient_id: result.patient_id,
+        // Legacy compatibility fields
         processing_summary: result.processing_summary,
-        clinical_notes: result.deliverables.clinical_notes,
-        highlighted_html: result.deliverables.highlighted_html,
-        quality_score: extractQualityScore(result.processing_summary.quality_assurance),
+        clinical_notes: result.deliverables?.clinical_notes,
+        highlighted_html: result.deliverables?.highlighted_html,
+        quality_score: extractQualityScore(result.processing_summary?.quality_assurance || ""),
         processing_time: result.total_processing_time,
         recommendations: result.recommendations,
-        google_doc_url: result.deliverables.google_doc_url,
-        ehr_record_id: result.deliverables.ehr_record_id,
+        google_doc_url: result.deliverables?.google_doc_url,
+        ehr_record_id: result.deliverables?.ehr_record_id,
         completed_at: result.completed_at,
       }
     });
@@ -163,7 +204,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("SOAP generation error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        status: "error",
+        message: "Internal server error",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "Unknown error"
+      },
       { status: 500 }
     );
   }

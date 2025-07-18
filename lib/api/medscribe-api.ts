@@ -25,7 +25,8 @@ export class MedScribeAPI {
   private retries: number;
 
   constructor(config: MedScribeAPIConfig = {}) {
-    this.baseUrl = config.baseUrl || 'http://localhost:8000';
+    // Use Next.js API routes instead of calling external API directly
+    this.baseUrl = config.baseUrl || '';
     this.timeout = config.timeout || 300000; // 5 minutes default
     this.retries = config.retries || 3;
   }
@@ -55,7 +56,7 @@ export class MedScribeAPI {
     });
 
     try {
-      const response = await this.makeRequest(`${this.baseUrl}/api/v1/process-audio`, {
+      const response = await this.makeRequest(`${this.baseUrl}/api/patient/soap`, {
         method: 'POST',
         body: formData,
       });
@@ -69,7 +70,19 @@ export class MedScribeAPI {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If we can't parse the error response, use the status message
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       // Update progress - analyzing
@@ -100,14 +113,19 @@ export class MedScribeAPI {
 
       return result;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       onProgress?.({
         isProcessing: false,
         progress: 0,
         stage: 'error',
         message: 'Failed to process audio',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       });
-      throw error;
+
+      // Create a more descriptive error
+      const enhancedError = new Error(`Audio processing failed: ${errorMessage}`);
+      enhancedError.cause = error;
+      throw enhancedError;
     }
   }
 
@@ -137,7 +155,7 @@ export class MedScribeAPI {
     });
 
     try {
-      const response = await this.makeRequest(`${this.baseUrl}/api/v1/process-text`, {
+      const response = await this.makeRequest(`${this.baseUrl}/api/patient/soap/text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +172,19 @@ export class MedScribeAPI {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If we can't parse the error response, use the status message
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       // Update progress - generating
@@ -177,14 +207,19 @@ export class MedScribeAPI {
 
       return result;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       onProgress?.({
         isProcessing: false,
         progress: 0,
         stage: 'error',
         message: 'Failed to process text',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       });
-      throw error;
+
+      // Create a more descriptive error
+      const enhancedError = new Error(`Text processing failed: ${errorMessage}`);
+      enhancedError.cause = error;
+      throw enhancedError;
     }
   }
 
@@ -242,10 +277,34 @@ export class MedScribeAPI {
       return { valid: false, error: 'File size must be less than 50MB' };
     }
 
-    // Check supported formats
-    const supportedFormats = ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac', 'audio/webm'];
-    if (!supportedFormats.some(format => file.type.includes(format.split('/')[1]))) {
-      return { valid: false, error: 'Supported formats: MP3, WAV, M4A, FLAC' };
+    // Check supported formats - more comprehensive MIME type checking
+    const supportedMimeTypes = [
+      'audio/mp3',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/wave',
+      'audio/x-wav',
+      'audio/m4a',
+      'audio/mp4',
+      'audio/x-m4a',
+      'audio/flac',
+      'audio/x-flac',
+      'audio/webm',
+      'audio/ogg'
+    ];
+
+    // Also check file extension as fallback
+    const fileName = file.name.toLowerCase();
+    const supportedExtensions = ['.mp3', '.wav', '.m4a', '.flac', '.webm', '.ogg'];
+
+    const mimeTypeSupported = supportedMimeTypes.includes(file.type.toLowerCase());
+    const extensionSupported = supportedExtensions.some(ext => fileName.endsWith(ext));
+
+    if (!mimeTypeSupported && !extensionSupported) {
+      return {
+        valid: false,
+        error: `Unsupported audio format. Supported formats: MP3, WAV, M4A, FLAC. Detected type: ${file.type || 'unknown'}`
+      };
     }
 
     return { valid: true };
