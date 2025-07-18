@@ -571,6 +571,33 @@ export default defineSchema({
     }))),
     relevantDocumentsCount: v.optional(v.number()),
     processingTime: v.optional(v.number()),
+    // Enhanced RAG fields
+    ragResponseData: v.optional(v.object({
+      role_type: v.optional(v.string()),
+      role_id: v.optional(v.string()),
+      query: v.optional(v.string()),
+      response: v.optional(v.string()),
+      similarity_threshold: v.optional(v.number()),
+      max_results: v.optional(v.number()),
+      generated_at: v.optional(v.string()),
+    })),
+    structuredResponse: v.optional(v.object({
+      type: v.string(),
+      summary: v.string(),
+      data: v.any(),
+      timestamp: v.string(),
+    })),
+    enhancedRelevantDocuments: v.optional(v.array(v.object({
+      id: v.string(),
+      role_type: v.string(),
+      role_id: v.string(),
+      event_type: v.string(),
+      content: v.string(),
+      content_chunk: v.optional(v.string()),
+      metadata: v.any(),
+      created_at: v.string(),
+      similarity_score: v.number(),
+    }))),
     createdAt: v.number(),
   })
     .index("by_session_id", ["sessionId"])
