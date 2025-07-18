@@ -1,4 +1,9 @@
 import { Id } from "@/convex/_generated/dataModel";
+import {
+  RelevantDocument as RAGRelevantDocument,
+  StructuredResponse as RAGStructuredResponse,
+  SearchResponse as RAGSearchResponse
+} from "@/lib/services/rag-api";
 
 // Core interfaces for doctor assistant chat functionality
 export interface RelevantDocument {
@@ -10,6 +15,11 @@ export interface RelevantDocument {
   metadata: any;
 }
 
+// Enhanced RAG-compatible relevant document
+export interface EnhancedRelevantDocument extends RAGRelevantDocument {
+  content_preview?: string; // For backward compatibility
+}
+
 export interface ChatMessage {
   id: string;
   content: string;
@@ -19,6 +29,10 @@ export interface ChatMessage {
   relevantDocuments?: RelevantDocument[];
   relevantDocumentsCount?: number;
   processingTime?: number;
+  // Enhanced RAG fields
+  ragResponse?: RAGSearchResponse;
+  structuredResponse?: RAGStructuredResponse;
+  enhancedRelevantDocuments?: EnhancedRelevantDocument[];
 }
 
 export interface ChatSession {
@@ -137,7 +151,18 @@ export interface DoctorChatAPIResponse {
     relevant_documents: RelevantDocument[];
     relevant_documents_count: number;
     processing_time?: number;
+    // Enhanced RAG fields
+    rag_response?: RAGSearchResponse;
+    structured_response?: RAGStructuredResponse;
+    enhanced_relevant_documents?: EnhancedRelevantDocument[];
   };
+  error?: string;
+}
+
+// Enhanced API response with full RAG integration
+export interface EnhancedDoctorChatAPIResponse {
+  success: boolean;
+  data?: RAGSearchResponse;
   error?: string;
 }
 

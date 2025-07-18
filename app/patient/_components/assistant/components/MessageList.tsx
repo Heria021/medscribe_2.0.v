@@ -56,8 +56,13 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
                 </div>
               )}
               {/* Show relevant documents for assistant messages */}
-              {message.sender === "assistant" && message.relevantDocuments && message.relevantDocuments.length > 0 && (
-                <RelevantDocumentsSection documents={message.relevantDocuments} />
+              {message.sender === "assistant" && (message.relevantDocuments || message.enhancedRelevantDocuments) && (
+                <RelevantDocumentsSection
+                  documents={message.relevantDocuments}
+                  enhancedDocuments={message.enhancedRelevantDocuments}
+                  structuredResponse={message.structuredResponse}
+                  processingTime={message.processingTime}
+                />
               )}
             </div>
             {message.sender === "user" && (
@@ -78,7 +83,7 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
             <div className="bg-muted rounded-lg p-3 text-sm">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Analyzing your medical records...</span>
+                <span>Searching your medical records and health data...</span>
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   MessageCircle,
   X,
@@ -16,7 +17,11 @@ import {
   Maximize2,
   Bot,
   Sparkles,
-  Loader2
+  Loader2,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/convex/_generated/api";
@@ -28,7 +33,116 @@ interface ChatMessage {
   content: string;
   sender: "user" | "assistant";
   timestamp: Date;
+  contextUsed?: boolean;
+  relevantDocuments?: Array<{
+    id: string;
+    event_type: string;
+    content_preview: string;
+    similarity_score: number;
+    created_at: string;
+    metadata: any;
+  }>;
+  relevantDocumentsCount?: number;
+  processingTime?: number;
+  // Enhanced RAG fields
+  ragResponseData?: any;
+  structuredResponse?: any;
+  enhancedRelevantDocuments?: Array<{
+    id: string;
+    role_type: string;
+    role_id: string;
+    event_type: string;
+    content: string;
+    content_chunk?: string;
+    metadata: any;
+    created_at: string;
+    similarity_score: number;
+  }>;
 }
+
+// Component to display relevant documents
+const RelevantDocumentsDisplay: React.FC<{
+  documents: ChatMessage['relevantDocuments'];
+  enhancedDocuments?: ChatMessage['enhancedRelevantDocuments'];
+  structuredResponse?: ChatMessage['structuredResponse'];
+  count: number;
+  processingTime?: number;
+}> = ({ documents, enhancedDocuments, structuredResponse, count, processingTime }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [showStructured, setShowStructured] = useState(false);
+
+  // Use enhanced documents if available, fallback to regular documents
+  const displayDocuments = enhancedDocuments || documents;
+
+  if (!displayDocuments || displayDocuments.length === 0) return null;
+
+  return (
+    <div className="mt-2 border-t pt-2 space-y-2">
+      {/* Structured Response Display */}
+      {structuredResponse && (
+        <Collapsible open={showStructured} onOpenChange={setShowStructured}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground">
+              {showStructured ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+              <Sparkles className="h-3 w-3 mr-1" />
+              AI Analysis: {structuredResponse.type?.replace(/_/g, ' ')}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <div className="bg-muted/50 rounded p-2 text-xs">
+              <div className="font-medium mb-1">{structuredResponse.summary}</div>
+              <div className="text-muted-foreground">
+                {typeof structuredResponse.data === 'object'
+                  ? JSON.stringify(structuredResponse.data, null, 2)
+                  : String(structuredResponse.data)
+                }
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Documents Section */}
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground">
+            {isOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+            <FileText className="h-3 w-3 mr-1" />
+            {count} relevant document{count !== 1 ? 's' : ''} found
+            {processingTime && (
+              <span className="ml-2 flex items-center">
+                <Clock className="h-3 w-3 mr-1" />
+                {processingTime.toFixed(1)}s
+              </span>
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          <div className="space-y-2">
+            {displayDocuments.map((doc, index) => (
+              <div key={doc.id} className="bg-muted/50 rounded p-2 text-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <Badge variant="outline" className="text-xs">
+                    {doc.event_type.replace(/_/g, ' ')}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {(doc.similarity_score * 100).toFixed(0)}% match
+                  </span>
+                </div>
+                <p className="text-muted-foreground line-clamp-2">
+                  {('content_preview' in doc ? doc.content_preview : doc.content?.substring(0, 200) + "...")}
+                </p>
+                <div className="text-muted-foreground mt-1">
+                  {new Date(doc.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+};
 
 interface FloatingChatWidgetProps {
   userRole: "doctor" | "patient";
@@ -90,6 +204,14 @@ export function FloatingChatWidget({ userRole }: FloatingChatWidgetProps) {
         content: msg.content,
         sender: msg.sender,
         timestamp: new Date(msg.createdAt),
+        contextUsed: msg.contextUsed,
+        relevantDocuments: msg.relevantDocuments,
+        relevantDocumentsCount: msg.relevantDocumentsCount,
+        processingTime: msg.processingTime,
+        // Enhanced RAG fields
+        ragResponseData: msg.ragResponseData,
+        structuredResponse: msg.structuredResponse,
+        enhancedRelevantDocuments: msg.enhancedRelevantDocuments,
       }));
       setMessages(formattedMessages);
 
@@ -190,18 +312,31 @@ export function FloatingChatWidget({ userRole }: FloatingChatWidgetProps) {
         throw new Error("Failed to get AI response");
       }
 
-      const data = await response.json();
+      const result = await response.json();
+      const data = result.data || result; // Handle both new and legacy response formats
 
-      // Add assistant message
+      // Add assistant message with enhanced RAG data
       await addMessage({
         sessionId,
         userId: session.user.id as any,
-        content: data.response,
+        content: data.message || data.response, // Handle both response formats
         sender: "assistant",
         contextUsed: data.context_used,
         relevantDocuments: data.relevant_documents,
         relevantDocumentsCount: data.relevant_documents_count,
         processingTime: data.processing_time,
+        // Enhanced RAG fields
+        ragResponseData: data.rag_response ? {
+          role_type: data.rag_response.role_type,
+          role_id: data.rag_response.role_id,
+          query: data.rag_response.query,
+          response: data.rag_response.response,
+          similarity_threshold: data.rag_response.similarity_threshold,
+          max_results: data.rag_response.max_results,
+          generated_at: data.rag_response.generated_at,
+        } : undefined,
+        structuredResponse: data.structured_response,
+        enhancedRelevantDocuments: data.enhanced_relevant_documents,
       });
 
     } catch (error) {
@@ -313,8 +448,26 @@ export function FloatingChatWidget({ userRole }: FloatingChatWidgetProps) {
                         )}
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          {message.timestamp.toLocaleTimeString()}
+
+                        {/* Show relevant documents for assistant messages */}
+                        {message.sender === "assistant" && (message.relevantDocuments || message.enhancedRelevantDocuments) && (
+                          <RelevantDocumentsDisplay
+                            documents={message.relevantDocuments}
+                            enhancedDocuments={message.enhancedRelevantDocuments}
+                            structuredResponse={message.structuredResponse}
+                            count={message.relevantDocumentsCount || 0}
+                            processingTime={message.processingTime}
+                          />
+                        )}
+
+                        <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
+                          <span>{message.timestamp.toLocaleTimeString()}</span>
+                          {message.sender === "assistant" && message.contextUsed && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Sparkles className="h-2 w-2 mr-1" />
+                              AI Enhanced
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       {message.sender === "user" && (
@@ -338,7 +491,12 @@ export function FloatingChatWidget({ userRole }: FloatingChatWidgetProps) {
                       <div className="bg-muted rounded-lg p-3 text-sm">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Analyzing your medical records...</span>
+                          <span>
+                            {userRole === "doctor"
+                              ? "Searching clinical records and patient data..."
+                              : "Analyzing your medical records and health data..."
+                            }
+                          </span>
                         </div>
                       </div>
                     </div>

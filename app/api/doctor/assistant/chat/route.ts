@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { searchDoctorRAG } from "@/lib/services/rag-api";
+import type { SearchResponse } from "@/lib/services/rag-api";
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,20 +49,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement new RAG system integration for doctor queries
-    // This will include multi-patient search and clinical decision support
+    // Integrate with RAG system for intelligent doctor responses
+    const doctorName = doctorProfile.title ?
+      `${doctorProfile.title} ${doctorProfile.lastName}` :
+      `Dr. ${doctorProfile.lastName || "Doctor"}`;
+
+    let ragResponse: SearchResponse | null = null;
+    let fallbackResponse = "";
+
     try {
-      // Provide intelligent responses based on doctor queries
-      const doctorName = doctorProfile.title ? 
-        `${doctorProfile.title} ${doctorProfile.lastName}` : 
-        `Dr. ${doctorProfile.lastName || "Doctor"}`;
+      // Try to get RAG response first
+      ragResponse = await searchDoctorRAG(
+        doctorProfile._id,
+        message,
+        {
+          similarity_threshold: 0.5,
+          max_results: 15,
+          include_context: true
+        }
+      );
 
-      // Generate contextual response based on common medical queries
-      let response = "";
-      const lowerMessage = message.toLowerCase();
+      console.log("RAG Response:", JSON.stringify(ragResponse, null, 2));
 
-      if (lowerMessage.includes("soap") || lowerMessage.includes("notes")) {
-        response = `Hello ${doctorName}! I can help you analyze SOAP notes and patient records. To provide specific insights, I would need access to particular patient records. You can ask me about:
+      // If RAG returns a valid response, use it (even with 0 documents)
+      if (ragResponse.success && ragResponse.response) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            message: ragResponse.response,
+            context_used: ragResponse.context_used,
+            relevant_documents: ragResponse.relevant_documents.map(doc => ({
+              id: doc.id,
+              event_type: doc.event_type,
+              content_preview: doc.content.substring(0, 200) + "...",
+              similarity_score: doc.similarity_score,
+              created_at: doc.created_at,
+              metadata: doc.metadata
+            })),
+            relevant_documents_count: ragResponse.relevant_documents_count,
+            processing_time: ragResponse.processing_time_seconds,
+            rag_response: ragResponse,
+            structured_response: ragResponse.structured_response,
+            enhanced_relevant_documents: ragResponse.relevant_documents,
+            timestamp: ragResponse.generated_at
+          }
+        });
+      }
+    } catch (ragError) {
+      console.warn("RAG API error, falling back to contextual response:", ragError);
+    }
+
+    // Fallback to contextual responses when RAG has no relevant data
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes("soap") || lowerMessage.includes("notes")) {
+      fallbackResponse = `Hello ${doctorName}! I can help you analyze SOAP notes and patient records. To provide specific insights, I would need access to particular patient records. You can ask me about:
 
 • Analyzing patterns in patient symptoms
 • Reviewing treatment effectiveness
@@ -69,8 +112,8 @@ export async function POST(request: NextRequest) {
 • Clinical documentation assistance
 
 What specific patient or medical topic would you like to discuss?`;
-      } else if (lowerMessage.includes("patient") || lowerMessage.includes("record")) {
-        response = `${doctorName}, I can assist with patient record analysis and clinical insights. I can help you:
+    } else if (lowerMessage.includes("patient") || lowerMessage.includes("record")) {
+      fallbackResponse = `${doctorName}, I can assist with patient record analysis and clinical insights. I can help you:
 
 • Review patient histories and trends
 • Analyze treatment outcomes
@@ -79,8 +122,8 @@ What specific patient or medical topic would you like to discuss?`;
 • Provide evidence-based recommendations
 
 Which patient or clinical area would you like to focus on?`;
-      } else if (lowerMessage.includes("medication") || lowerMessage.includes("drug") || lowerMessage.includes("prescription")) {
-        response = `I can help with medication-related queries, ${doctorName}. I can assist with:
+    } else if (lowerMessage.includes("medication") || lowerMessage.includes("drug") || lowerMessage.includes("prescription")) {
+      fallbackResponse = `I can help with medication-related queries, ${doctorName}. I can assist with:
 
 • Drug interaction checks
 • Dosage recommendations
@@ -89,8 +132,8 @@ Which patient or clinical area would you like to focus on?`;
 • Prescription optimization
 
 What specific medication or patient case are you working with?`;
-      } else if (lowerMessage.includes("treatment") || lowerMessage.includes("therapy")) {
-        response = `For treatment planning, ${doctorName}, I can help you:
+    } else if (lowerMessage.includes("treatment") || lowerMessage.includes("therapy")) {
+      fallbackResponse = `For treatment planning, ${doctorName}, I can help you:
 
 • Evaluate treatment effectiveness
 • Suggest evidence-based protocols
@@ -99,8 +142,8 @@ What specific medication or patient case are you working with?`;
 • Review clinical guidelines
 
 What treatment or condition would you like to discuss?`;
-      } else {
-        response = `Hello ${doctorName}! I'm your AI medical assistant. I can help you with:
+    } else {
+      fallbackResponse = `Hello ${doctorName}! I'm your AI medical assistant. I can help you with:
 
 • Patient record analysis and insights
 • SOAP note review and documentation
@@ -110,38 +153,19 @@ What treatment or condition would you like to discuss?`;
 • Drug interaction and prescription guidance
 
 How can I assist you with your medical practice today?`;
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          message: response,
-          relevant_documents: [],
-          relevant_documents_count: 0,
-          context_used: false,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-    } catch (error) {
-      console.error("Doctor assistant error:", error);
-
-      // Fallback response on error
-      const doctorName = doctorProfile.title ? 
-        `${doctorProfile.title} ${doctorProfile.lastName}` : 
-        `Dr. ${doctorProfile.lastName || "Doctor"}`;
-      
-      return NextResponse.json({
-        success: true,
-        data: {
-          message: `Hello ${doctorName}! I'm having trouble accessing the medical database right now. Please try again in a moment, or contact support if the issue persists.`,
-          relevant_documents: [],
-          relevant_documents_count: 0,
-          context_used: false,
-          timestamp: new Date().toISOString()
-        }
-      });
     }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: fallbackResponse,
+        relevant_documents: [],
+        relevant_documents_count: 0,
+        context_used: false,
+        rag_response: ragResponse,
+        timestamp: new Date().toISOString()
+      }
+    });
 
   } catch (error) {
     console.error("Doctor assistant chat API error:", error);

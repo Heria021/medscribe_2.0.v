@@ -49,7 +49,11 @@ export function useChat({
         contextUsed: msg.contextUsed,
         relevantDocuments: msg.relevantDocuments,
         relevantDocumentsCount: msg.relevantDocumentsCount,
-        processingTime: msg.processingTime
+        processingTime: msg.processingTime,
+        // Enhanced RAG fields
+        ragResponse: msg.ragResponseData,
+        structuredResponse: msg.structuredResponse,
+        enhancedRelevantDocuments: msg.enhancedRelevantDocuments,
       }));
       setMessages(formattedMessages);
     } else if (!currentSessionId && patientProfile) {
@@ -117,7 +121,7 @@ export function useChat({
       }
 
       if (result.success && result.data) {
-        // Add assistant message to database
+        // Add assistant message to database with enhanced RAG data
         await addMessageMutation({
           sessionId,
           userId: session.user.id as any,
@@ -126,7 +130,19 @@ export function useChat({
           contextUsed: result.data.context_used || false,
           relevantDocuments: result.data.relevant_documents || [],
           relevantDocumentsCount: result.data.relevant_documents_count || 0,
-          processingTime: result.data.processing_time
+          processingTime: result.data.processing_time,
+          // Enhanced RAG fields
+          ragResponseData: result.data.rag_response ? {
+            role_type: result.data.rag_response.role_type,
+            role_id: result.data.rag_response.role_id,
+            query: result.data.rag_response.query,
+            response: result.data.rag_response.response,
+            similarity_threshold: result.data.rag_response.similarity_threshold,
+            max_results: result.data.rag_response.max_results,
+            generated_at: result.data.rag_response.generated_at,
+          } : undefined,
+          structuredResponse: result.data.structured_response,
+          enhancedRelevantDocuments: result.data.enhanced_relevant_documents,
         });
       } else {
         throw new Error(result.error || "Failed to get response from assistant");
