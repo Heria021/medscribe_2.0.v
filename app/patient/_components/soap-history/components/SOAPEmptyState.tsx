@@ -43,15 +43,15 @@ export const SOAPEmptyState = React.memo<SOAPEmptyStateProps>(({
 
   return (
     <Card className={cn("border-dashed", className)}>
-      <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
+      <CardContent className="flex flex-col items-center justify-center py-10 px-6 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-muted/30 mb-4">
           {isSearchEmpty ? (
-            <Search className="h-8 w-8 text-muted-foreground" />
+            <Search className="h-6 w-6 text-muted-foreground" />
           ) : (
-            <FileText className="h-8 w-8 text-muted-foreground" />
+            <FileText className="h-6 w-6 text-muted-foreground" />
           )}
         </div>
-        
+
         <div className="space-y-2 mb-6">
           <h3 className="text-lg font-semibold text-foreground">
             {displayTitle}
@@ -60,34 +60,34 @@ export const SOAPEmptyState = React.memo<SOAPEmptyStateProps>(({
             {displayDescription}
           </p>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3">
+
+        <div className="flex flex-col sm:flex-row gap-2">
           {/* Clear Search Button (only for search empty state) */}
           {isSearchEmpty && onClearSearch && (
-            <Button 
-              variant="outline" 
-              onClick={onClearSearch} 
-              className="hover:bg-accent transition-colors"
+            <Button
+              variant="outline"
+              onClick={onClearSearch}
+              className="text-xs"
             >
               Clear Search
             </Button>
           )}
-          
+
           {/* Create New Action */}
           {showCreateAction && (
             <>
               {onCreateNew ? (
-                <Button 
+                <Button
                   onClick={onCreateNew}
-                  className="bg-primary hover:bg-primary/90 transition-all duration-200"
+                  className="text-xs"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-3 w-3 mr-2" />
                   {displayActionLabel}
                 </Button>
               ) : (
                 <Link href="/patient/soap/generate">
-                  <Button className="bg-primary hover:bg-primary/90 transition-all duration-200">
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button className="text-xs">
+                    <Plus className="h-3 w-3 mr-2" />
                     {displayActionLabel}
                   </Button>
                 </Link>

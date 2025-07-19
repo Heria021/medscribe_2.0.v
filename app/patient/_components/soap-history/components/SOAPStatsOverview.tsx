@@ -1,22 +1,24 @@
 "use client";
 
 import React from "react";
-import { FileText, Star, Share, Calendar, TrendingUp } from "lucide-react";
+import { FileText, Star, Share, Calendar, TrendingUp, Brain, Shield, ShieldAlert, AlertTriangle, Stethoscope, Clock } from "lucide-react";
 import { SOAPStatsOverviewProps } from "../types";
 import { cn } from "@/lib/utils";
 
 /**
- * Generic and reusable SOAP Stats Overview component
- * Optimized with React.memo and configurable display options
+ * Enhanced SOAP Stats Overview component with AI metrics
+ * Displays both traditional and enhanced AI-powered statistics
  */
 export const SOAPStatsOverview = React.memo<SOAPStatsOverviewProps>(({
   stats,
   loading = false,
   compact = false,
   showTrends = false,
+  showEnhanced = true,
   className,
 }) => {
-  const statsConfig = [
+  // Basic stats configuration
+  const basicStatsConfig = [
     {
       key: "totalNotes",
       label: "Total",
@@ -51,12 +53,71 @@ export const SOAPStatsOverview = React.memo<SOAPStatsOverviewProps>(({
     },
   ];
 
+  // Enhanced stats configuration
+  const enhancedStatsConfig = [
+    {
+      key: "enhancedNotes",
+      label: "AI Enhanced",
+      value: stats.enhancedNotesCount,
+      icon: Brain,
+      color: "purple",
+      description: "Notes with AI analysis",
+    },
+    {
+      key: "safeNotes",
+      label: "Safe",
+      value: stats.safeNotesCount,
+      icon: Shield,
+      color: "emerald",
+      description: "Notes marked as safe",
+    },
+    {
+      key: "unsafeNotes",
+      label: "Alerts",
+      value: stats.unsafeNotesCount,
+      icon: ShieldAlert,
+      color: "red",
+      description: "Notes requiring attention",
+    },
+    {
+      key: "redFlags",
+      label: "Red Flags",
+      value: stats.redFlagsCount,
+      icon: AlertTriangle,
+      color: "orange",
+      description: "Notes with clinical red flags",
+    },
+    {
+      key: "transcriptionConfidence",
+      label: "Accuracy",
+      value: `${stats.avgTranscriptionConfidence}%`,
+      icon: Stethoscope,
+      color: "blue",
+      description: "Average transcription confidence",
+    },
+    {
+      key: "processingTime",
+      label: "Speed",
+      value: `${stats.avgProcessingTime}s`,
+      icon: Clock,
+      color: "violet",
+      description: "Average processing time",
+    },
+  ];
+
+  // Choose which stats to display
+  const statsConfig = showEnhanced
+    ? (compact ? [...basicStatsConfig.slice(0, 2), ...enhancedStatsConfig.slice(0, 2)] : [...basicStatsConfig, ...enhancedStatsConfig])
+    : basicStatsConfig;
+
   const getColorClasses = (color: string) => {
     const colorMap = {
       blue: "bg-blue-500/15 group-hover:bg-blue-500/20 text-blue-600 dark:text-blue-400",
       emerald: "bg-emerald-500/15 group-hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
       violet: "bg-violet-500/15 group-hover:bg-violet-500/20 text-violet-600 dark:text-violet-400",
       orange: "bg-orange-500/15 group-hover:bg-orange-500/20 text-orange-600 dark:text-orange-400",
+      purple: "bg-purple-500/15 group-hover:bg-purple-500/20 text-purple-600 dark:text-purple-400",
+      red: "bg-red-500/15 group-hover:bg-red-500/20 text-red-600 dark:text-red-400",
     };
     return colorMap[color as keyof typeof colorMap] || colorMap.blue;
   };

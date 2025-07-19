@@ -1,5 +1,6 @@
 import { Id } from "@/convex/_generated/dataModel";
 import { UseSOAPViewerReturn } from "@/components/ui/soap-viewer";
+import { SOAPNote as EnhancedSOAPNote, SOAPUtils } from "@/app/patient/_components/soap-history/types";
 
 // Base types from the database
 export interface Patient {
@@ -13,14 +14,8 @@ export interface Patient {
   primaryPhone?: string;
 }
 
-export interface SOAPNote {
-  _id: Id<"soapNotes">;
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-  qualityScore?: number;
-}
+// Use the enhanced SOAP Note structure
+export interface SOAPNote extends EnhancedSOAPNote {}
 
 export interface SharedSOAPNote {
   _id: Id<"sharedSoapNotes">;

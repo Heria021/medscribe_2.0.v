@@ -4,7 +4,7 @@ import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { SOAPNote } from "../types";
+import { SOAPNote, SOAPUtils } from "../types";
 import { cn } from "@/lib/utils";
 
 interface SOAPNoteDocumentViewerProps {
@@ -27,6 +27,14 @@ export const SOAPNoteDocumentViewer = React.memo<SOAPNoteDocumentViewerProps>(({
   backButtonOverlay = false,
   className,
 }) => {
+  // Extract enhanced data using utility functions
+  const subjective = SOAPUtils.getSubjective(note);
+  const objective = SOAPUtils.getObjective(note);
+  const assessment = SOAPUtils.getAssessment(note);
+  const plan = SOAPUtils.getPlan(note);
+  const qualityScore = SOAPUtils.getQualityScore(note);
+  const specialty = SOAPUtils.getSpecialty(note);
+  const hasEnhancedData = SOAPUtils.hasEnhancedData(note);
   return (
     <div className={cn("h-full w-full flex flex-col relative", className)}>
       {/* Back Button - Regular (top bar) */}

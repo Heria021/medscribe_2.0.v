@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSOAPViewer } from "@/components/ui/soap-viewer";
+import { SOAPUtils } from "@/app/patient/_components/soap-history/types";
 import type { UseSharedSOAPActionsReturn, SharedSOAPNote } from "../types";
 import { soapRAGHooks } from "@/lib/services/soap-rag-hooks";
 
@@ -95,6 +96,19 @@ export function useSharedSOAPActions(): UseSharedSOAPActionsReturn {
    * Creates a text file with the SOAP note content and triggers download
    */
   const handleDownloadNote = useCallback((note: SharedSOAPNote) => {
+    // Extract enhanced data using utility functions
+    const subjective = note.soapNote ? SOAPUtils.getSubjective(note.soapNote) : '';
+    const objective = note.soapNote ? SOAPUtils.getObjective(note.soapNote) : '';
+    const assessment = note.soapNote ? SOAPUtils.getAssessment(note.soapNote) : '';
+    const plan = note.soapNote ? SOAPUtils.getPlan(note.soapNote) : '';
+    const qualityScore = note.soapNote ? SOAPUtils.getQualityScore(note.soapNote) : undefined;
+    const specialty = note.soapNote ? SOAPUtils.getSpecialty(note.soapNote) : undefined;
+    const safetyStatus = note.soapNote ? SOAPUtils.getSafetyStatus(note.soapNote) : undefined;
+    const redFlags = note.soapNote ? SOAPUtils.getRedFlags(note.soapNote) : [];
+    const recommendations = note.soapNote ? SOAPUtils.getRecommendations(note.soapNote) : [];
+    const sessionId = note.soapNote ? SOAPUtils.getSessionId(note.soapNote) : undefined;
+    const hasEnhancedData = note.soapNote ? SOAPUtils.hasEnhancedData(note.soapNote) : false;
+
     const content = `SOAP Note - ${note.patient?.firstName} ${note.patient?.lastName}
 
 Date: ${new Date(note.createdAt).toLocaleDateString()}
@@ -102,23 +116,25 @@ Patient: ${note.patient?.firstName} ${note.patient?.lastName}
 MRN: ${note.patient?.mrn || 'N/A'}
 Gender: ${note.patient?.gender}
 DOB: ${note.patient?.dateOfBirth}
+${sessionId ? `Session ID: ${sessionId}` : ''}
+${specialty ? `Specialty: ${specialty}` : ''}
+${hasEnhancedData ? 'Enhanced AI Analysis: Available' : ''}
 
 ${note.message ? `Message: "${note.message}"` : ''}
 
 SUBJECTIVE:
-${note.soapNote?.subjective}
+${subjective}
 
 OBJECTIVE:
-${note.soapNote?.objective}
+${objective}
 
 ASSESSMENT:
-${note.soapNote?.assessment}
+${assessment}
 
 PLAN:
-${note.soapNote?.plan}
+${plan}
 
-${note.soapNote?.qualityScore ? `Quality Score: ${note.soapNote.qualityScore}%` : ''}
-Share Type: ${note.shareType === "direct_share" ? "Direct Share" : "Referral Share"}
+${recommendations.length > 0 ? `RECOMMENDATIONS:\n${recommendations.map(rec => `• ${rec}`).join('\n')}\n\n` : ''}${redFlags.length > 0 ? `RED FLAGS:\n${redFlags.map(flag => `⚠ ${flag}`).join('\n')}\n\n` : ''}${qualityScore ? `Quality Score: ${qualityScore}%\n` : ''}${safetyStatus !== undefined ? `Safety Status: ${safetyStatus ? 'Safe' : 'Requires Attention'}\n` : ''}Share Type: ${note.shareType === "direct_share" ? "Direct Share" : "Referral Share"}
 Shared On: ${new Date(note.createdAt).toLocaleString()}`;
 
     const blob = new Blob([content], { type: 'text/plain' });

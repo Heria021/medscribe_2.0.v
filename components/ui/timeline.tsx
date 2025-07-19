@@ -65,29 +65,29 @@ export function Timeline({ items, className }: TimelineProps) {
       case "doctor_referral":
         return {
           icon: ArrowRight,
-          color: "text-violet-600 dark:text-violet-400",
-          bg: "bg-violet-500/10",
+          color: "text-muted-foreground",
+          bg: "bg-muted/30",
           label: "Referred to specialist"
         };
       case "specialist_accept":
         return {
           icon: CheckCircle,
-          color: "text-emerald-600 dark:text-emerald-400",
-          bg: "bg-emerald-500/10",
+          color: "text-primary",
+          bg: "bg-primary/10",
           label: "Referral accepted"
         };
       case "specialist_decline":
         return {
           icon: AlertCircle,
-          color: "text-red-600 dark:text-red-400",
-          bg: "bg-red-500/10",
+          color: "text-destructive",
+          bg: "bg-destructive/10",
           label: "Referral declined"
         };
       case "doctor_action":
         return {
           icon: CheckCircle,
-          color: "text-green-600 dark:text-green-400",
-          bg: "bg-green-500/10",
+          color: "text-secondary-foreground",
+          bg: "bg-secondary/30",
           label: "Action taken"
         };
     }
@@ -97,19 +97,19 @@ export function Timeline({ items, className }: TimelineProps) {
     switch (status) {
       case "completed":
         return (
-          <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+          <Badge variant="default" className="text-xs">
             {isRead ? "Reviewed" : "Completed"}
           </Badge>
         );
       case "pending":
         return (
-          <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
+          <Badge variant="outline" className="text-xs border-muted-foreground/50 text-muted-foreground bg-muted/10">
             Pending
           </Badge>
         );
       case "declined":
         return (
-          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800">
+          <Badge variant="outline" className="text-xs border-destructive/50 text-destructive bg-destructive/10">
             Declined
           </Badge>
         );

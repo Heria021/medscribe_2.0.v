@@ -1,8 +1,17 @@
-# Production-Ready SOAP Notes RAG Integration
+# Enhanced SOAP Notes RAG Integration
 
 ## 🎯 Overview
 
-This document outlines the comprehensive RAG integration for SOAP note lifecycle events including generation, sharing, acceptance, and actions. SOAP notes are the core of medical documentation, making this integration extremely valuable for AI-powered healthcare assistance.
+This document outlines the comprehensive RAG integration for SOAP note lifecycle events including generation, sharing, acceptance, and actions. The integration now supports both legacy and enhanced SOAP data structures with AI-powered analysis, quality metrics, safety assessments, and structured medical data.
+
+## 🚀 Enhanced Features
+
+- **AI-Enhanced Data Support**: Automatically extracts and embeds enhanced medical data from AI-processed SOAP notes
+- **Quality Metrics Integration**: Includes quality scores, safety assessments, and red flags in RAG embeddings
+- **Specialty Detection**: Embeds medical specialty information for better context
+- **Structured Medical Data**: Supports chief complaints, primary diagnosis, medications, allergies, and vital signs
+- **Safety Assessment**: Includes safety status and red flags for clinical decision support
+- **Session Tracking**: Links SOAP notes to processing sessions for better traceability
 
 ## ✅ Integrated SOAP Events
 
@@ -81,12 +90,12 @@ This document outlines the comprehensive RAG integration for SOAP note lifecycle
 
 ## 📝 Usage Examples
 
-### **SOAP Note Generation**
+### **Enhanced SOAP Note Generation**
 ```typescript
 // In useSOAPGenerate.ts
 const soapNoteId = await createSOAPNote({...});
 
-// RAG embedding happens automatically
+// Enhanced RAG embedding with AI-processed data
 soapRAGHooks.onSOAPNoteCreated({
   soapNoteId,
   doctorId,
@@ -95,13 +104,47 @@ soapRAGHooks.onSOAPNoteCreated({
   objective: "BP 140/90, HR 85, normal heart sounds...",
   assessment: "Hypertension, chest pain evaluation...",
   plan: "Start ACE inhibitor, follow-up in 2 weeks...",
-  vitalSigns: { bloodPressure: "140/90", heartRate: "85" },
-  diagnosis: ["Hypertension", "Chest pain"],
-  medications: ["Lisinopril 10mg"],
+
+  // Enhanced fields from AI processing
+  chiefComplaint: "Chest pain",
+  primaryDiagnosis: "Essential Hypertension",
+  specialty: "Cardiology",
+  qualityScore: 92,
+  safetyStatus: true,
+  hasEnhancedData: true,
+  sessionId: "sess_abc123",
+  processingTime: "45s",
+  transcriptionConfidence: 0.95,
+
+  // Structured medical data
+  vitalSigns: {
+    bloodPressure: "140/90",
+    heartRate: "85",
+    temperature: "98.6°F",
+    respiratoryRate: "16"
+  },
+  diagnosis: ["Essential Hypertension", "Chest pain evaluation"],
+  medications: ["Lisinopril 10mg daily"],
+  allergies: ["NKDA"],
+  recommendations: [
+    "Monitor blood pressure daily",
+    "Low sodium diet",
+    "Regular exercise"
+  ],
+  redFlags: [], // No red flags detected
   followUpInstructions: "Return in 2 weeks for BP check",
   status: 'completed',
   createdAt: Date.now(),
 });
+
+// Alternative: Use convenience method for existing SOAP notes
+const eventData = soapRAGHooks.createSOAPEventData(
+  soapNote, // Enhanced SOAP note object
+  doctorId,
+  patientId,
+  appointmentId
+);
+await soapRAGHooks.onSOAPNoteCreated(eventData);
 ```
 
 ### **SOAP Note Sharing**

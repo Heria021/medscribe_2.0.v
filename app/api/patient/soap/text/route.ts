@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Call external SOAP generation API
-    const externalApiUrl = process.env.SOAP_API_URL || "http://localhost:8000/api/v1/process-text";
+    const externalApiUrl = process.env.SOAP_TEXT_API_URL || "http://localhost:8000/api/v1/process-text";
     
     const response = await fetch(externalApiUrl, {
       method: "POST",

@@ -10,9 +10,9 @@ import {
   SOAPNotesGrid,
   SOAPHistorySkeleton,
   SOAPErrorBoundary,
-  SOAPDocumentViewerWrapper,
   ShareSOAPDialog,
 } from "@/app/patient/_components/soap-history";
+import { SOAPViewer, useSOAPViewer } from "@/components/ui/soap-viewer";
 import { api } from "@/convex/_generated/api";
 
 /**
@@ -41,6 +41,9 @@ export default function SOAPHistoryPage() {
   // Direct state management for stability and performance
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedSoapNoteId, setSelectedSoapNoteId] = useState<string | null>(null);
+
+  // Professional SOAP Viewer
+  const soapViewer = useSOAPViewer();
 
   // Data fetching
   const soapNotes = useQuery(
@@ -124,15 +127,13 @@ PLAN: ${note.plan}`;
     return "text-red-600 bg-red-50 border-red-200";
   }, []);
 
-  // Create a wrapper function to handle the ID to note conversion
-  const createViewNoteHandler = useCallback((openDocument: (note: any) => void) => {
-    return (noteId: string) => {
-      const note = filteredNotes.find(n => n._id === noteId);
-      if (note) {
-        openDocument(note);
-      }
-    };
-  }, [filteredNotes]);
+  // Handle viewing SOAP note with professional viewer
+  const handleViewNote = useCallback((noteId: string) => {
+    const note = filteredNotes.find(n => n._id === noteId);
+    if (note) {
+      soapViewer.openViewer(note);
+    }
+  }, [filteredNotes, soapViewer]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -153,63 +154,72 @@ PLAN: ${note.plan}`;
     return null;
   }
 
-  // Main SOAP History view with document viewer wrapper
+  // Main SOAP History view
   return (
     <SOAPErrorBoundary>
-      <SOAPDocumentViewerWrapper backButtonOverlay={true}>
-        {({ openDocument, isViewingDocument }) => {
-          // If viewing document, don't render the main content
-          if (isViewingDocument) {
-            return null;
-          }
+      <div className="h-full flex flex-col space-y-4">
+        {/* Header */}
+        <div className="flex-shrink-0 space-y-1">
+          <SOAPHistoryHeader
+            patientProfile={patientProfile || undefined}
+            title="SOAP Notes History"
+            subtitle="View and manage your generated clinical documentation"
+          />
+        </div>
 
-          // Create the view note handler with the current openDocument function
-          const handleViewNote = createViewNoteHandler(openDocument);
+        {/* SOAP Notes Grid - Scrollable */}
+        <div className="flex-1 min-h-0">
+          {filteredNotes.length === 0 ? (
+            <SOAPEmptyState />
+          ) : (
+            <SOAPNotesGrid
+              notes={filteredNotes}
+              sharedNotesMap={sharedNotesMap}
+              referrals={[] as any}
+              onDownload={handleDownloadNote}
+              onShare={handleShareNote}
+              onView={handleViewNote}
+              formatDate={formatDate}
+              getQualityColor={getQualityColor}
+              loading={loading}
+              virtualized={filteredNotes.length > 50}
+            />
+          )}
+        </div>
 
-          return (
-          <div className="h-full flex flex-col space-y-4">
-            {/* Header */}
-            <div className="flex-shrink-0 space-y-1">
-              <SOAPHistoryHeader
-                patientProfile={patientProfile || undefined}
-                title="SOAP Notes History"
-                subtitle="View and manage your generated clinical documentation"
-              />
-            </div>
+        {/* Share Dialog */}
+        {selectedSoapNoteId && (
+          <ShareSOAPDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            soapNoteId={selectedSoapNoteId}
+            onSuccess={handleShareSuccess}
+          />
+        )}
+      </div>
 
-            {/* SOAP Notes Grid - Scrollable */}
-            <div className="flex-1 min-h-0">
-              {filteredNotes.length === 0 ? (
-                <SOAPEmptyState />
-              ) : (
-                <SOAPNotesGrid
-                  notes={filteredNotes}
-                  sharedNotesMap={sharedNotesMap}
-                  referrals={[] as any}
-                  onDownload={handleDownloadNote}
-                  onShare={handleShareNote}
-                  onView={handleViewNote} // Use dialog instead of full page view
-                  formatDate={formatDate}
-                  getQualityColor={getQualityColor}
-                  loading={loading}
-                  virtualized={filteredNotes.length > 50}
-                />
-              )}
-            </div>
-
-            {/* Share Dialog */}
-            {selectedSoapNoteId && (
-              <ShareSOAPDialog
-                open={shareDialogOpen}
-                onOpenChange={setShareDialogOpen}
-                soapNoteId={selectedSoapNoteId}
-                onSuccess={handleShareSuccess}
-              />
-            )}
-          </div>
-          );
-        }}
-      </SOAPDocumentViewerWrapper>
+      {/* Professional SOAP Viewer for full-screen document view */}
+      {soapViewer.selectedNote && (
+        <SOAPViewer
+          note={soapViewer.selectedNote}
+          open={soapViewer.isOpen}
+          onOpenChange={soapViewer.setOpen}
+          config={{
+            showBackButton: true,
+            showActions: true,
+            showPatientInfo: true,
+            backButtonText: "Back to SOAP History"
+          }}
+          actions={{
+            onBack: soapViewer.closeViewer,
+            onDownload: () => {
+              if (soapViewer.selectedNote) {
+                handleDownloadNote(soapViewer.selectedNote._id);
+              }
+            }
+          }}
+        />
+      )}
     </SOAPErrorBoundary>
   );
 }

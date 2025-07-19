@@ -11,10 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  FileText, 
-  Eye, 
-  Save, 
+import {
+  FileText,
   Clock,
   User,
   Stethoscope,
@@ -26,8 +24,6 @@ import { SOAPResultPreviewProps } from "../types";
 
 export function SOAPResultPreview({
   result,
-  onViewFull,
-  onSave,
   className,
 }: SOAPResultPreviewProps) {
   const { data } = result;
@@ -270,24 +266,7 @@ export function SOAPResultPreview({
         </Card>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button
-          variant="outline"
-          onClick={onViewFull}
-          className="flex items-center gap-2"
-        >
-          <Eye className="h-4 w-4" />
-          View Full Document
-        </Button>
-        <Button
-          onClick={onSave}
-          className="flex items-center gap-2"
-        >
-          <Save className="h-4 w-4" />
-          Save SOAP Notes
-        </Button>
-      </div>
+      {/* Action Buttons - Removed to prevent duplication with main page buttons */}
     </div>
   );
 }

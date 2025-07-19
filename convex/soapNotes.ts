@@ -1,80 +1,22 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
-// Create a new SOAP note
+
+
+// Create a SOAP note from enhanced API response data
 export const create = mutation({
   args: {
     patientId: v.id("patients"),
     audioRecordingId: v.optional(v.id("audioRecordings")),
-    subjective: v.string(),
-    objective: v.string(),
-    assessment: v.string(),
-    plan: v.string(),
-    highlightedHtml: v.optional(v.string()),
-    qualityScore: v.optional(v.number()),
-    processingTime: v.optional(v.string()),
-    recommendations: v.optional(v.array(v.string())),
-    externalRecordId: v.optional(v.string()),
-    googleDocUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    
-    return await ctx.db.insert("soapNotes", {
-      ...args,
-      createdAt: now,
-      updatedAt: now,
-    });
-  },
-});
-
-// Create an enhanced SOAP note with AI analysis data
-export const createEnhanced = mutation({
-  args: {
-    patientId: v.id("patients"),
-    audioRecordingId: v.optional(v.id("audioRecordings")),
-    // Legacy SOAP fields (required for backward compatibility)
-    subjective: v.string(),
-    objective: v.string(),
-    assessment: v.string(),
-    plan: v.string(),
-    highlightedHtml: v.optional(v.string()),
-    qualityScore: v.optional(v.number()),
-    processingTime: v.optional(v.string()),
-    recommendations: v.optional(v.array(v.string())),
-    externalRecordId: v.optional(v.string()),
-    googleDocUrl: v.optional(v.string()),
-    // Enhanced fields
-    sessionId: v.optional(v.string()),
-    specialty: v.optional(v.string()),
-    specialtyConfidence: v.optional(v.number()),
-    focusAreas: v.optional(v.array(v.string())),
-    // Quality metrics
-    completenessScore: v.optional(v.number()),
-    clinicalAccuracy: v.optional(v.number()),
-    documentationQuality: v.optional(v.number()),
-    redFlags: v.optional(v.array(v.string())),
-    missingInformation: v.optional(v.array(v.string())),
-    // Safety assessment
-    isSafe: v.optional(v.boolean()),
-    safetyRedFlags: v.optional(v.array(v.string())),
-    criticalItems: v.optional(v.array(v.string())),
-    // Transcription data
-    transcriptionText: v.optional(v.string()),
-    transcriptionConfidence: v.optional(v.number()),
-    transcriptionLanguage: v.optional(v.string()),
-    transcriptionDuration: v.optional(v.number()),
-    // Enhanced structured data (JSON strings)
-    structuredSubjective: v.optional(v.string()),
-    structuredObjective: v.optional(v.string()),
-    structuredAssessment: v.optional(v.string()),
-    structuredPlan: v.optional(v.string()),
+    status: v.optional(v.string()),
+    data: v.any(), // The complete enhanced API response data structure
   },
   handler: async (ctx, args) => {
     const now = Date.now();
 
     return await ctx.db.insert("soapNotes", {
       ...args,
+      timestamp: now,
       createdAt: now,
       updatedAt: now,
     });
@@ -147,7 +89,7 @@ export const getRecentByPatientId = query({
   },
 });
 
-// Get SOAP notes statistics for a patient
+// Get enhanced SOAP notes statistics for a patient
 export const getStatsByPatientId = query({
   args: { patientId: v.id("patients") },
   handler: async (ctx, args) => {
@@ -157,21 +99,89 @@ export const getStatsByPatientId = query({
       .collect();
 
     const totalNotes = soapNotes.length;
-    const averageQuality = totalNotes > 0 
-      ? soapNotes
-          .filter(note => note.qualityScore !== undefined)
-          .reduce((sum, note) => sum + (note.qualityScore || 0), 0) / 
-        soapNotes.filter(note => note.qualityScore !== undefined).length
+
+    // Helper function to get quality score from enhanced structure
+    const getQualityScore = (note: any): number | undefined => {
+      return note.data?.qa_results?.quality_score ||
+             (note.data?.quality_metrics?.completeness_score ? Math.round(note.data.quality_metrics.completeness_score * 100) : undefined);
+    };
+
+    // Helper function to get safety status
+    const getSafetyStatus = (note: any): boolean | undefined => {
+      return note.data?.safety_check?.is_safe;
+    };
+
+    // Helper function to check if note has enhanced data
+    const hasEnhancedData = (note: any): boolean => {
+      return !!note.data?.enhanced_pipeline;
+    };
+
+    // Calculate basic metrics
+    const notesWithQuality = soapNotes.filter(note => getQualityScore(note) !== undefined);
+    const averageQuality = notesWithQuality.length > 0
+      ? Math.round(
+          notesWithQuality.reduce((sum, note) => sum + (getQualityScore(note) || 0), 0) /
+          notesWithQuality.length
+        )
       : 0;
-    
-    const excellentQualityCount = soapNotes.filter(note => 
-      (note.qualityScore || 0) >= 90
+
+    const excellentQualityCount = soapNotes.filter(note =>
+      (getQualityScore(note) || 0) >= 90
     ).length;
+
+    // Enhanced metrics
+    const enhancedNotesCount = soapNotes.filter(note => hasEnhancedData(note)).length;
+    const safeNotesCount = soapNotes.filter(note => getSafetyStatus(note) === true).length;
+    const unsafeNotesCount = soapNotes.filter(note => getSafetyStatus(note) === false).length;
+    const redFlagsCount = soapNotes.filter(note =>
+      (note.data?.quality_metrics?.red_flags?.length || 0) > 0 ||
+      (note.data?.safety_check?.red_flags?.length || 0) > 0
+    ).length;
+
+    // Specialty breakdown
+    const specialtyBreakdown: Record<string, number> = {};
+    soapNotes.forEach(note => {
+      const specialty = note.data?.specialty_detection?.specialty;
+      if (specialty) {
+        specialtyBreakdown[specialty] = (specialtyBreakdown[specialty] || 0) + 1;
+      }
+    });
+
+    // Quality distribution
+    const qualityDistribution = { excellent: 0, good: 0, fair: 0, poor: 0 };
+    soapNotes.forEach(note => {
+      const qualityScore = getQualityScore(note);
+      if (qualityScore !== undefined) {
+        if (qualityScore >= 90) qualityDistribution.excellent++;
+        else if (qualityScore >= 75) qualityDistribution.good++;
+        else if (qualityScore >= 60) qualityDistribution.fair++;
+        else qualityDistribution.poor++;
+      } else {
+        qualityDistribution.poor++;
+      }
+    });
+
+    // Average transcription confidence
+    const notesWithTranscription = soapNotes.filter(note => note.data?.transcription?.confidence);
+    const avgTranscriptionConfidence = notesWithTranscription.length > 0
+      ? Math.round(
+          notesWithTranscription.reduce((acc, note) =>
+            acc + (note.data?.transcription?.confidence || 0), 0
+          ) / notesWithTranscription.length * 100
+        )
+      : 0;
 
     return {
       totalNotes,
-      averageQuality: Math.round(averageQuality),
+      averageQuality,
       excellentQualityCount,
+      enhancedNotesCount,
+      safeNotesCount,
+      unsafeNotesCount,
+      redFlagsCount,
+      specialtyBreakdown,
+      qualityDistribution,
+      avgTranscriptionConfidence,
     };
   },
 });
@@ -191,11 +201,94 @@ export const searchByContent = query({
     const searchTermLower = args.searchTerm.toLowerCase();
 
     return allNotes.filter(note =>
-      note.subjective.toLowerCase().includes(searchTermLower) ||
-      note.objective.toLowerCase().includes(searchTermLower) ||
-      note.assessment.toLowerCase().includes(searchTermLower) ||
-      note.plan.toLowerCase().includes(searchTermLower)
+      // Search in enhanced structured data only
+      (note.data?.specialty_detection?.specialty && note.data.specialty_detection.specialty.toLowerCase().includes(searchTermLower)) ||
+      (note.data?.quality_metrics?.red_flags?.some(flag => flag.toLowerCase().includes(searchTermLower))) ||
+      (note.data?.safety_check?.red_flags?.some(flag => flag.toLowerCase().includes(searchTermLower))) ||
+      (note.data?.qa_results?.recommendations?.some(rec => rec.toLowerCase().includes(searchTermLower))) ||
+      // Search in structured SOAP sections
+      (note.data?.soap_notes?.soap_notes?.subjective?.history_present_illness &&
+       note.data.soap_notes.soap_notes.subjective.history_present_illness.toLowerCase().includes(searchTermLower)) ||
+      (note.data?.soap_notes?.soap_notes?.subjective?.chief_complaint &&
+       note.data.soap_notes.soap_notes.subjective.chief_complaint.toLowerCase().includes(searchTermLower)) ||
+      (note.data?.soap_notes?.soap_notes?.objective?.vital_signs &&
+       JSON.stringify(note.data.soap_notes.soap_notes.objective.vital_signs).toLowerCase().includes(searchTermLower)) ||
+      (note.data?.soap_notes?.soap_notes?.assessment?.primary_diagnosis?.clinical_reasoning &&
+       note.data.soap_notes.soap_notes.assessment.primary_diagnosis.clinical_reasoning.toLowerCase().includes(searchTermLower)) ||
+      (note.data?.soap_notes?.soap_notes?.plan?.patient_education?.some(edu => edu.toLowerCase().includes(searchTermLower))) ||
+      (note.data?.soap_notes?.soap_notes?.plan?.medications?.some(med => med.toLowerCase().includes(searchTermLower)))
     );
+  },
+});
+
+// Get SOAP notes by session ID
+export const getBySessionId = query({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("soapNotes")
+      .withIndex("by_session", (q) => q.eq("data.session_id", args.sessionId))
+      .first();
+  },
+});
+
+// Get SOAP notes by specialty
+export const getBySpecialty = query({
+  args: {
+    specialty: v.string(),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const query = ctx.db
+      .query("soapNotes")
+      .withIndex("by_specialty", (q) => q.eq("data.specialty_detection.specialty", args.specialty))
+      .order("desc");
+
+    if (args.limit) {
+      return await query.take(args.limit);
+    }
+
+    return await query.collect();
+  },
+});
+
+// Get SOAP notes by safety status
+export const getBySafetyStatus = query({
+  args: {
+    isSafe: v.boolean(),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const query = ctx.db
+      .query("soapNotes")
+      .withIndex("by_safety", (q) => q.eq("data.safety_check.is_safe", args.isSafe))
+      .order("desc");
+
+    if (args.limit) {
+      return await query.take(args.limit);
+    }
+
+    return await query.collect();
+  },
+});
+
+// Get SOAP notes by status
+export const getByStatus = query({
+  args: {
+    status: v.string(),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const query = ctx.db
+      .query("soapNotes")
+      .withIndex("by_status", (q) => q.eq("status", args.status))
+      .order("desc");
+
+    if (args.limit) {
+      return await query.take(args.limit);
+    }
+
+    return await query.collect();
   },
 });
 
@@ -219,10 +312,34 @@ export const addAssistance = mutation({
     // Add assistance to the SOAP note's plan section
     const assistanceNote = `\n\n--- Doctor Assistance (${new Date().toLocaleDateString()}) ---\nDr. ${doctor?.firstName} ${doctor?.lastName}: ${args.assistanceText}`;
 
-    await ctx.db.patch(args.soapNoteId, {
-      plan: soapNote.plan + assistanceNote,
+    // Update both legacy and new structure
+    const updateData: any = {
       updatedAt: now,
-    });
+    };
+
+
+
+    // Update structured plan if it exists in the data
+    if (soapNote.data?.soap_notes?.soap_notes?.plan) {
+      updateData.data = {
+        ...soapNote.data,
+        soap_notes: {
+          ...soapNote.data.soap_notes,
+          soap_notes: {
+            ...soapNote.data.soap_notes.soap_notes,
+            plan: {
+              ...soapNote.data.soap_notes.soap_notes.plan,
+              treatments: [
+                ...(soapNote.data.soap_notes.soap_notes.plan.treatments || []),
+                assistanceNote
+              ]
+            }
+          }
+        }
+      };
+    }
+
+    await ctx.db.patch(args.soapNoteId, updateData);
 
     // Create notification for patient
     if (patient && doctor) {

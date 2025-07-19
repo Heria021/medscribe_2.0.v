@@ -5,54 +5,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { ArrowLeft, Download, Share, Printer, Copy, FileText, Stethoscope, Shield, Clock } from "lucide-react";
+import { ArrowLeft, Download, Share, Printer, Copy, FileText, Stethoscope, Shield, Clock, Brain, AlertTriangle, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
 
-export interface SOAPNote {
-  _id: string;
-  // Legacy SOAP fields
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-  highlightedHtml?: string;
-  qualityScore?: number;
-  processingTime?: string;
-  recommendations?: string[];
-  googleDocUrl?: string;
-  createdAt: number;
-  updatedAt: number;
+// Import the enhanced SOAPNote type from the history components
+import { SOAPNote as EnhancedSOAPNote, SOAPUtils } from "@/app/patient/_components/soap-history/types";
+
+// Use the enhanced type for better compatibility
+export interface SOAPNote extends EnhancedSOAPNote {
   patientName?: string;
-  patientId?: string;
-  // Enhanced fields
-  sessionId?: string;
-  specialty?: string;
-  specialtyConfidence?: number;
-  focusAreas?: string[];
-  // Quality metrics
-  completenessScore?: number;
-  clinicalAccuracy?: number;
-  documentationQuality?: number;
-  redFlags?: string[];
-  missingInformation?: string[];
-  // Safety assessment
-  isSafe?: boolean;
-  safetyRedFlags?: string[];
-  criticalItems?: string[];
-  // Transcription data
-  transcriptionText?: string;
-  transcriptionConfidence?: number;
-  transcriptionLanguage?: string;
-  transcriptionDuration?: number;
-  // Enhanced structured data (JSON strings)
-  structuredSubjective?: string;
-  structuredObjective?: string;
-  structuredAssessment?: string;
-  structuredPlan?: string;
 }
 
 export interface SOAPViewerConfig {
@@ -213,26 +178,43 @@ export const SOAPViewer = React.memo<SOAPViewerProps>(({
   // --------------------------------
 
   /**
-   * Generates plain text content for clipboard copy
+   * Generates enhanced plain text content for clipboard copy
    */
   const generateTextContent = (note: SOAPNote, config: SOAPViewerConfig) => {
+    // Extract data using utility functions
+    const subjective = SOAPUtils.getSubjective(note);
+    const objective = SOAPUtils.getObjective(note);
+    const assessment = SOAPUtils.getAssessment(note);
+    const plan = SOAPUtils.getPlan(note);
+    const qualityScore = SOAPUtils.getQualityScore(note);
+    const specialty = SOAPUtils.getSpecialty(note);
+    const recommendations = SOAPUtils.getRecommendations(note);
+    const safetyStatus = SOAPUtils.getSafetyStatus(note);
+    const redFlags = SOAPUtils.getRedFlags(note);
+    const processingTime = SOAPUtils.getProcessingTime(note);
+    const sessionId = SOAPUtils.getSessionId(note);
+    const hasEnhancedData = SOAPUtils.hasEnhancedData(note);
+
     return `SOAP Clinical Note
 ${config.showPatientInfo && note.patientName ? `Patient: ${note.patientName}` : ''}
 Generated on ${formatDate(note.createdAt)}
+${sessionId ? `Session ID: ${sessionId}` : ''}
+${specialty ? `Specialty: ${specialty}` : ''}
+${hasEnhancedData ? 'Enhanced AI Analysis: Available' : ''}
 
 SUBJECTIVE:
-${note.subjective}
+${subjective}
 
 OBJECTIVE:
-${note.objective}
+${objective}
 
 ASSESSMENT:
-${note.assessment}
+${assessment}
 
 PLAN:
-${note.plan}
+${plan}
 
-${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n${note.recommendations.map(rec => `• ${rec}`).join('\n')}\n\n` : ''}${config.showMetadata ? `${note.qualityScore ? `Quality Score: ${note.qualityScore}%\n` : ''}${note.processingTime ? `Processing Time: ${note.processingTime}\n` : ''}Document ID: ${note._id.slice(-8)}` : ''}`;
+${recommendations.length > 0 ? `RECOMMENDATIONS:\n${recommendations.map(rec => `• ${rec}`).join('\n')}\n\n` : ''}${redFlags.length > 0 ? `RED FLAGS:\n${redFlags.map(flag => `⚠ ${flag}`).join('\n')}\n\n` : ''}${config.showMetadata ? `${qualityScore ? `Quality Score: ${qualityScore}%\n` : ''}${processingTime ? `Processing Time: ${processingTime}\n` : ''}${safetyStatus !== undefined ? `Safety Status: ${safetyStatus ? 'Safe' : 'Requires Attention'}\n` : ''}Document ID: ${note._id.slice(-8)}` : ''}`;
   };
 
   /**
@@ -444,37 +426,40 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
             <div class="document-content">
               <div class="section">
                 <div class="section-title">Subjective</div>
-                <div class="section-content">${note.subjective}</div>
+                <div class="section-content">${SOAPUtils.getSubjective(note)}</div>
               </div>
 
               <div class="section">
                 <div class="section-title">Objective</div>
-                <div class="section-content">${note.objective}</div>
+                <div class="section-content">${SOAPUtils.getObjective(note)}</div>
               </div>
 
               <div class="section">
                 <div class="section-title">Assessment</div>
-                <div class="section-content">${note.assessment}</div>
+                <div class="section-content">${SOAPUtils.getAssessment(note)}</div>
               </div>
 
               <div class="section">
                 <div class="section-title">Plan</div>
-                <div class="section-content">${note.plan}</div>
+                <div class="section-content">${SOAPUtils.getPlan(note)}</div>
               </div>
 
-              ${note.recommendations && note.recommendations.length > 0 ? `
-                <div class="section">
-                  <div class="section-title">Recommendations</div>
-                  <ul class="recommendations-list">
-                    ${note.recommendations.map(rec => `
-                      <li class="recommendation-item">
-                        <span class="recommendation-bullet">•</span>
-                        <span>${rec}</span>
-                      </li>
-                    `).join('')}
-                  </ul>
-                </div>
-              ` : ''}
+              ${(() => {
+                const recommendations = SOAPUtils.getRecommendations(note);
+                return recommendations.length > 0 ? `
+                  <div class="section">
+                    <div class="section-title">Recommendations</div>
+                    <ul class="recommendations-list">
+                      ${recommendations.map(rec => `
+                        <li class="recommendation-item">
+                          <span class="recommendation-bullet">•</span>
+                          <span>${rec}</span>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                ` : '';
+              })()}
 
               ${config.showMetadata ? `
                 <div class="document-footer">
@@ -487,18 +472,39 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
                   </div>
 
                   <div class="metadata">
-                    ${note.qualityScore ? `
-                      <div class="metadata-item">
-                        <div class="metadata-dot"></div>
-                        <span>Quality Score: ${note.qualityScore}%</span>
-                      </div>
-                    ` : ''}
-                    ${note.processingTime ? `
-                      <div class="metadata-item">
-                        <div class="metadata-dot"></div>
-                        <span>Processing Time: ${note.processingTime}</span>
-                      </div>
-                    ` : ''}
+                    ${(() => {
+                      const qualityScore = SOAPUtils.getQualityScore(note);
+                      const processingTime = SOAPUtils.getProcessingTime(note);
+                      const specialty = SOAPUtils.getSpecialty(note);
+                      const safetyStatus = SOAPUtils.getSafetyStatus(note);
+
+                      return `
+                        ${qualityScore ? `
+                          <div class="metadata-item">
+                            <div class="metadata-dot"></div>
+                            <span>Quality Score: ${qualityScore}%</span>
+                          </div>
+                        ` : ''}
+                        ${processingTime ? `
+                          <div class="metadata-item">
+                            <div class="metadata-dot"></div>
+                            <span>Processing Time: ${processingTime}</span>
+                          </div>
+                        ` : ''}
+                        ${specialty ? `
+                          <div class="metadata-item">
+                            <div class="metadata-dot"></div>
+                            <span>Specialty: ${specialty}</span>
+                          </div>
+                        ` : ''}
+                        ${safetyStatus !== undefined ? `
+                          <div class="metadata-item">
+                            <div class="metadata-dot"></div>
+                            <span>Safety Status: ${safetyStatus ? 'Safe' : 'Requires Attention'}</span>
+                          </div>
+                        ` : ''}
+                      `;
+                    })()}
                   </div>
 
                   <div>This document was generated automatically by MedScribe AI Clinical Platform</div>
@@ -649,50 +655,50 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
           <div className="flex justify-center">
             <div className="w-full max-w-4xl bg-card shadow-2xl mx-auto my-8 border border-border rounded-lg overflow-hidden">
               {/* Professional Document Header */}
-              <div className="bg-gradient-to-r from-muted/50 via-muted/30 to-muted/50 border-b border-border">
-                <div className="p-8 md:p-12">
+              <div className="bg-muted/30 border-b border-border">
+                <div className="p-6 md:p-8">
                   {/* Application Branding */}
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm">
-                        <Stethoscope className="h-6 w-6 text-primary-foreground" />
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm">
+                        <Stethoscope className="h-5 w-5 text-primary-foreground" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xl font-bold text-foreground">MedScribe</span>
-                        <span className="text-sm text-muted-foreground font-medium">v2.0 Clinical Platform</span>
+                        <span className="text-lg font-bold text-foreground">MedScribe</span>
+                        <span className="text-xs text-muted-foreground font-medium">v2.0 Clinical Platform</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="secondary" className="mb-2">
+                      <Badge variant="outline" className="mb-1 text-xs">
                         <Shield className="h-3 w-3 mr-1" />
                         HIPAA Compliant
                       </Badge>
                       <div className="text-xs text-muted-foreground">
-                        Document ID: {note._id.slice(-8)}
+                        ID: {note._id.slice(-8)}
                       </div>
                     </div>
                   </div>
 
                   {/* Document Title */}
                   <div className="text-center">
-                    <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3 tracking-tight">
                       {finalConfig.documentTitle}
                     </h1>
 
                     {/* Patient information for doctor views */}
                     {finalConfig.showPatientInfo && note.patientName && (
-                      <div className="mb-6">
-                        <Badge variant="outline" className="text-base px-4 py-2">
-                          <FileText className="h-4 w-4 mr-2" />
+                      <div className="mb-4">
+                        <Badge variant="outline" className="text-sm px-3 py-1">
+                          <FileText className="h-3 w-3 mr-2" />
                           Patient: {note.patientName}
                         </Badge>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-center gap-4 text-muted-foreground">
+                    <div className="flex items-center justify-center gap-3 text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span className="text-sm">Generated on {formatDate(note.createdAt)}</span>
+                        <Clock className="h-3 w-3" />
+                        <span className="text-xs">Generated on {formatDate(note.createdAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -700,200 +706,653 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
               </div>
 
               {/* Document Content */}
-              <div className="p-8 md:p-12 bg-card">
-                {/* SOAP content sections with professional typography */}
-                <div className="space-y-12">
+              <div className="p-6 md:p-8 bg-card">
+                {/* Enhanced SOAP content sections with professional typography */}
+                <div className="space-y-8">
+                  {/* Document Overview */}
+                  <div className="space-y-3">
+                    {/* Enhanced Data Indicator */}
+                    {SOAPUtils.hasEnhancedData(note) && (
+                      <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2 text-sm flex items-center gap-2">
+                          <Brain className="h-4 w-4" />
+                          AI Enhanced Analysis
+                        </h4>
+                        <p className="text-foreground text-xs">
+                          This SOAP note includes advanced AI analysis with structured medical data, quality metrics, and safety assessments.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Session Information */}
+                    {(() => {
+                      const sessionId = SOAPUtils.getSessionId(note);
+                      const specialty = SOAPUtils.getSpecialty(note);
+                      const processingTime = SOAPUtils.getProcessingTime(note);
+
+                      if (!sessionId && !specialty && !processingTime) return null;
+
+                      return (
+                        <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                          <h4 className="font-semibold text-foreground mb-2 text-sm">Session Information</h4>
+                          <div className="grid grid-cols-1 gap-1 text-xs">
+                            {sessionId && (
+                              <div className="text-foreground">
+                                <span className="font-medium">Session ID:</span> {sessionId}
+                              </div>
+                            )}
+                            {specialty && (
+                              <div className="text-foreground">
+                                <span className="font-medium">Detected Specialty:</span> {specialty}
+                              </div>
+                            )}
+                            {processingTime && (
+                              <div className="text-foreground">
+                                <span className="font-medium">Processing Time:</span> {processingTime}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
                   {/* Subjective Section */}
-                  <div className="space-y-4">
-                    <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider border-b-2 border-primary/20 pb-3 mb-6">
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
                       Subjective
                     </h2>
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed text-base pl-4 border-l-4 border-muted">
-                      {note.subjective}
-                    </div>
+                    {(() => {
+                      const subjective = note.data?.soap_notes?.soap_notes?.subjective;
+                      if (!subjective) return <p className="text-muted-foreground italic">No subjective data available</p>;
+
+                      return (
+                        <div className="space-y-3">
+                          {/* Chief Complaint */}
+                          {subjective.chief_complaint && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Chief Complaint</h4>
+                              <p className="text-foreground text-xs">{subjective.chief_complaint}</p>
+                            </div>
+                          )}
+
+                          {/* History of Present Illness */}
+                          {subjective.history_present_illness && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">History of Present Illness</h4>
+                              <p className="text-foreground text-xs">{subjective.history_present_illness}</p>
+                            </div>
+                          )}
+
+                          {/* Review of Systems */}
+                          {subjective.review_of_systems?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Review of Systems</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {subjective.review_of_systems.map((system, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {system}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Past Medical History */}
+                          {subjective.past_medical_history?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Past Medical History</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {subjective.past_medical_history.map((history, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {history}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Current Medications */}
+                          {subjective.medications?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Current Medications</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {subjective.medications.map((medication, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {medication}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Allergies */}
+                          {subjective.allergies?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Allergies</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {subjective.allergies.map((allergy, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {allergy}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Social History */}
+                          {subjective.social_history && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Social History</h4>
+                              <p className="text-foreground text-xs">{subjective.social_history}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Objective Section */}
-                  <div className="space-y-4">
-                    <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider border-b-2 border-primary/20 pb-3 mb-6">
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
                       Objective
                     </h2>
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed text-base pl-4 border-l-4 border-muted">
-                      {note.objective}
-                    </div>
+                    {(() => {
+                      const objective = note.data?.soap_notes?.soap_notes?.objective;
+                      if (!objective) return <p className="text-muted-foreground italic">No objective data available</p>;
+
+                      return (
+                        <div className="space-y-3">
+                          {/* Diagnostic Results */}
+                          {objective.diagnostic_results?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Diagnostic Results</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {objective.diagnostic_results.map((result, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {result}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Mental Status */}
+                          {objective.mental_status && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Mental Status</h4>
+                              <p className="text-foreground text-xs">{objective.mental_status}</p>
+                            </div>
+                          )}
+
+                          {/* Functional Status */}
+                          {objective.functional_status && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Functional Status</h4>
+                              <p className="text-foreground text-xs">{objective.functional_status}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Vital Signs (if available from enhanced data) */}
+                    {SOAPUtils.getVitalSigns(note) && (
+                      <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2 text-sm">Vital Signs</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          {Object.entries(SOAPUtils.getVitalSigns(note) || {}).map(([key, value]) => (
+                            <div key={key} className="text-foreground">
+                              <span className="font-medium">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span> {value}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Physical Examination (if available from enhanced data) */}
+                    {SOAPUtils.getPhysicalExam(note) && (
+                      <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2 text-sm">Physical Examination</h4>
+                        <div className="grid grid-cols-1 gap-1 text-xs">
+                          {Object.entries(SOAPUtils.getPhysicalExam(note) || {}).map(([key, value]) => (
+                            <div key={key} className="text-foreground">
+                              <span className="font-medium">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span> {value}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Assessment Section */}
-                  <div className="space-y-4">
-                    <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider border-b-2 border-primary/20 pb-3 mb-6">
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
                       Assessment
                     </h2>
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed text-base pl-4 border-l-4 border-muted">
-                      {note.assessment}
-                    </div>
+                    {(() => {
+                      const assessment = note.data?.soap_notes?.soap_notes?.assessment;
+                      if (!assessment) return <p className="text-muted-foreground italic">No assessment data available</p>;
+
+                      return (
+                        <div className="space-y-3">
+                          {/* Primary Diagnosis */}
+                          {assessment.primary_diagnosis && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Primary Diagnosis</h4>
+                              <div className="space-y-2">
+                                {assessment.primary_diagnosis.diagnosis && (
+                                  <p className="text-foreground text-xs">
+                                    <span className="font-medium">Diagnosis:</span> {assessment.primary_diagnosis.diagnosis}
+                                  </p>
+                                )}
+                                {assessment.primary_diagnosis.icd10_code && (
+                                  <p className="text-foreground text-xs">
+                                    <span className="font-medium">ICD-10:</span> {assessment.primary_diagnosis.icd10_code}
+                                  </p>
+                                )}
+                                {assessment.primary_diagnosis.severity && (
+                                  <p className="text-foreground text-xs">
+                                    <span className="font-medium">Severity:</span> {assessment.primary_diagnosis.severity}
+                                  </p>
+                                )}
+                                {assessment.primary_diagnosis.confidence && (
+                                  <p className="text-foreground text-xs">
+                                    <span className="font-medium">Confidence:</span> {Math.round(assessment.primary_diagnosis.confidence * 100)}%
+                                  </p>
+                                )}
+                                {assessment.primary_diagnosis.clinical_reasoning && (
+                                  <div className="mt-2">
+                                    <p className="text-foreground text-xs font-medium mb-1">Clinical Reasoning:</p>
+                                    <p className="text-foreground text-xs">{assessment.primary_diagnosis.clinical_reasoning}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Differential Diagnoses */}
+                          {assessment.differential_diagnoses?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Differential Diagnoses</h4>
+                              <div className="grid grid-cols-1 gap-2 text-xs">
+                                {assessment.differential_diagnoses.map((diff, index) => (
+                                  <div key={index} className="text-foreground border-l-2 border-muted/50 pl-2">
+                                    <p><span className="font-medium">Diagnosis:</span> {diff.diagnosis}</p>
+                                    {diff.icd10_code && <p><span className="font-medium">ICD-10:</span> {diff.icd10_code}</p>}
+                                    {diff.probability && <p><span className="font-medium">Probability:</span> {Math.round(diff.probability * 100)}%</p>}
+                                    {diff.ruling_out_criteria && <p><span className="font-medium">Ruling Out:</span> {diff.ruling_out_criteria}</p>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Problem List */}
+                          {assessment.problem_list?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Problem List</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {assessment.problem_list.map((problem, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {problem.problem}
+                                    <span className="text-muted-foreground ml-2">({problem.status}, {problem.priority} priority)</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Risk Assessment */}
+                          {(assessment.risk_level || assessment.risk_factors?.length > 0 || assessment.prognosis) && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Risk Assessment</h4>
+                              <div className="space-y-2">
+                                {assessment.risk_level && (
+                                  <p className="text-foreground text-xs">
+                                    <span className="font-medium">Risk Level:</span> {assessment.risk_level}
+                                  </p>
+                                )}
+                                {assessment.risk_factors?.length > 0 && (
+                                  <div>
+                                    <p className="text-foreground text-xs font-medium mb-1">Risk Factors:</p>
+                                    <div className="grid grid-cols-1 gap-1">
+                                      {assessment.risk_factors.map((factor, index) => (
+                                        <div key={index} className="text-foreground text-xs">
+                                          <span className="font-medium">•</span> {factor}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {assessment.prognosis && (
+                                  <p className="text-foreground text-xs">
+                                    <span className="font-medium">Prognosis:</span> {assessment.prognosis}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Plan Section */}
-                  <div className="space-y-4">
-                    <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider border-b-2 border-primary/20 pb-3 mb-6">
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
                       Plan
                     </h2>
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed text-base pl-4 border-l-4 border-muted">
-                      {note.plan}
-                    </div>
+                    {(() => {
+                      const plan = note.data?.soap_notes?.soap_notes?.plan;
+                      if (!plan) return <p className="text-muted-foreground italic">No plan data available</p>;
+
+                      return (
+                        <div className="space-y-3">
+                          {/* Diagnostic Workup */}
+                          {plan.diagnostic_workup?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Diagnostic Workup</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {plan.diagnostic_workup.map((workup, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {workup}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Treatments */}
+                          {plan.treatments?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Treatments</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {plan.treatments.map((treatment, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {treatment}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Medications */}
+                          {plan.medications?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Medications</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {plan.medications.map((medication, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {medication}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Follow-up */}
+                          {plan.follow_up?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Follow-up</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {plan.follow_up.map((followUp, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {followUp.provider} ({followUp.timeframe}
+                                    {followUp.urgency !== 'routine' && <span className="text-orange-600 ml-1">- {followUp.urgency}</span>})
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Patient Education */}
+                          {plan.patient_education?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Patient Education</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {plan.patient_education.map((education, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {education}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Referrals */}
+                          {plan.referrals?.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Referrals</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {plan.referrals.map((referral, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium">•</span> {referral}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Enhanced AI Analysis Section */}
-                  {(note.specialty || note.completenessScore || note.isSafe !== undefined) && (
-                    <div className="space-y-6 p-6 bg-muted/30 rounded-lg border border-border">
-                      <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
-                        AI Analysis & Quality Metrics
-                      </h2>
+                  {(() => {
+                    const specialty = SOAPUtils.getSpecialty(note);
+                    const qualityScore = SOAPUtils.getQualityScore(note);
+                    const safetyStatus = SOAPUtils.getSafetyStatus(note);
+                    const redFlags = SOAPUtils.getRedFlags(note);
+                    const hasEnhancedData = SOAPUtils.hasEnhancedData(note);
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Specialty Detection */}
-                        {note.specialty && (
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-foreground flex items-center gap-2">
-                              <Stethoscope className="h-4 w-4" />
-                              Detected Specialty
-                            </h3>
-                            <div className="space-y-1">
-                              <Badge variant="default" className="text-sm">
-                                {note.specialty}
-                              </Badge>
-                              {note.specialtyConfidence && (
-                                <div className="text-xs text-muted-foreground">
-                                  {Math.round(note.specialtyConfidence * 100)}% confidence
-                                </div>
-                              )}
-                              {note.focusAreas && note.focusAreas.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {note.focusAreas.map((area, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs">
-                                      {area}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                    // Show section if we have any enhanced data
+                    const showSection = specialty || qualityScore || safetyStatus !== undefined || hasEnhancedData;
 
-                        {/* Quality Metrics */}
-                        {(note.completenessScore || note.clinicalAccuracy || note.documentationQuality) && (
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-foreground flex items-center gap-2">
-                              <FileText className="h-4 w-4" />
-                              Quality Scores
-                            </h3>
-                            <div className="space-y-1 text-sm">
-                              {note.completenessScore && (
-                                <div className="flex justify-between">
-                                  <span>Completeness:</span>
-                                  <Badge variant="secondary">{Math.round(note.completenessScore * 100)}%</Badge>
-                                </div>
-                              )}
-                              {note.clinicalAccuracy && (
-                                <div className="flex justify-between">
-                                  <span>Clinical Accuracy:</span>
-                                  <Badge variant="secondary">{Math.round(note.clinicalAccuracy * 100)}%</Badge>
-                                </div>
-                              )}
-                              {note.documentationQuality && (
-                                <div className="flex justify-between">
-                                  <span>Documentation:</span>
-                                  <Badge variant="secondary">{Math.round(note.documentationQuality * 100)}%</Badge>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                    if (!showSection) return null;
 
-                        {/* Safety Assessment */}
-                        {note.isSafe !== undefined && (
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-foreground flex items-center gap-2">
-                              <Shield className="h-4 w-4" />
-                              Safety Assessment
-                            </h3>
-                            <div className="space-y-2">
-                              <Badge variant={note.isSafe ? "default" : "destructive"}>
-                                {note.isSafe ? "Safe" : "Needs Review"}
-                              </Badge>
-                              {note.safetyRedFlags && note.safetyRedFlags.length > 0 && (
-                                <div className="text-xs">
-                                  <div className="font-medium text-destructive mb-1">Red Flags:</div>
-                                  <ul className="list-disc list-inside space-y-1 text-destructive">
-                                    {note.safetyRedFlags.map((flag, index) => (
-                                      <li key={index}>{flag}</li>
-                                    ))}
-                                  </ul>
+                    return (
+                      <div className="space-y-3">
+                        <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
+                          AI Analysis & Quality Metrics
+                        </h2>
+
+                        <div className="space-y-3">
+                          {/* Specialty Detection */}
+                          {specialty && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm flex items-center gap-2">
+                                <Stethoscope className="h-4 w-4" />
+                                Detected Specialty
+                              </h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                <div className="text-foreground">
+                                  <span className="font-medium">Specialty:</span> {specialty}
                                 </div>
-                              )}
-                              {note.criticalItems && note.criticalItems.length > 0 && (
-                                <div className="text-xs">
-                                  <div className="font-medium text-orange-600 mb-1">Critical Items:</div>
-                                  <ul className="list-disc list-inside space-y-1 text-orange-600">
-                                    {note.criticalItems.map((item, index) => (
-                                      <li key={index}>{item}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
+                                {note.data?.specialty_detection?.confidence && (
+                                  <div className="text-foreground">
+                                    <span className="font-medium">Confidence:</span> {Math.round(note.data.specialty_detection.confidence * 100)}%
+                                  </div>
+                                )}
+                                {note.data?.specialty_detection?.reasoning && (
+                                  <div className="text-foreground mt-2">
+                                    <span className="font-medium">Reasoning:</span> {note.data.specialty_detection.reasoning}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+
+                          {/* Quality Metrics */}
+                          {note.data?.quality_metrics && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Quality Scores
+                              </h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {note.data.quality_metrics.completeness_score && (
+                                  <div className="text-foreground">
+                                    <span className="font-medium">Completeness:</span> {Math.round(note.data.quality_metrics.completeness_score * 100)}%
+                                  </div>
+                                )}
+                                {note.data.quality_metrics.clinical_accuracy && (
+                                  <div className="text-foreground">
+                                    <span className="font-medium">Clinical Accuracy:</span> {Math.round(note.data.quality_metrics.clinical_accuracy * 100)}%
+                                  </div>
+                                )}
+                                {note.data.quality_metrics.documentation_quality && (
+                                  <div className="text-foreground">
+                                    <span className="font-medium">Documentation Quality:</span> {Math.round(note.data.quality_metrics.documentation_quality * 100)}%
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Safety Assessment */}
+                          {safetyStatus !== undefined && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm flex items-center gap-2">
+                                {safetyStatus ? <Shield className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
+                                Safety Assessment
+                              </h4>
+                              <div className="space-y-3">
+                                <div className="text-foreground text-xs">
+                                  <span className="font-medium">Status:</span> {safetyStatus ? "Safe" : "Requires Attention"}
+                                </div>
+
+                                {/* Two-column grid for Safety Red Flags and Critical Items */}
+                                {((note.data?.safety_check?.red_flags && note.data.safety_check.red_flags.length > 0) ||
+                                  (note.data?.safety_check?.critical_items && note.data.safety_check.critical_items.length > 0)) && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Safety Red Flags */}
+                                    {note.data?.safety_check?.red_flags && note.data.safety_check.red_flags.length > 0 && (
+                                      <div>
+                                        <div className="font-medium text-foreground mb-2 text-xs">Safety Red Flags:</div>
+                                        <div className="grid grid-cols-1 gap-1">
+                                          {note.data.safety_check.red_flags.map((flag, index) => (
+                                            <div key={index} className="text-foreground text-xs">
+                                              <span className="font-medium text-destructive">•</span> {flag}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Critical Items */}
+                                    {note.data?.safety_check?.critical_items && note.data.safety_check.critical_items.length > 0 && (
+                                      <div>
+                                        <div className="font-medium text-foreground mb-2 text-xs">Critical Items:</div>
+                                        <div className="grid grid-cols-1 gap-1">
+                                          {note.data.safety_check.critical_items.map((item, index) => (
+                                            <div key={index} className="text-foreground text-xs">
+                                              <span className="font-medium text-orange-600">•</span> {item}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                          {/* Missing Information */}
+                          {note.data?.quality_metrics?.missing_information && note.data.quality_metrics.missing_information.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">Missing Information</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {note.data.quality_metrics.missing_information.map((item, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium text-orange-600">•</span> {item}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Clinical Red Flags */}
+                          {redFlags.length > 0 && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                Clinical Red Flags
+                              </h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {redFlags.map((flag, index) => (
+                                  <div key={index} className="text-foreground">
+                                    <span className="font-medium text-destructive">•</span> {flag}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* QA Results */}
+                          {note.data?.qa_results && (
+                            <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                              <h4 className="font-semibold text-foreground mb-2 text-sm">QA Results</h4>
+                              <div className="grid grid-cols-1 gap-1 text-xs">
+                                {note.data.qa_results.quality_score && (
+                                  <div className="text-foreground">
+                                    <span className="font-medium">Overall Quality Score:</span> {note.data.qa_results.quality_score}%
+                                  </div>
+                                )}
+                                {note.data.qa_results.approved !== undefined && (
+                                  <div className="text-foreground">
+                                    <span className="font-medium">Approved:</span> {note.data.qa_results.approved ? "Yes" : "No"}
+                                  </div>
+                                )}
+                                {note.data.qa_results.recommendations?.length > 0 && (
+                                  <div className="mt-2">
+                                    <div className="font-medium text-foreground mb-1">Recommendations:</div>
+                                    <div className="grid grid-cols-1 gap-1">
+                                      {note.data.qa_results.recommendations.map((rec, index) => (
+                                        <div key={index} className="text-foreground">
+                                          <span className="font-medium">•</span> {rec}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                       </div>
+                    );
+                  })()}
 
-                      {/* Missing Information */}
-                      {note.missingInformation && note.missingInformation.length > 0 && (
-                        <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                          <h4 className="font-medium text-orange-800 dark:text-orange-200 mb-2">Missing Information:</h4>
-                          <ul className="list-disc list-inside space-y-1 text-sm text-orange-700 dark:text-orange-300">
-                            {note.missingInformation.map((item, index) => (
-                              <li key={index}>{item}</li>
+                  {/* Recommendations Section */}
+                  {(() => {
+                    const recommendations = SOAPUtils.getRecommendations(note);
+                    if (recommendations.length === 0) return null;
+
+                    return (
+                      <div className="space-y-3">
+                        <h2 className="text-xl font-bold text-foreground uppercase tracking-wider border-b border-primary/20 pb-2 mb-4">
+                          Recommendations
+                        </h2>
+                        <div className="p-3 bg-muted/30 border border-border rounded-lg">
+                          <div className="grid grid-cols-1 gap-1 text-xs">
+                            {recommendations.map((recommendation, index) => (
+                              <div key={index} className="text-foreground">
+                                <span className="font-medium">•</span> {recommendation}
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </div>
-                      )}
-
-                      {/* Red Flags */}
-                      {note.redFlags && note.redFlags.length > 0 && (
-                        <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">Clinical Red Flags:</h4>
-                          <ul className="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
-                            {note.redFlags.map((flag, index) => (
-                              <li key={index}>{flag}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Recommendations if available */}
-                  {note.recommendations && note.recommendations.length > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-2xl font-bold text-foreground uppercase tracking-wider border-b-2 border-primary/20 pb-3 mb-6">
-                        Recommendations
-                      </h2>
-                      <ul className="space-y-3 pl-4 border-l-4 border-muted">
-                        {note.recommendations.map((recommendation, index) => (
-                          <li key={index} className="text-foreground leading-relaxed text-base flex items-start gap-3">
-                            <span className="text-primary font-bold mt-1">•</span>
-                            <span>{recommendation}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Document footer with metadata and compliance indicators */}
-                <div className="mt-16 pt-8 border-t border-border">
+                <div className="mt-8 pt-6 border-t border-border">
                   {/* Compliance badges */}
-                  <div className="flex flex-wrap justify-center items-center gap-4 mb-8">
+                  <div className="flex flex-wrap justify-center items-center gap-2 mb-6">
                     {[
                       { name: "HIPAA Compliant", icon: <Shield className="h-3 w-3" /> },
                       { name: "SOC 2 Type II", icon: <Shield className="h-3 w-3" /> },
@@ -911,42 +1370,72 @@ ${note.recommendations && note.recommendations.length > 0 ? `RECOMMENDATIONS:\n$
                   {/* Metadata section */}
                   {finalConfig.showMetadata && (
                     <div className="text-center">
-                      <div className="flex justify-center items-center gap-6 text-sm text-muted-foreground flex-wrap">
-                        {note.qualityScore && (
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 bg-primary rounded-full"></span>
-                            <span className="font-medium">Quality Score: {note.qualityScore}%</span>
-                          </div>
-                        )}
-                        {note.processingTime && (
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 bg-primary rounded-full"></span>
-                            <span className="font-medium">Processing Time: {note.processingTime}</span>
-                          </div>
-                        )}
-                        {note.sessionId && (
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 bg-primary rounded-full"></span>
-                            <span className="font-medium">Session: {note.sessionId.slice(-8)}</span>
-                          </div>
-                        )}
-                        {note.transcriptionDuration && (
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 bg-primary rounded-full"></span>
-                            <span className="font-medium">Audio Duration: {note.transcriptionDuration}s</span>
-                          </div>
-                        )}
-                        {note.transcriptionConfidence && (
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 bg-primary rounded-full"></span>
-                            <span className="font-medium">Transcription Confidence: {Math.round(note.transcriptionConfidence * 100)}%</span>
-                          </div>
-                        )}
+                      <div className="flex justify-center items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        {(() => {
+                          const qualityScore = SOAPUtils.getQualityScore(note);
+                          const processingTime = SOAPUtils.getProcessingTime(note);
+                          const sessionId = SOAPUtils.getSessionId(note);
+                          const specialty = SOAPUtils.getSpecialty(note);
+                          const safetyStatus = SOAPUtils.getSafetyStatus(note);
+
+                          return (
+                            <>
+                              {qualityScore && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Quality: {qualityScore}%</span>
+                                </div>
+                              )}
+                              {processingTime && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Processing: {processingTime}</span>
+                                </div>
+                              )}
+                              {sessionId && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Session: {sessionId.slice(-8)}</span>
+                                </div>
+                              )}
+                              {specialty && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Specialty: {specialty}</span>
+                                </div>
+                              )}
+                              {safetyStatus !== undefined && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Safety: {safetyStatus ? 'Safe' : 'Attention'}</span>
+                                </div>
+                              )}
+                              {note.data?.transcription?.duration && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Duration: {note.data.transcription.duration}s</span>
+                                </div>
+                              )}
+                              {note.data?.transcription?.confidence && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>Confidence: {Math.round(note.data.transcription.confidence * 100)}%</span>
+                                </div>
+                              )}
+                              {SOAPUtils.hasEnhancedData(note) && (
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></span>
+                                  <span>AI Enhanced</span>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
-                      <div className="mt-6 text-xs text-muted-foreground">
-                        This document was generated automatically by MedScribe AI Clinical Platform
+                      <div className="mt-4 text-xs text-muted-foreground">
+                        Generated by MedScribe AI Clinical Platform
                       </div>
-                      <div className="mt-2 text-xs text-muted-foreground/70">
+                      <div className="mt-1 text-xs text-muted-foreground/70">
                         © {new Date().getFullYear()} MedScribe. All rights reserved.
                       </div>
                     </div>

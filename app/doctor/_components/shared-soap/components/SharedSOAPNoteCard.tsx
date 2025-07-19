@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Stethoscope, Download, Clock, User, Calendar } from "lucide-react";
+import { Eye, Stethoscope, Download, Clock, User, Calendar, Brain, Shield, ShieldAlert, AlertTriangle } from "lucide-react";
+import { SOAPUtils } from "@/app/patient/_components/soap-history/types";
 import type { SharedSOAPNoteCardProps } from "../types";
+import { cn } from "@/lib/utils";
 
 /**
  * SharedSOAPNoteCard Component
@@ -19,6 +21,16 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
   onDownloadNote,
   formatDate,
 }) => {
+  // Extract enhanced data using utility functions
+  const qualityScore = note.soapNote ? SOAPUtils.getQualityScore(note.soapNote) : undefined;
+  const specialty = note.soapNote ? SOAPUtils.getSpecialty(note.soapNote) : undefined;
+  const safetyStatus = note.soapNote ? SOAPUtils.getSafetyStatus(note.soapNote) : undefined;
+  const redFlags = note.soapNote ? SOAPUtils.getRedFlags(note.soapNote) : [];
+  const hasEnhancedData = note.soapNote ? SOAPUtils.hasEnhancedData(note.soapNote) : false;
+  const subjective = note.soapNote ? SOAPUtils.getSubjective(note.soapNote) : '';
+  const assessment = note.soapNote ? SOAPUtils.getAssessment(note.soapNote) : '';
+  const chiefComplaint = note.soapNote ? SOAPUtils.getChiefComplaint(note.soapNote) : undefined;
+  const primaryDiagnosis = note.soapNote ? SOAPUtils.getPrimaryDiagnosis(note.soapNote) : undefined;
   return (
     <Card className="hover:shadow-sm transition-all duration-200 border-border/50">
       <CardContent className="p-3">
@@ -49,9 +61,48 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
                 >
                   {note.shareType === "direct_share" ? "Direct" : "Referral"}
                 </Badge>
-                {note.soapNote?.qualityScore && (
+
+                {/* Enhanced data indicator */}
+                {hasEnhancedData && (
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 text-purple-600 bg-purple-50 border-purple-200">
+                    <Brain className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
+
+                {/* Safety status */}
+                {safetyStatus !== undefined && (
+                  <Badge variant="outline" className={cn(
+                    "text-xs h-5 px-1.5",
+                    safetyStatus
+                      ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+                      : "text-red-600 bg-red-50 border-red-200"
+                  )}>
+                    {safetyStatus ? <Shield className="h-3 w-3 mr-1" /> : <ShieldAlert className="h-3 w-3 mr-1" />}
+                    {safetyStatus ? 'Safe' : 'Alert'}
+                  </Badge>
+                )}
+
+                {/* Specialty */}
+                {specialty && (
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 text-blue-600 bg-blue-50 border-blue-200">
+                    <Stethoscope className="h-3 w-3 mr-1" />
+                    {specialty.length > 8 ? specialty.substring(0, 8) + '...' : specialty}
+                  </Badge>
+                )}
+
+                {/* Quality score */}
+                {qualityScore && (
                   <Badge variant="outline" className="text-xs h-5 px-1.5">
-                    {note.soapNote.qualityScore}%
+                    {qualityScore}%
+                  </Badge>
+                )}
+
+                {/* Red flags indicator */}
+                {redFlags.length > 0 && (
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 bg-orange-50 border-orange-200">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {redFlags.length}
                   </Badge>
                 )}
               </div>
@@ -76,24 +127,58 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
               </div>
             )}
 
-            {/* SOAP Preview - Compact */}
-            <div className="bg-muted/20 rounded p-2 border border-border/30">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span className="font-medium text-foreground">S:</span>
-                  <span className="text-muted-foreground ml-1">
-                    {note.soapNote?.subjective.substring(0, 60)}...
-                  </span>
+            {/* Enhanced SOAP Preview */}
+            <div className="space-y-2">
+              {/* Chief Complaint or Primary Diagnosis (if available) */}
+              {(chiefComplaint || primaryDiagnosis) && (
+                <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
+                    {chiefComplaint ? 'Chief Complaint' : 'Primary Diagnosis'}
+                  </div>
+                  <div className="text-xs text-foreground font-medium">
+                    {(chiefComplaint || primaryDiagnosis)!.substring(0, 80)}
+                    {(chiefComplaint || primaryDiagnosis)!.length > 80 ? '...' : ''}
+                  </div>
                 </div>
-                {note.soapNote?.assessment && (
+              )}
+
+              {/* Traditional SOAP Preview */}
+              <div className="bg-muted/20 rounded p-2 border border-border/30">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="font-medium text-foreground">A:</span>
+                    <span className="font-medium text-foreground">S:</span>
                     <span className="text-muted-foreground ml-1">
-                      {note.soapNote.assessment.substring(0, 60)}...
+                      {subjective.substring(0, 60)}...
                     </span>
                   </div>
-                )}
+                  {assessment && (
+                    <div>
+                      <span className="font-medium text-foreground">A:</span>
+                      <span className="text-muted-foreground ml-1">
+                        {assessment.substring(0, 60)}...
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Red Flags (if any) */}
+              {redFlags.length > 0 && (
+                <div className="p-2 bg-orange-50 dark:bg-orange-950/20 rounded-md border border-orange-200 dark:border-orange-800">
+                  <div className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Red Flags ({redFlags.length})
+                  </div>
+                  <div className="text-xs text-orange-700 dark:text-orange-300">
+                    {redFlags.slice(0, 2).map((flag, index) => (
+                      <div key={index}>• {flag.substring(0, 50)}{flag.length > 50 ? '...' : ''}</div>
+                    ))}
+                    {redFlags.length > 2 && (
+                      <div className="text-orange-600 font-medium">+{redFlags.length - 2} more</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons - Compact */}

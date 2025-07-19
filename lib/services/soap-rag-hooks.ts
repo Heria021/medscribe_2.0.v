@@ -10,6 +10,8 @@
  */
 
 import { embedDoctorData, embedPatientData } from './rag-api';
+import { SOAPUtils } from '@/app/patient/_components/soap-history/types';
+import { safeExtractSOAPData } from '@/lib/utils/soap-type-guards';
 
 /**
  * Configuration for SOAP RAG embedding
@@ -31,18 +33,24 @@ const DEFAULT_CONFIG: SOAPRAGConfig = {
 };
 
 /**
- * SOAP note data structure
+ * Enhanced SOAP note data structure for RAG embedding
+ * Supports both legacy and enhanced data structures
  */
 export interface SOAPNoteEventData {
   soapNoteId: string;
   doctorId: string;
   patientId: string;
   appointmentId?: string;
+
+  // Core SOAP content (extracted from either legacy or enhanced structure)
   subjective: string;
   objective: string;
   assessment: string;
   plan: string;
+
+  // Enhanced fields
   chiefComplaint?: string;
+  primaryDiagnosis?: string;
   vitalSigns?: {
     bloodPressure?: string;
     heartRate?: string;
@@ -54,10 +62,29 @@ export interface SOAPNoteEventData {
   };
   diagnosis?: string[];
   medications?: string[];
+  allergies?: string[];
   followUpInstructions?: string;
+  recommendations?: string[];
+
+  // Quality and safety metrics
+  qualityScore?: number;
+  specialty?: string;
+  safetyStatus?: boolean;
+  redFlags?: string[];
+
+  // Enhanced data indicators
+  hasEnhancedData?: boolean;
+  sessionId?: string;
+  processingTime?: string;
+  transcriptionConfidence?: number;
+
+  // Status and timestamps
   status: 'draft' | 'completed' | 'shared' | 'reviewed';
   createdAt: number;
   updatedAt?: number;
+
+  // Raw enhanced data (optional for advanced processing)
+  enhancedData?: any;
 }
 
 /**
@@ -99,6 +126,46 @@ class SOAPRAGService {
 
   constructor(config: Partial<SOAPRAGConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  /**
+   * Extract enhanced SOAP data from a SOAP note for RAG embedding
+   */
+  private extractEnhancedSOAPData(soapNote: any): Partial<SOAPNoteEventData> {
+    // Use the safe extraction utility
+    const extractedData = safeExtractSOAPData(soapNote);
+
+    // Extract additional enhanced fields
+    const chiefComplaint = SOAPUtils.getChiefComplaint?.(soapNote);
+    const primaryDiagnosis = SOAPUtils.getPrimaryDiagnosis?.(soapNote);
+    const medications = SOAPUtils.getMedications?.(soapNote) || [];
+    const allergies = SOAPUtils.getAllergies?.(soapNote) || [];
+    const vitalSigns = SOAPUtils.getVitalSigns?.(soapNote);
+    const sessionId = SOAPUtils.getSessionId?.(soapNote);
+    const processingTime = SOAPUtils.getProcessingTime?.(soapNote);
+    const transcriptionConfidence = soapNote.data?.transcription?.confidence;
+
+    return {
+      subjective: extractedData.subjective,
+      objective: extractedData.objective,
+      assessment: extractedData.assessment,
+      plan: extractedData.plan,
+      qualityScore: extractedData.qualityScore,
+      specialty: extractedData.specialty,
+      safetyStatus: extractedData.safetyStatus,
+      redFlags: extractedData.redFlags,
+      recommendations: extractedData.recommendations,
+      hasEnhancedData: extractedData.hasEnhancedData,
+      chiefComplaint,
+      primaryDiagnosis,
+      medications,
+      allergies,
+      vitalSigns,
+      sessionId,
+      processingTime,
+      transcriptionConfidence,
+      enhancedData: soapNote.data, // Store raw enhanced data for advanced processing
+    };
   }
 
   /**
@@ -160,22 +227,45 @@ class SOAPRAGService {
     await this.executeEmbed(
       async () => {
         const date = new Date(soapData.createdAt).toLocaleDateString();
+
+        // Enhanced data fields
         const diagnosisText = soapData.diagnosis?.length ? ` Diagnosis: ${soapData.diagnosis.join(', ')}` : '';
+        const primaryDiagnosisText = soapData.primaryDiagnosis ? ` Primary Diagnosis: ${soapData.primaryDiagnosis}` : '';
         const medicationsText = soapData.medications?.length ? ` Medications: ${soapData.medications.join(', ')}` : '';
+        const allergiesText = soapData.allergies?.length ? ` Allergies: ${soapData.allergies.join(', ')}` : '';
         const vitalSignsText = soapData.vitalSigns ? ` Vitals: BP ${soapData.vitalSigns.bloodPressure || 'N/A'}, HR ${soapData.vitalSigns.heartRate || 'N/A'}` : '';
         const followUpText = soapData.followUpInstructions ? ` Follow-up: ${soapData.followUpInstructions}` : '';
-        
-        const doctorData = `SOAP note created for patient visit on ${date}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Subjective: ${soapData.subjective}. Objective: ${soapData.objective}. Assessment: ${soapData.assessment}. Plan: ${soapData.plan}.${diagnosisText}${medicationsText}${vitalSignsText}${followUpText}`;
-        
-        const patientData = `Medical visit documented on ${date}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Assessment: ${soapData.assessment}. Treatment plan: ${soapData.plan}.${diagnosisText}${followUpText}`;
+        const recommendationsText = soapData.recommendations?.length ? ` Recommendations: ${soapData.recommendations.join(', ')}` : '';
+        const specialtyText = soapData.specialty ? ` Specialty: ${soapData.specialty}` : '';
+        const qualityText = soapData.qualityScore ? ` Quality Score: ${soapData.qualityScore}%` : '';
+        const safetyText = soapData.safetyStatus !== undefined ? ` Safety Status: ${soapData.safetyStatus ? 'Safe' : 'Requires Attention'}` : '';
+        const redFlagsText = soapData.redFlags?.length ? ` Red Flags: ${soapData.redFlags.join(', ')}` : '';
+        const enhancedText = soapData.hasEnhancedData ? ' [AI Enhanced Analysis]' : '';
+        const sessionText = soapData.sessionId ? ` Session: ${soapData.sessionId}` : '';
+        const processingText = soapData.processingTime ? ` Processing Time: ${soapData.processingTime}` : '';
+
+        const doctorData = `SOAP note created for patient visit on ${date}${enhancedText}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Subjective: ${soapData.subjective}. Objective: ${soapData.objective}. Assessment: ${soapData.assessment}. Plan: ${soapData.plan}.${diagnosisText}${primaryDiagnosisText}${medicationsText}${allergiesText}${vitalSignsText}${followUpText}${recommendationsText}${specialtyText}${qualityText}${safetyText}${redFlagsText}${sessionText}${processingText}`;
+
+        const patientData = `Medical visit documented on ${date}${enhancedText}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Assessment: ${soapData.assessment}. Treatment plan: ${soapData.plan}.${diagnosisText}${primaryDiagnosisText}${medicationsText}${allergiesText}${followUpText}${recommendationsText}${safetyText}${redFlagsText}`;
         
         const metadata = {
           soap_note_id: soapData.soapNoteId,
           appointment_id: soapData.appointmentId,
           chief_complaint: soapData.chiefComplaint,
+          primary_diagnosis: soapData.primaryDiagnosis,
           diagnosis: soapData.diagnosis,
           medications: soapData.medications,
+          allergies: soapData.allergies,
           vital_signs: soapData.vitalSigns,
+          recommendations: soapData.recommendations,
+          specialty: soapData.specialty,
+          quality_score: soapData.qualityScore,
+          safety_status: soapData.safetyStatus,
+          red_flags: soapData.redFlags,
+          has_enhanced_data: soapData.hasEnhancedData,
+          session_id: soapData.sessionId,
+          processing_time: soapData.processingTime,
+          transcription_confidence: soapData.transcriptionConfidence,
           status: soapData.status,
           created_date: date
         };
@@ -198,6 +288,50 @@ class SOAPRAGService {
       'soap_note_created',
       soapData.soapNoteId
     );
+  }
+
+  /**
+   * Create enhanced SOAP event data from a SOAP note object
+   * This is a convenience method for converting SOAP notes to RAG event data
+   */
+  createSOAPEventData(
+    soapNote: any,
+    doctorId: string,
+    patientId: string,
+    appointmentId?: string
+  ): SOAPNoteEventData {
+    const enhancedData = this.extractEnhancedSOAPData(soapNote);
+
+    return {
+      soapNoteId: soapNote._id,
+      doctorId,
+      patientId,
+      appointmentId,
+      subjective: enhancedData.subjective || '',
+      objective: enhancedData.objective || '',
+      assessment: enhancedData.assessment || '',
+      plan: enhancedData.plan || '',
+      chiefComplaint: enhancedData.chiefComplaint,
+      primaryDiagnosis: enhancedData.primaryDiagnosis,
+      diagnosis: enhancedData.diagnosis || [],
+      medications: enhancedData.medications || [],
+      allergies: enhancedData.allergies || [],
+      vitalSigns: enhancedData.vitalSigns,
+      followUpInstructions: soapNote.followUpInstructions,
+      recommendations: enhancedData.recommendations || [],
+      qualityScore: enhancedData.qualityScore,
+      specialty: enhancedData.specialty,
+      safetyStatus: enhancedData.safetyStatus,
+      redFlags: enhancedData.redFlags || [],
+      hasEnhancedData: enhancedData.hasEnhancedData || false,
+      sessionId: enhancedData.sessionId,
+      processingTime: enhancedData.processingTime,
+      transcriptionConfidence: enhancedData.transcriptionConfidence,
+      status: soapNote.status || 'completed',
+      createdAt: soapNote.createdAt || soapNote.timestamp || Date.now(),
+      updatedAt: soapNote.updatedAt,
+      enhancedData: enhancedData.enhancedData,
+    };
   }
 
   /**

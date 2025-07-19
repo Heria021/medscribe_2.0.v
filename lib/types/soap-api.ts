@@ -39,13 +39,36 @@ export interface ProcessingData {
   status: "completed";
   message: string;
   session_id: string;
-  transcription: TranscriptionResult;
-  validation: ValidationResult;
+  patient_id: string;
+  enhanced_pipeline: boolean;
+
+  // Transcription (only for process-audio)
+  transcription?: TranscriptionResult;
+
+  validation_result: ValidationResult;
   specialty_detection: SpecialtyDetection;
   soap_notes: EnhancedSOAPNotes;
   quality_metrics: QualityMetrics;
   safety_check: SafetyCheck;
-  enhanced_pipeline: boolean;
+
+  // Quality assessment
+  qa_results: {
+    quality_score: number;
+    errors: string[];
+    warnings: string[];
+    recommendations: string[];
+    critical_flags: any[];
+    approved: boolean;
+  };
+
+  // Document generation results
+  document?: {
+    document_path?: string;
+    success: boolean;
+    error?: string;
+  };
+
+
 }
 
 // ============================================================================
@@ -67,9 +90,10 @@ export interface ValidationResult {
 }
 
 export interface SpecialtyDetection {
-  detected_specialty: string;  // e.g., "Cardiology", "Endocrinology"
+  specialty: string;           // e.g., "Cardiology", "Endocrinology"
   confidence: number;          // 0.0 to 1.0
-  focus_areas: string[];       // e.g., ["Acute Coronary Syndrome"]
+  reasoning: string;           // Explanation for specialty detection
+  templates: any;              // Specialty-specific templates
 }
 
 export interface QualityMetrics {
@@ -223,22 +247,7 @@ export type UrgencyLevel = "routine" | "urgent" | "stat";
 export type ProblemStatus = "active" | "chronic" | "resolved";
 export type PriorityLevel = "high" | "medium" | "low";
 
-// ============================================================================
-// LEGACY COMPATIBILITY TYPES
-// ============================================================================
 
-export interface LegacySOAPNote {
-  _id: string;
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-  qualityScore?: number;
-  processingTime?: string;
-  recommendations?: string[];
-  createdAt: number;
-  updatedAt: number;
-}
 
 // ============================================================================
 // EXPORT ALL TYPES
@@ -284,6 +293,5 @@ export type {
   ProblemStatus,
   PriorityLevel,
   
-  // Legacy types
-  LegacySOAPNote,
+
 };

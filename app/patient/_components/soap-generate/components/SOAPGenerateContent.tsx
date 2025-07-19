@@ -309,8 +309,6 @@ export function SOAPGenerateContent({
             {/* SOAP Preview */}
             <SOAPResultPreview
               result={state.result}
-              onViewFull={() => { }} // Will be implemented with viewer
-              onSave={handleSaveAndView}
             />
           </div>
 

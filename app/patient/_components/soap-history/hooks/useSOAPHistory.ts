@@ -7,7 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useSOAPSearch } from "./useSOAPSearch";
 import { useSOAPStats } from "./useSOAPStats";
 import { useSOAPSharing } from "./useSOAPSharing";
-import { SOAPNote, SharedSOAPNote, UseSOAPHistoryReturn } from "../types";
+import { SOAPNote, SharedSOAPNote, UseSOAPHistoryReturn, SOAPUtils } from "../types";
 
 /**
  * Main SOAP History hook that orchestrates all SOAP-related functionality
@@ -95,11 +95,14 @@ export function useSOAPHistory(patientId: string): UseSOAPHistoryReturn {
     });
   }, []);
 
-  const getQualityColor = useCallback((score?: number): string => {
-    if (!score) return "text-gray-500 bg-gray-50 border-gray-200";
-    if (score >= 90) return "text-emerald-600 bg-emerald-50 border-emerald-200";
-    if (score >= 75) return "text-blue-600 bg-blue-50 border-blue-200";
-    if (score >= 60) return "text-orange-600 bg-orange-50 border-orange-200";
+  const getQualityColor = useCallback((score?: number, note?: SOAPNote): string => {
+    // Use provided score or extract from note
+    const qualityScore = score ?? (note ? SOAPUtils.getQualityScore(note) : undefined);
+
+    if (!qualityScore) return "text-gray-500 bg-gray-50 border-gray-200";
+    if (qualityScore >= 90) return "text-emerald-600 bg-emerald-50 border-emerald-200";
+    if (qualityScore >= 75) return "text-blue-600 bg-blue-50 border-blue-200";
+    if (qualityScore >= 60) return "text-orange-600 bg-orange-50 border-orange-200";
     return "text-red-600 bg-red-50 border-red-200";
   }, []);
 
@@ -114,25 +117,44 @@ export function useSOAPHistory(patientId: string): UseSOAPHistoryReturn {
 
   const handleDownloadNote = useCallback((note: SOAPNote) => {
     try {
-      // Create downloadable content
+      // Extract data using utility functions
+      const subjective = SOAPUtils.getSubjective(note);
+      const objective = SOAPUtils.getObjective(note);
+      const assessment = SOAPUtils.getAssessment(note);
+      const plan = SOAPUtils.getPlan(note);
+      const qualityScore = SOAPUtils.getQualityScore(note);
+      const specialty = SOAPUtils.getSpecialty(note);
+      const recommendations = SOAPUtils.getRecommendations(note);
+      const safetyStatus = SOAPUtils.getSafetyStatus(note);
+      const redFlags = SOAPUtils.getRedFlags(note);
+      const sessionId = SOAPUtils.getSessionId(note);
+
+      // Create enhanced downloadable content
       const content = `
 SOAP Clinical Note
 Generated: ${formatDate(note.createdAt)}
-Quality Score: ${note.qualityScore || 'N/A'}%
+${sessionId ? `Session ID: ${sessionId}` : ''}
+${specialty ? `Specialty: ${specialty}` : ''}
+Quality Score: ${qualityScore || 'N/A'}${typeof qualityScore === 'number' ? '%' : ''}
+${safetyStatus !== undefined ? `Safety Status: ${safetyStatus ? 'Safe' : 'Requires Attention'}` : ''}
 
 SUBJECTIVE:
-${note.subjective}
+${subjective}
 
 OBJECTIVE:
-${note.objective}
+${objective}
 
 ASSESSMENT:
-${note.assessment}
+${assessment}
 
 PLAN:
-${note.plan}
+${plan}
 
-${note.recommendations?.length ? `RECOMMENDATIONS:\n${note.recommendations.join('\n')}` : ''}
+${recommendations?.length ? `RECOMMENDATIONS:\n${recommendations.join('\n')}` : ''}
+
+${redFlags?.length ? `RED FLAGS:\n${redFlags.join('\n')}` : ''}
+
+${SOAPUtils.hasEnhancedData(note) ? '\n--- ENHANCED DATA AVAILABLE ---\nThis note contains structured medical data for advanced analysis.' : ''}
       `.trim();
 
       // Create and download file

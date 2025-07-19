@@ -45,7 +45,17 @@ export class SOAPErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('SOAP Generation Error:', error, errorInfo);
+    console.error('SOAP Generation Error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+      errorInfo: {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: errorInfo.errorBoundary?.name,
+        errorBoundaryStack: errorInfo.errorBoundaryStack
+      }
+    });
     this.setState({
       error,
       errorInfo,
@@ -179,7 +189,12 @@ export function useErrorHandler() {
   const handleError = React.useCallback((error: Error | string) => {
     const errorObj = typeof error === 'string' ? new Error(error) : error;
     setError(errorObj);
-    console.error('SOAP Generation Error:', errorObj);
+    console.error('SOAP Generation Error:', {
+      name: errorObj.name,
+      message: errorObj.message,
+      stack: errorObj.stack,
+      cause: errorObj.cause
+    });
   }, []);
 
   React.useEffect(() => {

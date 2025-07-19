@@ -191,50 +191,184 @@ export default defineSchema({
     .index("by_created_at", ["createdAt"]),
 
   soapNotes: defineTable({
+    // Core identifiers
     patientId: v.id("patients"),
     audioRecordingId: v.optional(v.id("audioRecordings")),
-    // Legacy SOAP fields (for backward compatibility)
-    subjective: v.string(),
-    objective: v.string(),
-    assessment: v.string(),
-    plan: v.string(),
-    highlightedHtml: v.optional(v.string()),
-    qualityScore: v.optional(v.number()),
-    processingTime: v.optional(v.string()),
-    recommendations: v.optional(v.array(v.string())),
-    externalRecordId: v.optional(v.string()),
-    googleDocUrl: v.optional(v.string()),
-    // Enhanced SOAP fields
-    sessionId: v.optional(v.string()),
-    specialty: v.optional(v.string()),
-    specialtyConfidence: v.optional(v.number()),
-    focusAreas: v.optional(v.array(v.string())),
-    // Quality metrics
-    completenessScore: v.optional(v.number()),
-    clinicalAccuracy: v.optional(v.number()),
-    documentationQuality: v.optional(v.number()),
-    redFlags: v.optional(v.array(v.string())),
-    missingInformation: v.optional(v.array(v.string())),
-    // Safety assessment
-    isSafe: v.optional(v.boolean()),
-    safetyRedFlags: v.optional(v.array(v.string())),
-    criticalItems: v.optional(v.array(v.string())),
-    // Transcription data
-    transcriptionText: v.optional(v.string()),
-    transcriptionConfidence: v.optional(v.number()),
-    transcriptionLanguage: v.optional(v.string()),
-    transcriptionDuration: v.optional(v.number()),
-    // Enhanced structured data (stored as JSON strings for complex objects)
-    structuredSubjective: v.optional(v.string()),
-    structuredObjective: v.optional(v.string()),
-    structuredAssessment: v.optional(v.string()),
-    structuredPlan: v.optional(v.string()),
+    status: v.optional(v.string()),
+    timestamp: v.number(),
+
+    // Main data structure containing all SOAP processing results
+    data: v.optional(v.object({
+      // Enhanced pipeline fields
+      session_id: v.string(),
+      patient_id: v.string(),
+      enhanced_pipeline: v.boolean(),
+
+      // Transcription (only for process-audio)
+      transcription: v.optional(v.object({
+        text: v.string(),
+        confidence: v.number(),
+        language: v.string(),
+        duration: v.number(),
+      })),
+
+      validation_result: v.object({
+        validated_text: v.string(),
+        corrections: v.array(v.any()),
+        flags: v.array(v.any()),
+        confidence: v.number(),
+      }),
+
+      // Specialty detection
+      specialty_detection: v.object({
+        specialty: v.string(),
+        confidence: v.number(),
+        reasoning: v.string(),
+        templates: v.any(),
+      }),
+
+      // Main SOAP notes data structure
+      soap_notes: v.object({
+        // Structured SOAP notes
+        soap_notes: v.object({
+          subjective: v.object({
+            chief_complaint: v.string(),
+            history_present_illness: v.string(),
+            review_of_systems: v.array(v.string()),
+            past_medical_history: v.array(v.string()),
+            medications: v.array(v.string()),
+            allergies: v.array(v.string()),
+            social_history: v.string(),
+          }),
+          objective: v.object({
+            vital_signs: v.any(), // Flexible object for various vital signs
+            physical_exam: v.any(), // Flexible object for exam findings
+            diagnostic_results: v.array(v.string()),
+            mental_status: v.string(),
+            functional_status: v.string(),
+          }),
+          assessment: v.object({
+            primary_diagnosis: v.object({
+              diagnosis: v.string(),
+              icd10_code: v.string(),
+              confidence: v.number(),
+              severity: v.union(
+                v.literal("mild"),
+                v.literal("moderate"),
+                v.literal("severe")
+              ),
+              clinical_reasoning: v.string(),
+            }),
+            differential_diagnoses: v.array(v.object({
+              diagnosis: v.string(),
+              icd10_code: v.string(),
+              probability: v.number(),
+              ruling_out_criteria: v.string(),
+            })),
+            problem_list: v.array(v.object({
+              problem: v.string(),
+              status: v.union(
+                v.literal("active"),
+                v.literal("resolved"),
+                v.literal("chronic")
+              ),
+              priority: v.union(
+                v.literal("high"),
+                v.literal("medium"),
+                v.literal("low")
+              ),
+            })),
+            risk_level: v.union(
+              v.literal("low"),
+              v.literal("moderate"),
+              v.literal("high")
+            ),
+            risk_factors: v.array(v.string()),
+            prognosis: v.string(),
+          }),
+          plan: v.object({
+            diagnostic_workup: v.array(v.string()),
+            treatments: v.array(v.string()),
+            medications: v.array(v.string()),
+            follow_up: v.array(v.object({
+              provider: v.string(),
+              timeframe: v.string(),
+              urgency: v.union(
+                v.literal("routine"),
+                v.literal("urgent"),
+                v.literal("stat")
+              ),
+            })),
+            patient_education: v.array(v.string()),
+            referrals: v.array(v.string()),
+          }),
+          clinical_notes: v.string(),
+        }),
+
+        // Quality metrics at soap_notes level
+        quality_metrics: v.object({
+          completeness_score: v.number(),
+          clinical_accuracy: v.number(),
+          documentation_quality: v.number(),
+          red_flags: v.array(v.string()),
+          missing_information: v.array(v.string()),
+        }),
+
+        // SOAP notes metadata
+        session_id: v.string(),
+        specialty: v.string(),
+
+      }),
+
+      // Top-level quality metrics
+      quality_metrics: v.object({
+        completeness_score: v.number(),
+        clinical_accuracy: v.number(),
+        documentation_quality: v.number(),
+        red_flags: v.array(v.string()),
+        missing_information: v.array(v.string()),
+      }),
+
+      // Safety checks
+      safety_check: v.object({
+        is_safe: v.boolean(),
+        red_flags: v.array(v.string()),
+        critical_items: v.array(v.string()),
+      }),
+
+      // Quality assessment
+      qa_results: v.object({
+        quality_score: v.number(),
+        errors: v.array(v.string()),
+        warnings: v.array(v.string()),
+        recommendations: v.array(v.string()),
+        critical_flags: v.array(v.any()),
+        approved: v.boolean(),
+      }),
+
+      // Document generation results
+      document: v.optional(v.object({
+        document_path: v.optional(v.string()),
+        success: v.boolean(),
+        error: v.optional(v.string()),
+      })),
+
+    })),
+
+
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_patient_id", ["patientId"])
-    .index("by_audio_recording_id", ["audioRecordingId"])
-    .index("by_created_at", ["createdAt"]),
+  .index("by_patient", ["data.patient_id"])
+  .index("by_session", ["data.session_id"])
+  .index("by_status", ["status"])
+  .index("by_timestamp", ["timestamp"])
+  .index("by_specialty", ["data.specialty_detection.specialty"])
+  .index("by_safety", ["data.safety_check.is_safe"])
+  .index("by_patient_id", ["patientId"])
+  .index("by_audio_recording_id", ["audioRecordingId"])
+  .index("by_created_at", ["createdAt"]),
 
   sharedSoapNotes: defineTable({
     soapNoteId: v.id("soapNotes"),

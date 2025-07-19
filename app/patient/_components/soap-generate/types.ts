@@ -114,8 +114,6 @@ export interface QualityMetricsDisplayProps {
 
 export interface SOAPResultPreviewProps {
   result: SOAPProcessingResponse;
-  onViewFull: () => void;
-  onSave: () => Promise<void>;
   className?: string;
 }
 

@@ -13,9 +13,14 @@ import {
   Eye,
   Download,
   CheckCircle,
+  Shield,
+  ShieldAlert,
+  Stethoscope,
+  AlertTriangle,
+  Brain,
 } from "lucide-react";
 import Link from "next/link";
-import { SOAPNoteCardProps } from "../types";
+import { SOAPNoteCardProps, SOAPUtils } from "../types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -56,6 +61,18 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
   const dateFormatter = formatDate || defaultFormatDate;
   const qualityColorGetter = getQualityColor || defaultGetQualityColor;
 
+  // Extract enhanced data using utility functions
+  const subjective = SOAPUtils.getSubjective(note);
+  const assessment = SOAPUtils.getAssessment(note);
+  const qualityScore = SOAPUtils.getQualityScore(note);
+  const specialty = SOAPUtils.getSpecialty(note);
+  const safetyStatus = SOAPUtils.getSafetyStatus(note);
+  const redFlags = SOAPUtils.getRedFlags(note);
+  const chiefComplaint = SOAPUtils.getChiefComplaint(note);
+  const primaryDiagnosis = SOAPUtils.getPrimaryDiagnosis(note);
+  const hasEnhancedData = SOAPUtils.hasEnhancedData(note);
+  const processingTime = SOAPUtils.getProcessingTime(note);
+
   // Compact version for list views
   if (compact) {
     return (
@@ -66,11 +83,11 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="p-1.5 bg-blue-500/10 rounded shrink-0">
-                <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+              <div className="p-1.5 bg-muted/30 rounded shrink-0">
+                <FileText className="h-3 w-3 text-foreground" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium text-sm text-foreground truncate">
+                <h3 className="font-semibold text-sm text-foreground truncate">
                   SOAP Clinical Note
                 </h3>
                 <p className="text-xs text-muted-foreground">
@@ -78,16 +95,43 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {note.qualityScore && (
-                <Badge variant="outline" className={cn(
-                  "text-xs h-5",
-                  qualityColorGetter(note.qualityScore)
-                )}>
-                  <Star className="h-3 w-3 mr-1" />
-                  {note.qualityScore}%
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Enhanced data indicator */}
+              {hasEnhancedData && (
+                <Badge variant="outline" className="text-xs h-5">
+                  <Brain className="h-3 w-3 mr-1" />
+                  AI
                 </Badge>
               )}
+
+              {/* Safety status */}
+              {safetyStatus !== undefined && (
+                <Badge variant={safetyStatus ? "default" : "outline"} className={cn(
+                  "text-xs h-5",
+                  !safetyStatus && "border-destructive/50 text-destructive bg-destructive/10"
+                )}>
+                  {safetyStatus ? <Shield className="h-3 w-3 mr-1" /> : <ShieldAlert className="h-3 w-3 mr-1" />}
+                  {safetyStatus ? 'Safe' : 'Alert'}
+                </Badge>
+              )}
+
+              {/* Specialty */}
+              {specialty && (
+                <Badge variant="secondary" className="text-xs h-5">
+                  <Stethoscope className="h-3 w-3 mr-1" />
+                  {specialty.length > 8 ? specialty.substring(0, 8) + '...' : specialty}
+                </Badge>
+              )}
+
+              {/* Quality score */}
+              {qualityScore && (
+                <Badge variant="outline" className="text-xs h-5">
+                  <Star className="h-3 w-3 mr-1" />
+                  {qualityScore}%
+                </Badge>
+              )}
+
+              {/* Shared status */}
               {sharedWith.length > 0 && (
                 <Badge variant="secondary" className="text-xs h-5">
                   <Share className="h-3 w-3 mr-1" />
@@ -107,16 +151,16 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
       "hover:border-primary/50 transition-colors group",
       className
     )}>
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <div className="space-y-3">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-500/10 rounded">
-                <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+              <div className="p-1.5 bg-muted/30 rounded">
+                <FileText className="h-3 w-3 text-foreground" />
               </div>
               <div>
-                <h3 className="font-medium text-sm text-foreground">
+                <h3 className="font-semibold text-sm text-foreground">
                   SOAP Clinical Note
                 </h3>
                 <p className="text-xs text-muted-foreground">
@@ -124,16 +168,51 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              {note.qualityScore && (
-                <Badge variant="outline" className={cn(
-                  "text-xs h-5",
-                  qualityColorGetter(note.qualityScore)
-                )}>
-                  <Star className="h-3 w-3 mr-1" />
-                  {note.qualityScore}%
+            <div className="flex items-center gap-1 flex-wrap">
+              {/* Enhanced data indicator */}
+              {hasEnhancedData && (
+                <Badge variant="outline" className="text-xs h-5">
+                  <Brain className="h-3 w-3 mr-1" />
+                  Enhanced
                 </Badge>
               )}
+
+              {/* Safety status */}
+              {safetyStatus !== undefined && (
+                <Badge variant={safetyStatus ? "default" : "outline"} className={cn(
+                  "text-xs h-5",
+                  !safetyStatus && "border-destructive/50 text-destructive bg-destructive/10"
+                )}>
+                  {safetyStatus ? <Shield className="h-3 w-3 mr-1" /> : <ShieldAlert className="h-3 w-3 mr-1" />}
+                  {safetyStatus ? 'Safe' : 'Requires Attention'}
+                </Badge>
+              )}
+
+              {/* Red flags indicator */}
+              {redFlags.length > 0 && (
+                <Badge variant="outline" className="text-xs h-5 border-destructive/50 text-destructive bg-destructive/10">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {redFlags.length} Flag{redFlags.length > 1 ? 's' : ''}
+                </Badge>
+              )}
+
+              {/* Specialty */}
+              {specialty && (
+                <Badge variant="secondary" className="text-xs h-5">
+                  <Stethoscope className="h-3 w-3 mr-1" />
+                  {specialty}
+                </Badge>
+              )}
+
+              {/* Quality score */}
+              {qualityScore && (
+                <Badge variant="outline" className="text-xs h-5">
+                  <Star className="h-3 w-3 mr-1" />
+                  {qualityScore}%
+                </Badge>
+              )}
+
+              {/* Shared status */}
               {sharedWith.length > 0 && (
                 <Badge variant="secondary" className="text-xs h-5">
                   <Share className="h-3 w-3 mr-1" />
@@ -144,41 +223,102 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
           </div>
 
           {/* Content Preview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <h4 className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase">
-                Subjective
-              </h4>
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {note.subjective.length > 100
-                  ? note.subjective.substring(0, 100) + "..."
-                  : note.subjective}
-              </p>
+          <div className="space-y-2">
+            {/* Chief Complaint or Primary Diagnosis (if available) */}
+            {(chiefComplaint || primaryDiagnosis) && (
+              <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                <h4 className="text-xs font-semibold text-foreground mb-1">
+                  {chiefComplaint ? 'Chief Complaint' : 'Primary Diagnosis'}
+                </h4>
+                <p className="text-xs text-foreground">
+                  {(chiefComplaint || primaryDiagnosis)?.length > 80
+                    ? (chiefComplaint || primaryDiagnosis)?.substring(0, 80) + "..."
+                    : (chiefComplaint || primaryDiagnosis)}
+                </p>
+              </div>
+            )}
+
+            {/* SOAP Preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {subjective && (
+                <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                  <h4 className="text-xs font-semibold text-foreground mb-1">Subjective</h4>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {subjective.length > 80
+                      ? subjective.substring(0, 80) + "..."
+                      : subjective}
+                  </p>
+                </div>
+              )}
+              {assessment && (
+                <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                  <h4 className="text-xs font-semibold text-foreground mb-1">Assessment</h4>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {assessment.length > 80
+                      ? assessment.substring(0, 80) + "..."
+                      : assessment}
+                  </p>
+                </div>
+              )}
             </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase">
-                Assessment
-              </h4>
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {note.assessment.length > 100
-                  ? note.assessment.substring(0, 100) + "..."
-                  : note.assessment}
-              </p>
+
+            {/* Safety & Quality Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Safety Status */}
+              {safetyStatus !== undefined && (
+                <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                  <h4 className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                    {safetyStatus ? <Shield className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
+                    Safety Status
+                  </h4>
+                  <p className="text-xs text-foreground">
+                    {safetyStatus ? 'Safe' : 'Requires Attention'}
+                  </p>
+                </div>
+              )}
+
+              {/* Red Flags */}
+              {redFlags.length > 0 && (
+                <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                  <h4 className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Red Flags ({redFlags.length})
+                  </h4>
+                  <p className="text-xs text-foreground">
+                    {redFlags.slice(0, 2).join(', ')}
+                    {redFlags.length > 2 && ` +${redFlags.length - 2} more`}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Processing Info */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>{note.processingTime || 'N/A'}</span>
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+            <div className="flex items-center gap-3">
+              {processingTime && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{processingTime}</span>
+                </div>
+              )}
+              {specialty && (
+                <div className="flex items-center gap-1">
+                  <Stethoscope className="h-3 w-3" />
+                  <span>{specialty}</span>
+                </div>
+              )}
             </div>
-            {note.qualityScore && (
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3" />
-                <span>{note.qualityScore}%</span>
-              </div>
-            )}
+
+            {/* Status indicators */}
+            <div className="flex items-center gap-2">
+              {hasEnhancedData && (
+                <div className="flex items-center gap-1">
+                  <Brain className="h-3 w-3" />
+                  <span>AI Enhanced</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Timeline for Referrals and Sharing */}

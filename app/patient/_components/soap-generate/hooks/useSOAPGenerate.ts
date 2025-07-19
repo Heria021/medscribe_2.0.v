@@ -43,8 +43,8 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
   const router = useRouter();
   const [state, setState] = useState<SOAPGenerationState>(initialState);
   
-  // Convex mutation for saving SOAP notes
-  const createSOAPNote = useMutation(api.soapNotes.createEnhanced);
+  // Convex mutation for saving SOAP notes with enhanced API response data
+  const createSOAPNote = useMutation(api.soapNotes.create);
 
   // ============================================================================
   // STATE MANAGEMENT ACTIONS
@@ -141,13 +141,18 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
 
     toast.error(errorMessage);
 
-    // Better error logging with serialization
+    // Better error logging with proper serialization
     console.error('SOAP Generation Error:', {
       type: soapError.type,
       message: soapError.message,
       details: soapError.details,
       timestamp: new Date(soapError.timestamp).toISOString(),
-      originalError: error
+      originalError: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      } : error
     });
   }, []);
 
@@ -300,24 +305,113 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
             language: 'en',
             duration: 300
           },
-          validation: {
+          validation_result: {
             validated_text: 'Validated conversation content',
             corrections: [],
             flags: [],
             confidence: 0.95
           },
           specialty_detection: {
-            detected_specialty: 'Emergency Medicine',
+            specialty: 'Emergency Medicine',
             confidence: 0.92,
-            focus_areas: ['Acute Coronary Syndrome', 'Chest Pain Evaluation']
+            reasoning: 'Patient presents with acute chest pain requiring emergency evaluation',
+            templates: {}
           },
           soap_notes: {
+            // Structured SOAP notes
+            soap_notes: {
+              subjective: {
+                chief_complaint: 'Acute onset chest pain',
+                history_present_illness: '58-year-old male with acute onset chest pain x 2 hours. Pain described as heavy pressure in center of chest, radiating to left arm and jaw. Associated with shortness of breath, diaphoresis, and nausea. Onset while mowing lawn.',
+                review_of_systems: ['Chest pain', 'Shortness of breath', 'Diaphoresis', 'Nausea'],
+                past_medical_history: ['Hypertension', 'Diabetes mellitus', 'Smoking history'],
+                medications: ['Metformin', 'Lisinopril', 'Aspirin'],
+                allergies: ['NKDA'],
+                social_history: 'Former smoker, occasional alcohol use'
+              },
+              objective: {
+                vital_signs: {
+                  blood_pressure: '160/95',
+                  heart_rate: '95',
+                  oxygen_saturation: '96%',
+                  temperature: '98.6°F',
+                  respiratory_rate: '18'
+                },
+                physical_exam: {
+                  general: 'Patient appears uncomfortable, diaphoretic',
+                  cardiovascular: 'Regular rate and rhythm, no murmurs',
+                  respiratory: 'Clear to auscultation bilaterally'
+                },
+                diagnostic_results: ['EKG shows acute changes consistent with ACS'],
+                mental_status: 'Alert and oriented',
+                functional_status: 'Ambulatory with assistance'
+              },
+              assessment: {
+                primary_diagnosis: {
+                  diagnosis: 'Acute coronary syndrome/STEMI',
+                  icd10_code: 'I21.9',
+                  confidence: 0.95,
+                  severity: 'severe',
+                  clinical_reasoning: 'Multiple cardiac risk factors including HTN, DM, smoking history, and strong family history of premature CAD'
+                },
+                differential_diagnoses: [
+                  {
+                    diagnosis: 'Unstable angina',
+                    icd10_code: 'I20.0',
+                    probability: 0.15,
+                    ruling_out_criteria: 'EKG changes consistent with STEMI'
+                  }
+                ],
+                problem_list: [
+                  {
+                    problem: 'Acute coronary syndrome',
+                    status: 'active',
+                    priority: 'high'
+                  }
+                ],
+                risk_level: 'high',
+                risk_factors: ['Hypertension', 'Diabetes', 'Smoking history', 'Family history of CAD'],
+                prognosis: 'Good with immediate intervention'
+              },
+              plan: {
+                diagnostic_workup: ['Cardiac catheterization', 'Serial troponins', 'Echocardiogram'],
+                treatments: ['ACS protocol initiated', 'Continuous cardiac monitoring'],
+                medications: ['Aspirin', 'Clopidogrel', 'Atorvastatin', 'Metoprolol'],
+                follow_up: [
+                  {
+                    provider: 'Cardiology',
+                    timeframe: 'Immediate',
+                    urgency: 'stat'
+                  }
+                ],
+                patient_education: ['Cardiac diet', 'Activity restrictions', 'Medication compliance'],
+                referrals: ['Cardiology consultation']
+              },
+              clinical_notes: 'Patient presents with classic symptoms of acute coronary syndrome. Immediate intervention required.'
+            },
+
+            // Quality metrics at soap_notes level
+            quality_metrics: {
+              completeness_score: 0.92,
+              clinical_accuracy: 0.95,
+              documentation_quality: 0.88,
+              red_flags: ['Acute chest pain with radiation', 'Multiple cardiac risk factors'],
+              missing_information: ['Allergies confirmation', 'Current medications dosages']
+            },
+
+            // SOAP notes metadata
+            session_id: `conv_${Date.now()}`,
+            specialty: 'Emergency Medicine',
+
+            // Legacy compatibility fields
             subjective: '58-year-old male with acute onset chest pain x 2 hours. Pain described as heavy pressure in center of chest, radiating to left arm and jaw. Associated with shortness of breath, diaphoresis, and nausea. Onset while mowing lawn.',
             objective: 'Vital Signs: BP 160/95, HR 95, O2 sat 96%. Patient appears uncomfortable, diaphoretic. EKG shows acute changes consistent with ACS.',
             assessment: 'Acute coronary syndrome/STEMI. Multiple cardiac risk factors including HTN, DM, smoking history, and strong family history of premature CAD.',
             plan: 'ACS protocol initiated, cardiology consultation, plan for cardiac catheterization. Patient education provided, family notification arranged.',
             icd_codes: ['I21.9', 'I25.10']
           },
+
+          // Top-level quality metrics
           quality_metrics: {
             completeness_score: 0.92,
             clinical_accuracy: 0.95,
@@ -325,11 +419,57 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
             red_flags: ['Acute chest pain with radiation', 'Multiple cardiac risk factors'],
             missing_information: ['Allergies confirmation', 'Current medications dosages']
           },
+
+          // Safety checks
           safety_check: {
             is_safe: false,
             red_flags: ['Acute coronary syndrome', 'High-risk chest pain'],
             critical_items: ['Immediate cardiology consultation required', 'Continuous cardiac monitoring']
           },
+
+          // Quality assessment
+          qa_results: {
+            quality_score: 92,
+            errors: [],
+            warnings: ['High-risk presentation requires immediate attention'],
+            recommendations: ['Immediate cardiology consultation', 'Continuous monitoring'],
+            critical_flags: ['Acute coronary syndrome'],
+            approved: true
+          },
+
+          // Document generation results
+          document: {
+            document_path: '/documents/soap_note_conv_' + Date.now() + '.pdf',
+            success: true,
+            error: undefined
+          },
+
+          // Legacy compatibility fields at top level
+          status: 'completed',
+          message: 'Conversation analysis complete',
+          processing_summary: {
+            transcription: 'Conversation transcribed successfully',
+            validation: 'Content validated with high confidence',
+            soap_generation: 'Structured SOAP notes generated',
+            quality_assurance: 'Quality metrics calculated',
+            highlighting: 'Key medical terms highlighted',
+            document_creation: 'PDF document generated',
+            ehr_integration: 'Ready for EHR integration'
+          },
+          deliverables: {
+            clinical_notes: {
+              subjective: '58-year-old male with acute onset chest pain x 2 hours. Pain described as heavy pressure in center of chest, radiating to left arm and jaw. Associated with shortness of breath, diaphoresis, and nausea. Onset while mowing lawn.',
+              objective: 'Vital Signs: BP 160/95, HR 95, O2 sat 96%. Patient appears uncomfortable, diaphoretic. EKG shows acute changes consistent with ACS.',
+              assessment: 'Acute coronary syndrome/STEMI. Multiple cardiac risk factors including HTN, DM, smoking history, and strong family history of premature CAD.',
+              plan: 'ACS protocol initiated, cardiology consultation, plan for cardiac catheterization. Patient education provided, family notification arranged.'
+            },
+            highlighted_html: '<div class="soap-note">...</div>',
+            google_doc_url: 'https://docs.google.com/document/d/example',
+            ehr_record_id: 'EHR_' + Date.now()
+          },
+          recommendations: ['Immediate cardiology consultation', 'Continuous cardiac monitoring', 'Serial troponins'],
+          total_processing_time: '02:30',
+          completed_at: new Date().toISOString(),
           enhanced_pipeline: true
         }
       };
@@ -363,42 +503,11 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
     }
 
     try {
-      // Use the enhanced create mutation with full data structure
+      // Use the new createFromApiResponse mutation with complete API response data
       const soapNoteId = await createSOAPNote({
         patientId: patientProfile._id,
-        // Legacy SOAP fields (for backward compatibility)
-        subjective: result.data.soap_notes.subjective,
-        objective: result.data.soap_notes.objective,
-        assessment: result.data.soap_notes.assessment,
-        plan: result.data.soap_notes.plan,
-        qualityScore: Math.round(result.data.quality_metrics.completeness_score * 100),
-        processingTime: `${result.data.transcription?.duration || 0} seconds`,
-        recommendations: result.data.quality_metrics.missing_information || [],
-        // Enhanced fields
-        sessionId: result.data.session_id,
-        specialty: result.data.specialty_detection.detected_specialty,
-        specialtyConfidence: result.data.specialty_detection.confidence,
-        focusAreas: result.data.specialty_detection.focus_areas,
-        // Quality metrics
-        completenessScore: result.data.quality_metrics.completeness_score,
-        clinicalAccuracy: result.data.quality_metrics.clinical_accuracy,
-        documentationQuality: result.data.quality_metrics.documentation_quality,
-        redFlags: result.data.quality_metrics.red_flags,
-        missingInformation: result.data.quality_metrics.missing_information,
-        // Safety assessment
-        isSafe: result.data.safety_check.is_safe,
-        safetyRedFlags: result.data.safety_check.red_flags,
-        criticalItems: result.data.safety_check.critical_items,
-        // Transcription data
-        transcriptionText: result.data.transcription?.text,
-        transcriptionConfidence: result.data.transcription?.confidence,
-        transcriptionLanguage: result.data.transcription?.language,
-        transcriptionDuration: result.data.transcription?.duration,
-        // Enhanced structured data (serialize complex objects as JSON)
-        structuredSubjective: JSON.stringify(result.data.soap_notes.soap_notes?.subjective || {}),
-        structuredObjective: JSON.stringify(result.data.soap_notes.soap_notes?.objective || {}),
-        structuredAssessment: JSON.stringify(result.data.soap_notes.soap_notes?.assessment || {}),
-        structuredPlan: JSON.stringify(result.data.soap_notes.soap_notes?.plan || {}),
+        status: result.status,
+        data: result.data, // Pass the complete API response data structure
       });
 
       // 🔥 Embed SOAP note into RAG system (production-ready)
@@ -406,28 +515,32 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
         // Note: In a real implementation, you'd get doctor ID from context/auth
         const doctorId = 'doctor_from_context'; // This should be extracted from context
 
+        // Extract data from the enhanced structure
+        const soapData = result.data.soap_notes?.soap_notes || result.data.soap_notes;
+        const vitalSigns = result.data.soap_notes?.soap_notes?.objective?.vital_signs || result.data.vital_signs;
+
         soapRAGHooks.onSOAPNoteCreated({
           soapNoteId,
           doctorId,
           patientId: patientProfile._id,
           appointmentId: undefined, // Could be linked if created from appointment
-          subjective: result.data.soap_notes.subjective,
-          objective: result.data.soap_notes.objective,
-          assessment: result.data.soap_notes.assessment,
-          plan: result.data.soap_notes.plan,
-          chiefComplaint: result.data.chief_complaint?.complaint,
-          vitalSigns: result.data.vital_signs ? {
-            bloodPressure: result.data.vital_signs.blood_pressure,
-            heartRate: result.data.vital_signs.heart_rate,
-            temperature: result.data.vital_signs.temperature,
-            respiratoryRate: result.data.vital_signs.respiratory_rate,
-            oxygenSaturation: result.data.vital_signs.oxygen_saturation,
-            weight: result.data.vital_signs.weight,
-            height: result.data.vital_signs.height,
+          subjective: result.data.soap_notes?.subjective || soapData?.subjective?.chief_complaint || '',
+          objective: result.data.soap_notes?.objective || JSON.stringify(soapData?.objective) || '',
+          assessment: result.data.soap_notes?.assessment || JSON.stringify(soapData?.assessment) || '',
+          plan: result.data.soap_notes?.plan || JSON.stringify(soapData?.plan) || '',
+          chiefComplaint: soapData?.subjective?.chief_complaint,
+          vitalSigns: vitalSigns ? {
+            bloodPressure: vitalSigns.blood_pressure || vitalSigns.bloodPressure,
+            heartRate: vitalSigns.heart_rate || vitalSigns.heartRate,
+            temperature: vitalSigns.temperature,
+            respiratoryRate: vitalSigns.respiratory_rate || vitalSigns.respiratoryRate,
+            oxygenSaturation: vitalSigns.oxygen_saturation || vitalSigns.oxygenSaturation,
+            weight: vitalSigns.weight,
+            height: vitalSigns.height,
           } : undefined,
-          diagnosis: result.data.diagnosis_codes?.map(d => d.description) || [],
-          medications: result.data.medications?.map(m => m.name) || [],
-          followUpInstructions: result.data.follow_up_instructions?.instructions,
+          diagnosis: soapData?.assessment?.primary_diagnosis ? [soapData.assessment.primary_diagnosis.diagnosis] : [],
+          medications: soapData?.subjective?.medications || soapData?.plan?.medications || [],
+          followUpInstructions: soapData?.plan?.patient_education?.join(', '),
           status: 'completed',
           createdAt: Date.now(),
         });
@@ -435,8 +548,8 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
 
       toast.success('SOAP note saved successfully!');
 
-      // Navigate to the saved SOAP note
-      router.push(`/patient/soap/view/${soapNoteId}`);
+      // Navigate to SOAP history page
+      router.push('/patient/soap/history');
 
       return soapNoteId;
     } catch (error) {
