@@ -200,17 +200,18 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
 
         await createReferral({
           patientId: note.patient._id,
-          referringDoctorId: doctorId,
-          referredDoctorId: selectedDoctorId,
-          referralReason: referralReason.trim(),
-          urgencyLevel: urgencyLevel as any,
+          fromDoctorId: doctorId,
+          toDoctorId: selectedDoctorId,
+          reasonForReferral: referralReason.trim(),
+          urgency: urgencyLevel === "low" ? "routine" : urgencyLevel === "medium" ? "routine" : urgencyLevel === "high" ? "urgent" : "stat",
           soapNoteId: note.soapNote._id,
+          specialtyRequired: "General", // Default value, could be made dynamic
         });
 
         if (note._id) {
           await updateActionStatus({
             sharedSoapNoteId: note._id,
-            actionStatus: "referral_created",
+            actionStatus: "referral_sent",
             actionDetails: `Referral created: ${referralReason.trim().substring(0, 100)}...`,
           });
 

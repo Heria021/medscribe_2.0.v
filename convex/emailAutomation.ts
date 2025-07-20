@@ -14,7 +14,7 @@ export const scheduleEmail = mutation({
       v.literal("appointment_reminder_1h"),
       v.literal("appointment_followup"),
       v.literal("treatment_reminder"),
-      v.literal("medication_reminder"),
+
       v.literal("inactive_user_reengagement"),
       v.literal("security_alert"),
       v.literal("system_maintenance")

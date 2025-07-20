@@ -497,9 +497,9 @@ export default defineSchema({
 
   referrals: defineTable({
     fromDoctorId: v.id("doctors"),
-    toDoctorId: v.id("doctors"),
+    toDoctorId: v.optional(v.id("doctors")), // Optional for open referrals
     patientId: v.id("patients"),
-    soapNoteId: v.id("soapNotes"),
+    soapNoteId: v.optional(v.id("soapNotes")), // Optional when no SOAP note attached
     specialtyRequired: v.string(),
     urgency: v.union(v.literal("routine"), v.literal("urgent"), v.literal("stat")),
     reasonForReferral: v.string(),
@@ -542,32 +542,32 @@ export default defineSchema({
     ),
     startDate: v.string(),
     endDate: v.optional(v.string()),
+
+    // New fields for enhanced treatment management
+    medicationDetails: v.optional(v.array(v.object({
+      name: v.string(),
+      genericName: v.optional(v.string()),
+      strength: v.string(),
+      dosageForm: v.string(),
+      ndc: v.optional(v.string()),
+      rxcui: v.optional(v.string()),
+      quantity: v.string(),
+      frequency: v.string(),
+      duration: v.optional(v.string()),
+      instructions: v.string(),
+      refills: v.number(),
+    }))),
+    pharmacyId: v.optional(v.id("pharmacies")),
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_doctor_patient", ["doctorPatientId"])
     .index("by_status", ["status"])
-    .index("by_doctor_patient_status", ["doctorPatientId", "status"]),
+    .index("by_doctor_patient_status", ["doctorPatientId", "status"])
+    .index("by_pharmacy", ["pharmacyId"]),
 
-  medications: defineTable({
-    treatmentPlanId: v.id("treatmentPlans"),
-    medicationName: v.string(),
-    dosage: v.string(),
-    frequency: v.string(),
-    instructions: v.string(),
-    startDate: v.string(),
-    endDate: v.optional(v.string()),
-    status: v.union(
-      v.literal("active"),
-      v.literal("completed"),
-      v.literal("discontinued")
-    ),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_treatment_plan", ["treatmentPlanId"])
-    .index("by_status", ["status"])
-    .index("by_treatment_plan_status", ["treatmentPlanId", "status"]),
+
 
   notifications: defineTable({
     recipientId: v.id("users"),
@@ -634,7 +634,7 @@ export default defineSchema({
       v.literal("appointment_reminder_1h"),
       v.literal("appointment_followup"),
       v.literal("treatment_reminder"),
-      v.literal("medication_reminder"),
+
       v.literal("inactive_user_reengagement"),
       v.literal("security_alert"),
       v.literal("system_maintenance")
@@ -673,7 +673,7 @@ export default defineSchema({
     appointmentReminders: v.boolean(),
     appointmentConfirmations: v.boolean(),
     treatmentReminders: v.boolean(),
-    medicationReminders: v.boolean(),
+
     securityAlerts: v.boolean(),
     systemNotifications: v.boolean(),
     marketingEmails: v.boolean(),
@@ -762,12 +762,7 @@ export default defineSchema({
       instructions: v.string(),
       refills: v.number(),
     }),
-    pharmacy: v.optional(v.object({
-      ncpdpId: v.string(), // NCPDP ID for e-prescribing
-      name: v.string(),
-      address: v.string(),
-      phone: v.string(),
-    })),
+    pharmacyId: v.optional(v.id("pharmacies")),
     prescriptionDate: v.number(),
     status: v.union(
       v.literal("pending"),
@@ -811,6 +806,7 @@ export default defineSchema({
     .index("by_patient", ["patientId"])
     .index("by_doctor", ["doctorId"])
     .index("by_appointment", ["appointmentId"])
+    .index("by_pharmacy", ["pharmacyId"])
     .index("by_status", ["status"])
     .index("by_prescription_date", ["prescriptionDate"])
     .index("by_external_id", ["externalPrescriptionId"]),
@@ -1049,5 +1045,59 @@ export default defineSchema({
     .index("by_doctor_status", ["doctorId", "status"])
     .index("by_requested_at", ["requestedAt"])
     .index("by_patient_status", ["patientId", "status"]),
+
+  // Prescription Orders - Orders sent to pharmacies
+  prescriptionOrders: defineTable({
+    prescriptionId: v.id("prescriptions"),
+    pharmacyId: v.id("pharmacies"),
+    patientId: v.id("patients"),
+    doctorId: v.id("doctors"),
+    treatmentPlanId: v.optional(v.id("treatmentPlans")),
+    orderNumber: v.string(),
+    medicationDetails: v.object({
+      name: v.string(),
+      dosage: v.string(),
+      quantity: v.string(),
+      refills: v.number(),
+      frequency: v.string(),
+      instructions: v.optional(v.string()),
+    }),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("ready"),
+      v.literal("picked_up"),
+      v.literal("delivered"),
+      v.literal("cancelled"),
+      v.literal("on_hold")
+    ),
+    deliveryMethod: v.union(v.literal("pickup"), v.literal("delivery")),
+    deliveryAddress: v.optional(v.object({
+      street: v.string(),
+      city: v.string(),
+      state: v.string(),
+      zipCode: v.string(),
+      instructions: v.optional(v.string()),
+    })),
+    urgency: v.union(v.literal("routine"), v.literal("urgent"), v.literal("stat")),
+    estimatedReadyTime: v.optional(v.number()),
+    actualReadyTime: v.optional(v.number()),
+    pickedUpAt: v.optional(v.number()),
+    deliveredAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    pharmacyNotes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_prescription", ["prescriptionId"])
+    .index("by_pharmacy", ["pharmacyId"])
+    .index("by_patient", ["patientId"])
+    .index("by_doctor", ["doctorId"])
+    .index("by_status", ["status"])
+    .index("by_pharmacy_status", ["pharmacyId", "status"])
+    .index("by_patient_status", ["patientId", "status"])
+    .index("by_doctor_status", ["doctorId", "status"])
+    .index("by_order_number", ["orderNumber"])
+    .index("by_created_at", ["createdAt"]),
 });
 

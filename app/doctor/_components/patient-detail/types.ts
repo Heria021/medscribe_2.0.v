@@ -43,15 +43,34 @@ export interface TreatmentPlan {
   _id: Id<"treatmentPlans">;
   patientId: Id<"patients">;
   doctorPatientId: Id<"doctorPatients">;
+  soapNoteId?: Id<"soapNotes">;
   title: string;
   diagnosis: string;
   plan: string;
   goals?: string[];
   status: "active" | "completed" | "discontinued";
-  startDate: number;
-  endDate?: number;
+  startDate: string; // ISO date string
+  endDate?: string; // ISO date string
   createdAt: number;
   updatedAt: number;
+
+  // Extended properties from API queries
+  soapNote?: {
+    _id: Id<"soapNotes">;
+    timestamp: number;
+    data?: {
+      specialty_detection?: {
+        specialty: string;
+      };
+      soap_notes?: {
+        assessment?: string;
+        plan?: string;
+      };
+    };
+  };
+  doctorPatient?: any;
+  patient?: any;
+  doctor?: any;
 }
 
 export interface Medication {

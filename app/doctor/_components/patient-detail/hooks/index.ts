@@ -1,7 +1,7 @@
 // Export all hooks
 export { usePatientDetail } from "./usePatientDetail";
 export { useTreatmentManagement } from "./useTreatmentManagement";
-export { useMedicationManagement } from "./useMedicationManagement";
+
 export { useAppointmentScheduling } from "./useAppointmentScheduling";
 export { usePatientDetailFormatters } from "./usePatientDetailFormatters";
 

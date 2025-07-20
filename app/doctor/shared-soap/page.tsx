@@ -136,12 +136,33 @@ const SharedSOAPPage = React.memo(() => {
             showBackButton: true,
             showActions: true,
             showPatientInfo: true,
-            backButtonText: "Back to Shared Notes"
+            showMetadata: true,
+            allowPrint: true,
+            allowDownload: true,
+            allowShare: false,
+            allowCopy: true,
+            allowExportPDF: true,
+            backButtonText: "Back to Shared Notes",
+            documentTitle: "SOAP Clinical Note - Shared"
           }}
           actions={{
             onBack: soapViewer.closeViewer,
             onDownload: () => {
               // Create a simplified version of SharedSOAPNote for download
+              if (selectedNote) {
+                handleDownloadNote(selectedNote);
+              }
+            },
+            onPrint: (note) => {
+              // Handle print action
+              window.print();
+            },
+            onCopy: (note) => {
+              // Handle copy action - could copy note ID or summary
+              navigator.clipboard.writeText(`SOAP Note ID: ${note._id}`);
+            },
+            onExportPDF: () => {
+              // Handle PDF export
               if (selectedNote) {
                 handleDownloadNote(selectedNote);
               }

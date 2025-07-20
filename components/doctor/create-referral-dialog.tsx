@@ -96,7 +96,7 @@ export function CreateReferralDialog({
   );
   
   // Create referral mutation
-  const createReferral = useMutation(api.refferals.create);
+  const createReferral = useMutation(api.referrals.create);
 
   // Filter doctors by specialty and search term
   const filteredDoctors = doctors?.filter(doctor => {

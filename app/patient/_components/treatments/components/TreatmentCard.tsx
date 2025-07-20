@@ -69,7 +69,7 @@ export const TreatmentCard = React.memo<TreatmentCardProps>(({
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <Pill className="h-3 w-3" />
-              {treatment.medications?.length || 0}
+              {treatment.medicationDetails?.length || 0}
             </span>
             <span className="flex items-center gap-1">
               <Target className="h-3 w-3" />

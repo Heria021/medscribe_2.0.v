@@ -14,37 +14,37 @@ export function usePatientTreatments(patientId?: Id<"patients">): UsePatientTrea
     patientId ? { patientId } : "skip"
   );
 
-  // Fetch medications with details
-  const medications = useQuery(
-    api.medications.getWithDetailsByPatientId,
+  // Fetch prescriptions with details (replacing medications)
+  const prescriptions = useQuery(
+    api.prescriptions.getByPatientId,
     patientId ? { patientId } : "skip"
   );
 
   // Memoized loading state
   const isLoading = useMemo(() => {
-    return treatmentPlans === undefined || medications === undefined;
-  }, [treatmentPlans, medications]);
+    return treatmentPlans === undefined || prescriptions === undefined;
+  }, [treatmentPlans, prescriptions]);
 
-  // Create treatment plans with their associated medications
-  const treatmentsWithMedications = useMemo(() => {
-    if (!treatmentPlans || !medications) return [];
-    
+  // Create treatment plans with their associated prescriptions
+  const treatmentsWithPrescriptions = useMemo(() => {
+    if (!treatmentPlans || !prescriptions) return [];
+
     return treatmentPlans.map(treatment => {
-      const relatedMedications = medications.filter(med =>
-        med.treatmentPlan?._id === treatment._id
+      const relatedPrescriptions = prescriptions.filter(prescription =>
+        prescription.treatmentPlanId === treatment._id
       );
       return {
         ...treatment,
-        medications: relatedMedications
+        prescriptions: relatedPrescriptions
       };
     });
-  }, [treatmentPlans, medications]);
+  }, [treatmentPlans, prescriptions]);
 
-  // Get standalone medications (not associated with any treatment)
-  const standaloneMedications = useMemo(() => {
-    if (!medications) return [];
-    return medications.filter(med => !med.treatmentPlan);
-  }, [medications]);
+  // Get standalone prescriptions (not associated with any treatment)
+  const standalonePrescriptions = useMemo(() => {
+    if (!prescriptions) return [];
+    return prescriptions.filter(prescription => !prescription.treatmentPlanId);
+  }, [prescriptions]);
 
   // Calculate statistics
   const stats = useMemo((): TreatmentStats => {
@@ -52,31 +52,31 @@ export function usePatientTreatments(patientId?: Id<"patients">): UsePatientTrea
     const activeTreatments = treatmentPlans?.filter(t => t.status === "active").length || 0;
     const completedTreatments = treatmentPlans?.filter(t => t.status === "completed").length || 0;
     const discontinuedTreatments = treatmentPlans?.filter(t => t.status === "discontinued").length || 0;
-    
-    const totalMedications = medications?.length || 0;
-    const activeMedications = medications?.filter(m => m.status === "active").length || 0;
+
+    const totalPrescriptions = prescriptions?.length || 0;
+    const activePrescriptions = prescriptions?.filter(p => p.status === "filled").length || 0;
 
     return {
       total: totalTreatments,
       active: activeTreatments,
       completed: completedTreatments,
       discontinued: discontinuedTreatments,
-      activeMedications,
-      totalMedications,
+      activeMedications: activePrescriptions, // Keep same property name for compatibility
+      totalMedications: totalPrescriptions, // Keep same property name for compatibility
     };
-  }, [treatmentPlans, medications]);
+  }, [treatmentPlans, prescriptions]);
 
   // Refetch function (placeholder for now)
   const refetch = useMemo(() => () => {
     // In a real implementation, this would trigger a refetch of the queries
-    console.log("Refetching treatments and medications...");
+    console.log("Refetching treatments and prescriptions...");
   }, []);
 
   return {
     treatmentPlans,
-    medications,
-    treatmentsWithMedications,
-    standaloneMedications,
+    medications: prescriptions, // Keep same property name for compatibility
+    treatmentsWithMedications: treatmentsWithPrescriptions, // Keep same property name for compatibility
+    standaloneMedications: standalonePrescriptions, // Keep same property name for compatibility
     isLoading,
     error: null, // Convex queries don't expose errors in the same way
     refetch,

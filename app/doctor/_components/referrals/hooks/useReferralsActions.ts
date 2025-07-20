@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useSOAPViewer } from "@/components/ui/soap-viewer";
 import { toast } from "sonner";
 import type { UseReferralsActionsReturn } from "../types";
 
@@ -23,11 +24,21 @@ export function useReferralsActions(): UseReferralsActionsReturn {
   const [selectedReferral, setSelectedReferral] = useState<string | null>(null);
   const [responseNotes, setResponseNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedSOAPNoteId, setSelectedSOAPNoteId] = useState<string | null>(null);
+
+  // SOAP Viewer state
+  const soapViewer = useSOAPViewer();
 
   // Mutations
   const acceptReferral = useMutation(api.referrals.accept);
   const declineReferral = useMutation(api.referrals.decline);
   const completeReferral = useMutation(api.referrals.complete);
+
+  // Query for SOAP note when selected
+  const soapNote = useQuery(
+    api.soapNotes.getById,
+    selectedSOAPNoteId ? { id: selectedSOAPNoteId as any } : "skip"
+  );
 
   /**
    * Handle accepting a referral
@@ -97,11 +108,25 @@ export function useReferralsActions(): UseReferralsActionsReturn {
 
   /**
    * Handle viewing a SOAP note
-   * Navigates to the SOAP view page
+   * Opens the SOAP viewer with the selected note
    */
-  const handleViewSOAP = useCallback((soapNoteId: string) => {
-    router.push(`/doctor/soap/view/${soapNoteId}`);
-  }, [router]);
+  const handleViewSOAP = useCallback((soapNoteId: string, patientName?: string) => {
+    setSelectedSOAPNoteId(soapNoteId);
+  }, []);
+
+  // Effect to open SOAP viewer when note is loaded
+  React.useEffect(() => {
+    if (soapNote && selectedSOAPNoteId) {
+      // Convert to SOAPViewer format
+      const viewerNote = {
+        ...soapNote,
+        patientName: soapNote.patientName || "Unknown Patient",
+      };
+
+      soapViewer.openViewer(viewerNote);
+      setSelectedSOAPNoteId(null); // Reset after opening
+    }
+  }, [soapNote, selectedSOAPNoteId, soapViewer]);
 
   /**
    * Clear response form and close selection
@@ -121,5 +146,7 @@ export function useReferralsActions(): UseReferralsActionsReturn {
     handleCompleteReferral,
     handleViewSOAP,
     isProcessing,
+    soapViewer,
+    clearResponseForm,
   };
 }

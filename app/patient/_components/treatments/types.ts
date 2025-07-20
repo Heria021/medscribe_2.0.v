@@ -37,6 +37,21 @@ export interface Medication {
   updatedAt?: number;
 }
 
+// Medication details structure (matching the schema)
+export interface MedicationDetails {
+  name: string;
+  genericName?: string;
+  strength: string;
+  dosageForm: string;
+  ndc?: string;
+  rxcui?: string;
+  quantity: string;
+  frequency: string;
+  duration?: string;
+  instructions: string;
+  refills: number;
+}
+
 export interface TreatmentPlan {
   _id: Id<"treatmentPlans">;
   patientId: Id<"patients">;
@@ -50,7 +65,8 @@ export interface TreatmentPlan {
   endDate?: number;
   doctor?: Doctor;
   patient?: Patient;
-  medications?: Medication[];
+  medicationDetails?: MedicationDetails[]; // Updated to match schema
+  medications?: Medication[]; // Keep for backward compatibility with prescriptions
   createdAt?: number;
   updatedAt?: number;
 }
@@ -132,6 +148,7 @@ export interface TreatmentListProps {
 export interface TreatmentDetailsProps {
   treatment: TreatmentPlan | null;
   standaloneMedications?: Medication[];
+  onViewTreatment?: (treatment: TreatmentPlan) => void;
   className?: string;
 }
 

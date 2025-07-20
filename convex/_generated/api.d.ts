@@ -35,10 +35,10 @@ import type * as emailTemplates_profileCompletion from "../emailTemplates/profil
 import type * as emailTemplates_resetPassword from "../emailTemplates/resetPassword.js";
 import type * as emailTemplates_securityAlert from "../emailTemplates/securityAlert.js";
 import type * as emailTemplates_welcome from "../emailTemplates/welcome.js";
-import type * as medications from "../medications.js";
 import type * as notifications from "../notifications.js";
 import type * as patients from "../patients.js";
 import type * as pharmacies from "../pharmacies.js";
+import type * as prescriptionOrders from "../prescriptionOrders.js";
 import type * as prescriptions from "../prescriptions.js";
 import type * as referrals from "../referrals.js";
 import type * as seedAppointments from "../seedAppointments.js";
@@ -81,10 +81,10 @@ declare const fullApi: ApiFromModules<{
   "emailTemplates/resetPassword": typeof emailTemplates_resetPassword;
   "emailTemplates/securityAlert": typeof emailTemplates_securityAlert;
   "emailTemplates/welcome": typeof emailTemplates_welcome;
-  medications: typeof medications;
   notifications: typeof notifications;
   patients: typeof patients;
   pharmacies: typeof pharmacies;
+  prescriptionOrders: typeof prescriptionOrders;
   prescriptions: typeof prescriptions;
   referrals: typeof referrals;
   seedAppointments: typeof seedAppointments;

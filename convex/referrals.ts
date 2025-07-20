@@ -4,29 +4,42 @@ import { mutation, query } from "./_generated/server";
 export const create = mutation({
   args: {
     fromDoctorId: v.id("doctors"),
-    toDoctorId: v.id("doctors"),
+    toDoctorId: v.optional(v.id("doctors")), // Made optional for open referrals
     patientId: v.id("patients"),
-    soapNoteId: v.id("soapNotes"),
+    soapNoteId: v.optional(v.id("soapNotes")), // Made optional
     specialtyRequired: v.string(),
     urgency: v.union(v.literal("routine"), v.literal("urgent"), v.literal("stat")),
     reasonForReferral: v.string(),
     clinicalQuestion: v.optional(v.string()),
+    // Additional optional fields from frontend
+    referralType: v.optional(v.string()),
+    relevantHistory: v.optional(v.string()),
+    currentMedications: v.optional(v.string()),
+    workupCompleted: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Verify all required entities exist
     const fromDoctor = await ctx.db.get(args.fromDoctorId);
-    const toDoctor = await ctx.db.get(args.toDoctorId);
     const patient = await ctx.db.get(args.patientId);
-    const soapNote = await ctx.db.get(args.soapNoteId);
 
     if (!fromDoctor) throw new Error("Referring doctor not found");
-    if (!toDoctor) throw new Error("Receiving doctor not found");
     if (!patient) throw new Error("Patient not found");
-    if (!soapNote) throw new Error("SOAP note not found");
 
-    // Verify SOAP note belongs to the patient
-    if (soapNote.patientId !== args.patientId) {
-      throw new Error("SOAP note does not belong to this patient");
+    // Verify receiving doctor exists (if specified - not for open referrals)
+    let toDoctor = null;
+    if (args.toDoctorId) {
+      toDoctor = await ctx.db.get(args.toDoctorId);
+      if (!toDoctor) throw new Error("Receiving doctor not found");
+    }
+
+    // Verify SOAP note exists and belongs to patient (if specified)
+    let soapNote = null;
+    if (args.soapNoteId) {
+      soapNote = await ctx.db.get(args.soapNoteId);
+      if (!soapNote) throw new Error("SOAP note not found");
+      if (soapNote.patientId !== args.patientId) {
+        throw new Error("SOAP note does not belong to this patient");
+      }
     }
 
     const now = Date.now();
@@ -34,9 +47,9 @@ export const create = mutation({
     // Create the referral
     const referralId = await ctx.db.insert("referrals", {
       fromDoctorId: args.fromDoctorId,
-      toDoctorId: args.toDoctorId,
+      toDoctorId: args.toDoctorId, // Can be undefined for open referrals
       patientId: args.patientId,
-      soapNoteId: args.soapNoteId,
+      soapNoteId: args.soapNoteId, // Can be undefined if no SOAP note attached
       specialtyRequired: args.specialtyRequired,
       urgency: args.urgency,
       reasonForReferral: args.reasonForReferral,
@@ -47,26 +60,28 @@ export const create = mutation({
       updatedAt: now,
     });
 
-    // Create notification for receiving doctor
-    await ctx.db.insert("notifications", {
-      recipientId: toDoctor.userId,
-      recipientType: "doctor",
-      category: "clinical",
-      type: "referral_received",
-      priority: args.urgency === "stat" ? "urgent" : args.urgency === "urgent" ? "high" : "medium",
-      title: "New Referral Received",
-      message: `Dr. ${fromDoctor.firstName} ${fromDoctor.lastName} has referred ${patient.firstName} ${patient.lastName} (${args.specialtyRequired}) to you.`,
-      actionUrl: `/doctor/referrals/received/${referralId}`,
-      relatedRecords: {
-        referralId,
-        patientId: args.patientId,
-        doctorId: args.fromDoctorId,
-        soapNoteId: args.soapNoteId,
-      },
-      channels: ["in_app", "email"],
-      isRead: false,
-      createdAt: now,
-    });
+    // Create notification for receiving doctor (only if specific doctor is selected)
+    if (toDoctor) {
+      await ctx.db.insert("notifications", {
+        recipientId: toDoctor.userId,
+        recipientType: "doctor",
+        category: "clinical",
+        type: "referral_received",
+        priority: args.urgency === "stat" ? "urgent" : args.urgency === "urgent" ? "high" : "medium",
+        title: "New Referral Received",
+        message: `Dr. ${fromDoctor.firstName} ${fromDoctor.lastName} has referred ${patient.firstName} ${patient.lastName} (${args.specialtyRequired}) to you.`,
+        actionUrl: `/doctor/referrals/received/${referralId}`,
+        relatedRecords: {
+          referralId,
+          patientId: args.patientId,
+          doctorId: args.fromDoctorId,
+          soapNoteId: args.soapNoteId,
+        },
+        channels: ["in_app", "email"],
+        isRead: false,
+        createdAt: now,
+      });
+    }
 
     return referralId;
   },
@@ -98,8 +113,37 @@ export const accept = mutation({
 
     // Get doctors and patient for notifications
     const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-    const toDoctor = await ctx.db.get(referral.toDoctorId);
+    const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
     const patient = await ctx.db.get(referral.patientId);
+
+    // If there's a SOAP note attached to this referral, share it with the accepting doctor
+    if (referral.soapNoteId && referral.toDoctorId) {
+      // Check if SOAP note is already shared to avoid duplicates
+      const existingShare = await ctx.db
+        .query("sharedSoapNotes")
+        .withIndex("by_soap_note_id", (q) => q.eq("soapNoteId", referral.soapNoteId!))
+        .filter((q) => q.eq(q.field("sharedWith"), referral.toDoctorId!))
+        .filter((q) => q.eq(q.field("referralId"), args.referralId))
+        .first();
+
+      if (!existingShare) {
+        // Create shared SOAP note for the referral
+        await ctx.db.insert("sharedSoapNotes", {
+          soapNoteId: referral.soapNoteId,
+          patientId: referral.patientId,
+          sharedBy: referral.fromDoctorId,
+          sharedByType: "doctor",
+          sharedWith: referral.toDoctorId,
+          shareType: "referral_share",
+          referralId: args.referralId,
+          message: args.responseMessage || `SOAP note shared via accepted referral`,
+          isRead: false,
+          actionStatus: "pending",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
 
     if (fromDoctor && toDoctor && patient) {
       // Notify referring doctor about acceptance
@@ -123,24 +167,50 @@ export const accept = mutation({
         createdAt: now,
       });
 
-      // Create doctor-patient relationship if it doesn't exist
-      const existingRelationship = await ctx.db
-        .query("doctorPatients")
-        .withIndex("by_doctor_patient", (q) =>
-          q.eq("doctorId", referral.toDoctorId).eq("patientId", referral.patientId)
-        )
-        .first();
+      // If SOAP note was shared, also notify about the shared SOAP note
+      if (referral.soapNoteId) {
+        await ctx.db.insert("notifications", {
+          recipientId: toDoctor.userId,
+          recipientType: "doctor",
+          category: "clinical",
+          type: "soap_note_shared",
+          priority: "medium",
+          title: "SOAP Note Shared via Referral",
+          message: `Dr. ${fromDoctor.firstName} ${fromDoctor.lastName} has shared a SOAP note for ${patient.firstName} ${patient.lastName} via referral.`,
+          actionUrl: `/doctor/shared-soap`,
+          relatedRecords: {
+            soapNoteId: referral.soapNoteId,
+            patientId: referral.patientId,
+            doctorId: referral.fromDoctorId,
+            referralId: args.referralId,
+          },
+          channels: ["in_app", "email"],
+          isRead: false,
+          createdAt: now,
+        });
+      }
 
-      if (!existingRelationship) {
-        await ctx.db.insert("doctorPatients", {
-          doctorId: referral.toDoctorId,
-          patientId: referral.patientId,
+      // Create doctor-patient relationship if it doesn't exist (only for specific doctor referrals)
+      if (referral.toDoctorId) {
+        const toDoctorId = referral.toDoctorId; // TypeScript assertion
+        const existingRelationship = await ctx.db
+          .query("doctorPatients")
+          .withIndex("by_doctor_patient", (q) =>
+            q.eq("doctorId", toDoctorId!).eq("patientId", referral.patientId)
+          )
+          .first();
+
+        if (!existingRelationship) {
+          await ctx.db.insert("doctorPatients", {
+            doctorId: toDoctorId,
+            patientId: referral.patientId,
           assignedBy: "referral_acceptance",
           relatedActionId: args.referralId,
           assignedAt: now,
           isActive: true,
           notes: `Assigned via referral from Dr. ${fromDoctor.firstName} ${fromDoctor.lastName}`,
         });
+        }
       }
     }
 
@@ -174,7 +244,7 @@ export const decline = mutation({
 
     // Get doctors and patient for notification
     const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-    const toDoctor = await ctx.db.get(referral.toDoctorId);
+    const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
     const patient = await ctx.db.get(referral.patientId);
 
     if (fromDoctor && toDoctor && patient) {
@@ -228,7 +298,7 @@ export const complete = mutation({
 
     // Get doctors and patient for notification
     const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-    const toDoctor = await ctx.db.get(referral.toDoctorId);
+    const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
     const patient = await ctx.db.get(referral.patientId);
 
     if (fromDoctor && toDoctor && patient) {
@@ -295,8 +365,8 @@ export const getByFromDoctor = query({
     const enrichedReferrals = await Promise.all(
       referrals.map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
-        const toDoctor = await ctx.db.get(referral.toDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -324,7 +394,7 @@ export const getByToDoctor = query({
       referrals.map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
         const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -353,7 +423,7 @@ export const getReceivedReferrals = query({
       referrals.map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
         const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -381,8 +451,8 @@ export const getSentReferrals = query({
     const enrichedReferrals = await Promise.all(
       referrals.map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
-        const toDoctor = await ctx.db.get(referral.toDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -409,8 +479,8 @@ export const getByPatient = query({
     const enrichedReferrals = await Promise.all(
       referrals.map(async (referral) => {
         const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-        const toDoctor = await ctx.db.get(referral.toDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -433,8 +503,8 @@ export const getById = query({
 
     const patient = await ctx.db.get(referral.patientId);
     const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-    const toDoctor = await ctx.db.get(referral.toDoctorId);
-    const soapNote = await ctx.db.get(referral.soapNoteId);
+    const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+    const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
     return {
       ...referral,
@@ -479,8 +549,8 @@ export const getPendingBySpecialty = query({
       referrals.map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
         const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-        const toDoctor = await ctx.db.get(referral.toDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -539,8 +609,8 @@ export const getRecentActivity = query({
       allReferrals.map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
         const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-        const toDoctor = await ctx.db.get(referral.toDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,
@@ -656,8 +726,8 @@ export const searchReferrals = query({
       referrals.slice(0, limit).map(async (referral) => {
         const patient = await ctx.db.get(referral.patientId);
         const fromDoctor = await ctx.db.get(referral.fromDoctorId);
-        const toDoctor = await ctx.db.get(referral.toDoctorId);
-        const soapNote = await ctx.db.get(referral.soapNoteId);
+        const toDoctor = referral.toDoctorId ? await ctx.db.get(referral.toDoctorId) : null;
+        const soapNote = referral.soapNoteId ? await ctx.db.get(referral.soapNoteId) : null;
 
         return {
           ...referral,

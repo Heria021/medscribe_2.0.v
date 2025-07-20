@@ -82,8 +82,10 @@ export interface UseReferralsActionsReturn {
   handleAcceptReferral: (referralId: string) => Promise<void>;
   handleDeclineReferral: (referralId: string) => Promise<void>;
   handleCompleteReferral: (referralId: string) => Promise<void>;
-  handleViewSOAP: (soapNoteId: string) => void;
+  handleViewSOAP: (soapNoteId: string, patientName?: string) => void;
   isProcessing: boolean;
+  soapViewer: any; // UseSOAPViewerReturn type
+  clearResponseForm: () => void;
 }
 
 export interface UseReferralsFormattersReturn {
@@ -110,7 +112,7 @@ export interface ReceivedReferralCardProps {
   onAccept: (referralId: string) => Promise<void>;
   onDecline: (referralId: string) => Promise<void>;
   onComplete: (referralId: string) => Promise<void>;
-  onViewSOAP: (soapNoteId: string) => void;
+  onViewSOAP: (soapNoteId: string, patientName?: string) => void;
   formatDate: (timestamp: number) => string;
   getUrgencyBadge: (urgency: string) => React.ReactNode;
   getStatusBadge: (status: string) => React.ReactNode;
@@ -119,7 +121,7 @@ export interface ReceivedReferralCardProps {
 
 export interface SentReferralCardProps {
   referral: Referral;
-  onViewSOAP: (soapNoteId: string) => void;
+  onViewSOAP: (soapNoteId: string, patientName?: string) => void;
   formatDate: (timestamp: number) => string;
   getUrgencyBadge: (urgency: string) => React.ReactNode;
   getStatusBadge: (status: string) => React.ReactNode;
@@ -134,7 +136,7 @@ export interface ReceivedReferralsListProps {
   onAccept: (referralId: string) => Promise<void>;
   onDecline: (referralId: string) => Promise<void>;
   onComplete: (referralId: string) => Promise<void>;
-  onViewSOAP: (soapNoteId: string) => void;
+  onViewSOAP: (soapNoteId: string, patientName?: string) => void;
   formatDate: (timestamp: number) => string;
   getUrgencyBadge: (urgency: string) => React.ReactNode;
   getStatusBadge: (status: string) => React.ReactNode;
@@ -144,7 +146,7 @@ export interface ReceivedReferralsListProps {
 
 export interface SentReferralsListProps {
   referrals: Referral[];
-  onViewSOAP: (soapNoteId: string) => void;
+  onViewSOAP: (soapNoteId: string, patientName?: string) => void;
   formatDate: (timestamp: number) => string;
   getUrgencyBadge: (urgency: string) => React.ReactNode;
   getStatusBadge: (status: string) => React.ReactNode;

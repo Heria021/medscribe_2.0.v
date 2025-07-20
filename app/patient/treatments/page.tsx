@@ -18,6 +18,7 @@ import { TreatmentList } from "@/app/patient/_components/treatments/components/T
 import { TreatmentDetails } from "@/app/patient/_components/treatments/components/TreatmentDetails";
 import { TreatmentStats } from "@/app/patient/_components/treatments/components/TreatmentStats";
 import { TreatmentFilters } from "@/app/patient/_components/treatments/components/TreatmentFilters";
+import { TreatmentViewer, useTreatmentViewer } from "@/components/ui/treatment-viewer";
 
 /**
  * Profile Completion Component
@@ -202,6 +203,9 @@ const PatientTreatmentsPage = React.memo(() => {
     stats,
   } = usePatientTreatments(patientProfile?._id);
 
+  // Treatment viewer hook
+  const treatmentViewer = useTreatmentViewer();
+
   // Memoized authentication check
   const isAuthorized = useMemo(() =>
     isAuthenticated && isPatient,
@@ -252,6 +256,10 @@ const PatientTreatmentsPage = React.memo(() => {
   const handleFiltersChange = React.useCallback((newFilters: TreatmentFiltersType) => {
     setFilters(newFilters);
   }, []);
+
+  const handleViewTreatment = React.useCallback((treatment: TreatmentPlan) => {
+    treatmentViewer.openViewer(treatment);
+  }, [treatmentViewer]);
 
   // Authentication check
   if (authLoading || !isAuthorized) {
@@ -314,10 +322,33 @@ const PatientTreatmentsPage = React.memo(() => {
             <TreatmentDetails
               treatment={selectedTreatment}
               standaloneMedications={standaloneMedications}
+              onViewTreatment={handleViewTreatment}
             />
           )}
         </div>
       </div>
+
+      {/* Treatment Viewer for full-screen document view */}
+      {treatmentViewer.selectedTreatment && (
+        <TreatmentViewer
+          treatment={treatmentViewer.selectedTreatment}
+          open={treatmentViewer.isOpen}
+          onOpenChange={treatmentViewer.setOpen}
+          config={{
+            showBackButton: true,
+            showActions: true,
+            showPatientInfo: false,
+            showMetadata: true,
+            allowPrint: true,
+            allowDownload: true,
+            allowShare: false,
+            allowCopy: true,
+            allowExportPDF: false,
+            backButtonText: "Back to Treatments",
+            documentTitle: "Treatment Plan Details"
+          }}
+        />
+      )}
     </div>
   );
 });

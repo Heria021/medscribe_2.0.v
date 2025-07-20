@@ -41,7 +41,7 @@ export const createUser = mutation({
       appointmentReminders: true,
       appointmentConfirmations: true,
       treatmentReminders: true,
-      medicationReminders: true,
+
       securityAlerts: true,
       systemNotifications: true,
       marketingEmails: false,
@@ -510,15 +510,7 @@ async function deletePatientData(ctx: MutationCtx, userId: Id<"users">) {
       .collect();
 
     for (const plan of treatmentPlans) {
-      // Delete medications for this treatment plan
-      const medications = await ctx.db
-        .query("medications")
-        .withIndex("by_treatment_plan", (q) => q.eq("treatmentPlanId", plan._id))
-        .collect();
-
-      for (const medication of medications) {
-        await ctx.db.delete(medication._id);
-      }
+      // Note: Medications now handled through prescription system
 
       // Delete the treatment plan
       await ctx.db.delete(plan._id);
@@ -578,15 +570,7 @@ async function deleteDoctorData(ctx: MutationCtx, userId: Id<"users">) {
       .collect();
 
     for (const plan of treatmentPlans) {
-      // Delete medications for this treatment plan
-      const medications = await ctx.db
-        .query("medications")
-        .withIndex("by_treatment_plan", (q) => q.eq("treatmentPlanId", plan._id))
-        .collect();
-
-      for (const medication of medications) {
-        await ctx.db.delete(medication._id);
-      }
+      // Note: Medications now handled through prescription system
 
       // Delete the treatment plan
       await ctx.db.delete(plan._id);

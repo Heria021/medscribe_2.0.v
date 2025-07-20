@@ -78,7 +78,10 @@ export const SentReferralCard = React.memo<SentReferralCardProps>(({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onViewSOAP(referral.soapNote!._id)}
+              onClick={() => onViewSOAP(
+                referral.soapNote!._id,
+                `${referral.patient?.firstName} ${referral.patient?.lastName}`
+              )}
               className="h-7 px-2 text-xs"
             >
               <FileText className="h-3 w-3 mr-1" />

@@ -64,7 +64,7 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
 
                 {/* Enhanced data indicator */}
                 {hasEnhancedData && (
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 text-purple-600 bg-purple-50 border-purple-200">
+                  <Badge variant="outline" className="text-xs h-5 px-1.5">
                     <Brain className="h-3 w-3 mr-1" />
                     AI
                   </Badge>
@@ -72,11 +72,9 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
 
                 {/* Safety status */}
                 {safetyStatus !== undefined && (
-                  <Badge variant="outline" className={cn(
+                  <Badge variant={safetyStatus ? "default" : "outline"} className={cn(
                     "text-xs h-5 px-1.5",
-                    safetyStatus
-                      ? "text-emerald-600 bg-emerald-50 border-emerald-200"
-                      : "text-red-600 bg-red-50 border-red-200"
+                    !safetyStatus && "border-destructive/50 text-destructive bg-destructive/10"
                   )}>
                     {safetyStatus ? <Shield className="h-3 w-3 mr-1" /> : <ShieldAlert className="h-3 w-3 mr-1" />}
                     {safetyStatus ? 'Safe' : 'Alert'}
@@ -85,7 +83,7 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
 
                 {/* Specialty */}
                 {specialty && (
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 text-blue-600 bg-blue-50 border-blue-200">
+                  <Badge variant="secondary" className="text-xs h-5 px-1.5">
                     <Stethoscope className="h-3 w-3 mr-1" />
                     {specialty.length > 8 ? specialty.substring(0, 8) + '...' : specialty}
                   </Badge>
@@ -100,7 +98,7 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
 
                 {/* Red flags indicator */}
                 {redFlags.length > 0 && (
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 bg-orange-50 border-orange-200">
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 border-destructive/50 text-destructive bg-destructive/10">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     {redFlags.length}
                   </Badge>
@@ -127,58 +125,70 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
               </div>
             )}
 
-            {/* Enhanced SOAP Preview */}
+            {/* SOAP Preview */}
             <div className="space-y-2">
               {/* Chief Complaint or Primary Diagnosis (if available) */}
               {(chiefComplaint || primaryDiagnosis) && (
-                <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-                  <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
+                <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                  <h4 className="text-xs font-semibold text-foreground mb-1">
                     {chiefComplaint ? 'Chief Complaint' : 'Primary Diagnosis'}
-                  </div>
-                  <div className="text-xs text-foreground font-medium">
+                  </h4>
+                  <p className="text-xs text-foreground">
                     {(chiefComplaint || primaryDiagnosis)!.substring(0, 80)}
                     {(chiefComplaint || primaryDiagnosis)!.length > 80 ? '...' : ''}
-                  </div>
+                  </p>
                 </div>
               )}
 
-              {/* Traditional SOAP Preview */}
-              <div className="bg-muted/20 rounded p-2 border border-border/30">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="font-medium text-foreground">S:</span>
-                    <span className="text-muted-foreground ml-1">
+              {/* SOAP Preview Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {subjective && (
+                  <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                    <h4 className="text-xs font-semibold text-foreground mb-1">Subjective</h4>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
                       {subjective.substring(0, 60)}...
-                    </span>
+                    </p>
                   </div>
-                  {assessment && (
-                    <div>
-                      <span className="font-medium text-foreground">A:</span>
-                      <span className="text-muted-foreground ml-1">
-                        {assessment.substring(0, 60)}...
-                      </span>
-                    </div>
-                  )}
-                </div>
+                )}
+                {assessment && (
+                  <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                    <h4 className="text-xs font-semibold text-foreground mb-1">Assessment</h4>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {assessment.substring(0, 60)}...
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Red Flags (if any) */}
-              {redFlags.length > 0 && (
-                <div className="p-2 bg-orange-50 dark:bg-orange-950/20 rounded-md border border-orange-200 dark:border-orange-800">
-                  <div className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Red Flags ({redFlags.length})
+              {/* Safety & Quality Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Safety Status */}
+                {safetyStatus !== undefined && (
+                  <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                    <h4 className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                      {safetyStatus ? <Shield className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
+                      Safety Status
+                    </h4>
+                    <p className="text-xs text-foreground">
+                      {safetyStatus ? 'Safe' : 'Requires Attention'}
+                    </p>
                   </div>
-                  <div className="text-xs text-orange-700 dark:text-orange-300">
-                    {redFlags.slice(0, 2).map((flag, index) => (
-                      <div key={index}>• {flag.substring(0, 50)}{flag.length > 50 ? '...' : ''}</div>
-                    ))}
-                    {redFlags.length > 2 && (
-                      <div className="text-orange-600 font-medium">+{redFlags.length - 2} more</div>
-                    )}
+                )}
+
+                {/* Red Flags */}
+                {redFlags.length > 0 && (
+                  <div className="p-2 bg-muted/30 border border-border rounded-lg">
+                    <h4 className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Red Flags ({redFlags.length})
+                    </h4>
+                    <p className="text-xs text-foreground">
+                      {redFlags.slice(0, 2).join(', ')}
+                      {redFlags.length > 2 && ` +${redFlags.length - 2} more`}
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Action Buttons - Compact */}

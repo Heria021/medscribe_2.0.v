@@ -69,6 +69,10 @@ export function useSharedSOAPActions(): UseSharedSOAPActionsReturn {
       updatedAt: note.createdAt, // Use createdAt as fallback
       patientName: `${note.patient.firstName} ${note.patient.lastName}`,
       patientId: note.patient._id,
+      // Include all enhanced data from the original SOAP note
+      data: note.soapNote.data,
+      // Include any other fields that might be needed
+      ...note.soapNote,
     };
 
     // Open SOAP viewer

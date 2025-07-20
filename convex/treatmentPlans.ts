@@ -16,6 +16,22 @@ export const create = mutation({
     ),
     startDate: v.string(),
     endDate: v.optional(v.string()),
+
+    // New fields for enhanced treatment management
+    medicationDetails: v.optional(v.array(v.object({
+      name: v.string(),
+      genericName: v.optional(v.string()),
+      strength: v.string(),
+      dosageForm: v.string(),
+      ndc: v.optional(v.string()),
+      rxcui: v.optional(v.string()),
+      quantity: v.string(),
+      frequency: v.string(),
+      duration: v.optional(v.string()),
+      instructions: v.string(),
+      refills: v.number(),
+    }))),
+    pharmacyId: v.optional(v.id("pharmacies")),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -74,10 +90,26 @@ export const update = mutation({
     )),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
+
+    // New fields for enhanced treatment management
+    medicationDetails: v.optional(v.array(v.object({
+      name: v.string(),
+      genericName: v.optional(v.string()),
+      strength: v.string(),
+      dosageForm: v.string(),
+      ndc: v.optional(v.string()),
+      rxcui: v.optional(v.string()),
+      quantity: v.string(),
+      frequency: v.string(),
+      duration: v.optional(v.string()),
+      instructions: v.string(),
+      refills: v.number(),
+    }))),
+    pharmacyId: v.optional(v.id("pharmacies")),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    
+
     return await ctx.db.patch(id, {
       ...updates,
       updatedAt: Date.now(),
@@ -108,12 +140,18 @@ export const getWithDetailsById = query({
       ? await ctx.db.get(treatmentPlan.soapNoteId)
       : null;
 
+    // Get pharmacy details if pharmacyId exists
+    const pharmacy = treatmentPlan.pharmacyId
+      ? await ctx.db.get(treatmentPlan.pharmacyId)
+      : null;
+
     return {
       ...treatmentPlan,
       doctorPatient,
       patient,
       doctor,
       soapNote,
+      pharmacy,
     };
   },
 });
@@ -139,12 +177,18 @@ export const getWithDetailsByDoctorPatientId = query({
           ? await ctx.db.get(plan.soapNoteId)
           : null;
 
+        // Get pharmacy details if pharmacyId exists
+        const pharmacy = plan.pharmacyId
+          ? await ctx.db.get(plan.pharmacyId)
+          : null;
+
         return {
           ...plan,
           doctorPatient,
           patient,
           doctor,
           soapNote,
+          pharmacy,
         };
       })
     );
@@ -153,9 +197,11 @@ export const getWithDetailsByDoctorPatientId = query({
   },
 });
 
+// Get treatment plans with details by patient ID (enhanced version)
 export const getWithDetailsByPatientId = query({
   args: { patientId: v.id("patients") },
   handler: async (ctx, args) => {
+    // Get all doctor-patient relationships for this patient
     const doctorPatients = await ctx.db
       .query("doctorPatients")
       .withIndex("by_patient_id", (q) => q.eq("patientId", args.patientId))
@@ -179,16 +225,22 @@ export const getWithDetailsByPatientId = query({
           ? await ctx.db.get(plan.soapNoteId)
           : null;
 
+        // Get pharmacy details if pharmacyId exists
+        const pharmacy = plan.pharmacyId
+          ? await ctx.db.get(plan.pharmacyId)
+          : null;
+
         allTreatmentPlans.push({
           ...plan,
           doctorPatient,
           patient,
           doctor,
           soapNote,
+          pharmacy,
         });
       }
     }
 
-    return allTreatmentPlans.sort((a, b) => b.createdAt - a.createdAt);
+    return allTreatmentPlans.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   },
 });

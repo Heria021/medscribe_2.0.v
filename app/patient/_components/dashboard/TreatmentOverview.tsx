@@ -59,29 +59,29 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
     { patientId: patientId as any }
   );
 
-  const activeMedications = useQuery(
-    api.medications.getActiveByPatientId,
+  const activePrescriptions = useQuery(
+    api.prescriptions.getByPatientId,
     { patientId: patientId as any }
   );
 
-  // Group medications by treatment plan
-  const medicationsByTreatment = new Map();
-  const standaloneMedications: any[] = [];
+  // Group prescriptions by treatment plan
+  const prescriptionsByTreatment = new Map();
+  const standalonePrescriptions: any[] = [];
 
-  if (activeMedications) {
-    activeMedications.forEach((med: any) => {
-      if (med.treatmentPlanId) {
-        if (!medicationsByTreatment.has(med.treatmentPlanId)) {
-          medicationsByTreatment.set(med.treatmentPlanId, []);
+  if (activePrescriptions) {
+    activePrescriptions.forEach((prescription: any) => {
+      if (prescription.treatmentPlanId) {
+        if (!prescriptionsByTreatment.has(prescription.treatmentPlanId)) {
+          prescriptionsByTreatment.set(prescription.treatmentPlanId, []);
         }
-        medicationsByTreatment.get(med.treatmentPlanId).push(med);
+        prescriptionsByTreatment.get(prescription.treatmentPlanId).push(prescription);
       } else {
-        standaloneMedications.push(med);
+        standalonePrescriptions.push(prescription);
       }
     });
   }
 
-  const isLoading = activeTreatments === undefined || activeMedications === undefined;
+  const isLoading = activeTreatments === undefined || activePrescriptions === undefined;
 
   if (isLoading) {
     return (
@@ -108,12 +108,12 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
   }
 
   const hasActiveTreatments = activeTreatments && activeTreatments.length > 0;
-  const hasStandaloneMedications = standaloneMedications.length > 0;
-  const hasAnyActive = hasActiveTreatments || hasStandaloneMedications;
+  const hasStandalonePrescriptions = standalonePrescriptions.length > 0;
+  const hasAnyActive = hasActiveTreatments || hasStandalonePrescriptions;
 
-  // Filter treatments that have medications or are active
-  const activeFilteredTreatments = activeTreatments?.filter((treatment: any) => 
-    treatment.status === 'active' || medicationsByTreatment.has(treatment._id)
+  // Filter treatments that have prescriptions or are active
+  const activeFilteredTreatments = activeTreatments?.filter((treatment: any) =>
+    treatment.status === 'active' || prescriptionsByTreatment.has(treatment._id)
   ) || [];
 
   return (
@@ -194,7 +194,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
           ) : (
             <div className="p-4 space-y-3">
               {hasActiveTreatments && activeFilteredTreatments.map((treatment) => {
-                const treatmentMedications = medicationsByTreatment.get(treatment._id) || [];
+                const treatmentPrescriptions = prescriptionsByTreatment.get(treatment._id) || [];
                 const isExpanded = expandedTreatments.has(treatment._id);
 
                 return (
@@ -258,7 +258,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                         )}
                       </div>
 
-                      {treatmentMedications.length > 0 && (
+                      {treatmentPrescriptions.length > 0 && (
                         <div className="border-t border-border/50 pt-3 mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1">
@@ -270,7 +270,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                                 "text-xs font-medium",
                                 gradient?.textColor || "text-muted-foreground"
                               )}>
-                                Medications ({treatmentMedications.length})
+                                Prescriptions ({treatmentPrescriptions.length})
                               </span>
                             </div>
                             <Button
@@ -298,7 +298,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                           </div>
                           {expandedTreatments.has(treatment._id) && (
                             <div className="space-y-2">
-                              {treatmentMedications.map((med: any, index: number) => (
+                              {treatmentPrescriptions.map((prescription: any, index: number) => (
                                 <div
                                   key={index}
                                   className={cn(
@@ -312,16 +312,16 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                                         "font-medium text-xs truncate",
                                         gradient?.textColor
                                       )}>
-                                        {med.medicationName}
+                                        {prescription.medicationName}
                                       </div>
                                       <div className={cn(
                                         "text-xs mt-1 space-y-0.5",
                                         gradient?.textColor || "text-muted-foreground"
                                       )}>
-                                        <div>Dosage: {med.dosage}</div>
-                                        <div>Frequency: {med.frequency}</div>
-                                        {med.instructions && (
-                                          <div className="text-xs">Instructions: {med.instructions}</div>
+                                        <div>Dosage: {prescription.dosage}</div>
+                                        <div>Frequency: {prescription.frequency}</div>
+                                        {prescription.instructions && (
+                                          <div className="text-xs">Instructions: {prescription.instructions}</div>
                                         )}
                                       </div>
                                     </div>
@@ -346,7 +346,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                 );
               })}
 
-              {!hasActiveTreatments && hasStandaloneMedications && (
+              {!hasActiveTreatments && hasStandalonePrescriptions && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -373,17 +373,17 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                           )}
                         >
                           <Info className="h-3 w-3 mr-1" />
-                          View All ({standaloneMedications.length})
+                          View All ({standalonePrescriptions.length})
                           <ChevronDown className="h-3 w-3 ml-1" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-64">
-                        {standaloneMedications.map((medication) => (
-                          <DropdownMenuItem key={medication._id} className="flex-col items-start p-3">
-                            <div className="font-medium text-sm">{medication.medicationName}</div>
+                        {standalonePrescriptions.map((prescription) => (
+                          <DropdownMenuItem key={prescription._id} className="flex-col items-start p-3">
+                            <div className="font-medium text-sm">{prescription.medicationName}</div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              <div>Dosage: {medication.dosage}</div>
-                              <div>Frequency: {medication.frequency}</div>
+                              <div>Dosage: {prescription.dosage}</div>
+                              <div>Frequency: {prescription.frequency}</div>
                               {medication.instructions && (
                                 <div className="mt-1">Instructions: {medication.instructions}</div>
                               )}
@@ -401,7 +401,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                       "text-xs",
                       gradient?.textColor || "text-muted-foreground"
                     )}>
-                      {standaloneMedications.length} active medication{standaloneMedications.length > 1 ? 's' : ''} • Click "View All" for details
+                      {standalonePrescriptions.length} active prescription{standalonePrescriptions.length > 1 ? 's' : ''} • Click "View All" for details
                     </p>
                   </div>
                 </div>

@@ -1,299 +1,411 @@
+"use client";
+
 import React from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   Activity,
+  Calendar,
   FileText,
   Target,
-  Pill,
-  Plus,
+  User,
+  Edit,
+  MoreHorizontal,
+  Clock,
   CheckCircle,
+  AlertTriangle,
+  Pill,
+  MapPin,
   Eye,
+  Stethoscope,
+  Building2,
+  Hash,
+  Timer,
+  RefreshCw,
 } from "lucide-react";
-import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
-import { PrescriptionList } from "@/components/prescriptions/prescription-list";
-import { usePatientDetailFormatters } from "../hooks";
-import type { TreatmentDetailsProps } from "../types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { Id } from "@/convex/_generated/dataModel";
+
+interface TreatmentDetailsProps {
+  treatmentId: string;
+  onEdit?: () => void;
+  onView?: () => void;
+  onStatusChange?: (status: string) => void;
+  className?: string;
+}
 
 /**
  * TreatmentDetails Component
- * 
- * Displays detailed information about a selected treatment plan
- * Includes medications, goals, and prescription management
- * Optimized for performance with React.memo
+ *
+ * Clean, detailed, grid-based treatment details view
+ * Optimized for information density and visual hierarchy
  */
-export const TreatmentDetails = React.memo<TreatmentDetailsProps & { isLoading?: boolean }>(({
-  treatment,
-  medications,
-  onAddMedication,
-  onMedicationComplete,
-  onShowPrescriptionForm,
-  onAddPrescription,
-  showPrescriptionForm,
-  patientId,
-  isLoading = false,
-  className = "",
+export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
+  treatmentId,
+  onEdit,
+  onView,
+  onStatusChange,
+  className,
 }) => {
-  const { formatDate } = usePatientDetailFormatters();
+  // Fetch treatment details with all related data
+  const treatment = useQuery(
+    api.treatmentPlans.getWithDetailsById,
+    treatmentId ? { id: treatmentId as Id<"treatmentPlans"> } : "skip"
+  );
 
-  // Skeleton loading state
-  if (isLoading || !treatment) {
+  // Loading state
+  if (treatment === undefined) {
     return (
-      <Card className={cn("flex-1 min-h-0 flex flex-col bg-background border-border", className)}>
-        <CardHeader className="p-0 flex-shrink-0">
-          <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-br from-muted/50 via-muted/30 to-transparent">
-            <div className="relative px-4 py-4">
-              <div className="flex items-start gap-4">
-                <Skeleton className="h-11 w-11 rounded-xl" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <Skeleton className="h-6 w-48" />
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-3 w-16" />
-                        <Skeleton className="h-5 w-32 rounded-md" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-right space-y-1">
-                        <Skeleton className="h-3 w-12" />
-                        <Skeleton className="h-5 w-20 rounded-md" />
-                      </div>
-                      <Skeleton className="h-6 w-16 rounded-full" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <div className={cn("h-full p-6", className)}>
+        <div className="space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-64" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-8 w-8" />
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="flex-1 min-h-0 p-3 md:p-6">
-          <div className="space-y-4 md:space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 md:gap-6">
-              <div className="space-y-2 md:space-y-3">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-4 md:h-5 w-24 md:w-32" />
-                </div>
-                <Skeleton className="h-16 md:h-24 w-full rounded-lg" />
-              </div>
-              <div className="space-y-2 md:space-y-3">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-4 md:h-5 w-20 md:w-28" />
-                </div>
-                <div className="space-y-1.5 md:space-y-2">
-                  <Skeleton className="h-3 md:h-4 w-full" />
-                  <Skeleton className="h-3 md:h-4 w-3/4" />
-                  <Skeleton className="h-3 md:h-4 w-1/2" />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3 md:space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Skeleton className="h-4 w-4 flex-shrink-0" />
-                  <Skeleton className="h-4 md:h-5 w-20 md:w-24" />
-                </div>
-                <Skeleton className="h-6 md:h-8 w-12 md:w-20 flex-shrink-0" />
-              </div>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 md:gap-3">
-                {[1, 2].map((i) => (
-                  <Skeleton key={i} className="h-16 md:h-20 w-full rounded-lg" />
-                ))}
-              </div>
-            </div>
+
+          {/* Info grid skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Content skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
     );
   }
 
+  // Treatment not found
   if (!treatment) {
     return (
-      <Card className={cn("h-full flex items-center justify-center bg-background border-border", className)}>
-        <div className="text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-            <Eye className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-foreground">Select a Treatment Plan</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Choose a treatment plan from the list to view detailed information, medications, and goals
+      <div className={cn("h-full flex items-center justify-center p-12", className)}>
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">Treatment not found</h3>
+          <p className="text-muted-foreground">
+            The requested treatment plan could not be found.
           </p>
         </div>
-      </Card>
+      </div>
     );
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "completed":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "discontinued":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
+  };
+
+  const formatShortDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatLongDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   return (
-    <Card className={cn("h-full flex flex-col bg-background border-border", className)}>
-      <CardHeader className="p-0 flex-shrink-0">
-        <div className="relative overflow-hidden rounded-t-lg">
-          <div className="relative px-4">
-            <div className="flex items-start gap-4">
-              <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
-                <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <Activity className="h-4 w-4 text-primary" />
+    <div className={cn("h-full", className)}>
+      <ScrollArea className="h-full">
+        <div className="p-6 space-y-6">
+          {/* Treatment Header - Clean and Prominent */}
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-foreground mb-2">{treatment.title}</h1>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Started {formatLongDate(treatment.startDate)}
+                  </span>
+                  {treatment.endDate && (
+                    <span className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Ends {formatLongDate(treatment.endDate)}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base font-semibold text-foreground leading-tight truncate mb-1">
-                      {treatment.title}
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {treatment.diagnosis}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-right">
-                      <div className="text-xs font-medium text-muted-foreground mb-1">Duration</div>
-                      <div className="text-xs text-foreground bg-muted/50 px-2 py-1 rounded-md">
-                        {formatDate(treatment.startDate)}
-                        {treatment.endDate && (
-                          <span className="mx-1">→ {formatDate(treatment.endDate)}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-primary/10 rounded-full blur-sm"></div>
-                      <Badge
-                        variant={treatment.status === 'active' ? 'default' : 'secondary'}
-                        className="relative text-xs capitalize px-3 py-1 font-medium shadow-sm"
-                      >
-                        {treatment.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className={cn("text-sm px-3 py-1", getStatusColor(treatment.status))}
+                >
+                  {treatment.status === "active" && <CheckCircle className="h-4 w-4 mr-2" />}
+                  {treatment.status === "completed" && <CheckCircle className="h-4 w-4 mr-2" />}
+                  {treatment.status === "discontinued" && <AlertTriangle className="h-4 w-4 mr-2" />}
+                  <span className="capitalize font-medium">{treatment.status}</span>
+                </Badge>
+
+                {onView && (
+                  <Button variant="outline" size="sm" onClick={onView} className="gap-2">
+                    <Eye className="h-4 w-4" />
+                    View Full
+                  </Button>
+                )}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={onEdit}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Treatment
+                    </DropdownMenuItem>
+                    {treatment.status === "active" && (
+                      <DropdownMenuItem onClick={() => onStatusChange?.("completed")}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark Complete
+                      </DropdownMenuItem>
+                    )}
+                    {treatment.status === "active" && (
+                      <DropdownMenuItem onClick={() => onStatusChange?.("discontinued")}>
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Discontinue
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 min-h-0 p-0">
-        <ScrollArea className="h-full">
-          <div className="p-3 md:p-4 space-y-4 md:space-y-5">
-            {/* Treatment Plan and Goals - Single Column Layout */}
-            <div className="grid grid-cols-1 gap-3 md:gap-4">
-              {/* Treatment Plan */}
-              <div className="space-y-2 md:space-y-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-sm md:text-base text-foreground">Treatment Plan</h3>
+
+          {/* Enhanced Information Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Doctor Information */}
+            {treatment.doctor && (
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-primary/10 rounded">
+                    <Stethoscope className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prescribing Doctor</span>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 md:p-4 border border-border">
-                  <p className="text-xs md:text-sm leading-relaxed text-foreground">{treatment.plan}</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    Dr. {treatment.doctor.firstName} {treatment.doctor.lastName}
+                  </p>
+                  {treatment.doctor.primarySpecialty && (
+                    <p className="text-xs text-muted-foreground">{treatment.doctor.primarySpecialty}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Pharmacy Information */}
+            {treatment.pharmacy && (
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-primary/10 rounded">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Pharmacy</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">{treatment.pharmacy.name}</p>
+                  {treatment.pharmacy.chainName && (
+                    <p className="text-xs text-muted-foreground">{treatment.pharmacy.chainName}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Treatment Goals */}
+            {treatment.goals && treatment.goals.length > 0 && (
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-primary/10 rounded">
+                    <Target className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Goals</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">{treatment.goals.length} Objectives</p>
+                  <p className="text-xs text-muted-foreground">Treatment targets</p>
+                </div>
+              </div>
+            )}
+
+            {/* Medications Count */}
+            {treatment.medicationDetails && treatment.medicationDetails.length > 0 && (
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-primary/10 rounded">
+                    <Pill className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medications</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">{treatment.medicationDetails.length} Prescribed</p>
+                  <p className="text-xs text-muted-foreground">Active prescriptions</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Main Content Sections */}
+          <div className="space-y-6">
+            {/* Diagnosis & Treatment Plan */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">Primary Diagnosis</h2>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                  <p className="text-sm text-foreground leading-relaxed">{treatment.diagnosis}</p>
                 </div>
               </div>
 
-              {/* Goals */}
-              {treatment.goals && treatment.goals.length > 0 && (
-                <div className="space-y-2 md:space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold text-sm md:text-base text-foreground">
-                      Goals ({treatment.goals.length})
-                    </h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Activity className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="space-y-1.5 md:space-y-2">
-                    {treatment.goals.map((goal: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2 md:gap-3 p-2 md:p-3 bg-muted/30 rounded-lg border border-border">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 md:mt-2 flex-shrink-0" />
-                        <span className="text-xs md:text-sm leading-relaxed text-foreground">{goal}</span>
+                  <h2 className="text-lg font-semibold text-foreground">Treatment Plan</h2>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                  <p className="text-sm text-foreground leading-relaxed">{treatment.plan}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Treatment Goals */}
+            {treatment.goals && treatment.goals.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">Treatment Goals</h2>
+                  <Badge variant="secondary" className="ml-auto">
+                    {treatment.goals.length} {treatment.goals.length === 1 ? 'Goal' : 'Goals'}
+                  </Badge>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {treatment.goals.map((goal, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-background rounded border">
+                        <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-semibold text-primary">{index + 1}</span>
+                        </div>
+                        <p className="text-sm text-foreground leading-relaxed">{goal}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <Separator className="my-2" />
-
-            {/* Medications */}
-            {medications && medications.length > 0 && (
-              <div className="space-y-2 md:space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Pill className="h-4 w-4 text-primary flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm md:text-base text-foreground truncate">
-                        Current Medications ({medications.length})
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Active medications for this treatment plan
-                      </p>
-                    </div>
+            {/* Medications - Enhanced Grid Layout */}
+            {treatment.medicationDetails && treatment.medicationDetails.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Pill className="h-5 w-5 text-primary" />
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onAddMedication}
-                    className="h-6 md:h-7 px-2 md:px-3 text-xs flex-shrink-0"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    <span className="hidden sm:inline">Add</span>
-                  </Button>
+                  <h2 className="text-lg font-semibold text-foreground">Prescribed Medications</h2>
+                  <Badge variant="secondary" className="ml-auto">
+                    {treatment.medicationDetails.length} {treatment.medicationDetails.length === 1 ? 'Medication' : 'Medications'}
+                  </Badge>
                 </div>
-                <div className="grid grid-cols-1 gap-2 md:gap-3">
-                  {medications.map((medication) => (
-                    <div key={medication._id} className="p-3 md:p-4 bg-background rounded-lg border border-border hover:shadow-sm transition-shadow">
-                      <div className="flex items-start justify-between mb-2 gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-xs md:text-sm text-foreground mb-1 truncate">{medication.medicationName}</h4>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-                            <span className="bg-muted/50 px-1.5 md:px-2 py-0.5 rounded text-xs">{medication.dosage}</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span className="bg-muted/50 px-1.5 md:px-2 py-0.5 rounded text-xs">{medication.frequency}</span>
+                <div className="space-y-3">
+                  {treatment.medicationDetails.map((medication, index) => (
+                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border">
+                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                        {/* Medication Name & Generic */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <Hash className="h-3 w-3" />
+                            Medication
                           </div>
-                        </div>
-                        <Badge
-                          variant={medication.status === 'active' ? 'default' : 'secondary'}
-                          className="text-xs capitalize flex-shrink-0"
-                        >
-                          {medication.status}
-                        </Badge>
-                      </div>
-                      {medication.instructions && (
-                        <div className="mb-2 p-2 bg-muted/30 rounded text-xs text-foreground">
-                          <p className="line-clamp-2">{medication.instructions}</p>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between pt-2 border-t border-border gap-2">
-                        <span className="text-xs text-muted-foreground truncate">
-                          {new Date(medication.startDate).toLocaleDateString()}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          {medication.status === 'active' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-5 md:h-6 px-1.5 md:px-2 text-xs flex-shrink-0"
-                                onClick={() => onAddPrescription ? onAddPrescription() : onShowPrescriptionForm()}
-                                title="Create prescription from this medication"
-                              >
-                                <Pill className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">Prescribe</span>
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-5 md:h-6 px-1.5 md:px-2 text-xs flex-shrink-0"
-                                onClick={() => onMedicationComplete(medication._id)}
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">Complete</span>
-                              </Button>
-                            </>
+                          <p className="font-semibold text-foreground">{medication.name}</p>
+                          {medication.genericName && (
+                            <p className="text-sm text-muted-foreground">Generic: {medication.genericName}</p>
                           )}
+                          <p className="text-xs text-muted-foreground">{medication.dosageForm}</p>
+                        </div>
+
+                        {/* Strength & Quantity */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <Activity className="h-3 w-3" />
+                            Dosage
+                          </div>
+                          <p className="font-semibold text-foreground">{medication.strength}</p>
+                          <p className="text-sm text-muted-foreground">Qty: {medication.quantity}</p>
+                          {medication.refills > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              <RefreshCw className="h-3 w-3 inline mr-1" />
+                              {medication.refills} refills
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Frequency & Duration */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <Timer className="h-3 w-3" />
+                            Schedule
+                          </div>
+                          <p className="font-semibold text-foreground">{medication.frequency}</p>
+                          {medication.duration && (
+                            <p className="text-sm text-muted-foreground">Duration: {medication.duration}</p>
+                          )}
+                        </div>
+
+                        {/* Instructions */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <FileText className="h-3 w-3" />
+                            Instructions
+                          </div>
+                          <p className="text-sm text-foreground leading-relaxed">{medication.instructions}</p>
                         </div>
                       </div>
                     </div>
@@ -301,78 +413,11 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps & { isLoading?:
                 </div>
               </div>
             )}
-
-            <Separator className="my-2" />
-
-            {/* Add Medication Button if no medications */}
-            {(!medications || medications.length === 0) && (
-              <div className="text-center py-4 md:py-6 bg-muted/30 rounded-lg border border-dashed border-border">
-                <div className="w-10 md:w-12 h-10 md:h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-2 md:mb-3">
-                  <Pill className="h-5 md:h-6 w-5 md:w-6 text-muted-foreground" />
-                </div>
-                <h3 className="font-medium mb-1 text-foreground text-sm md:text-base">No Current Medications</h3>
-                <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4 px-4">
-                  Add medications that the patient is currently taking
-                </p>
-                <Button
-                  size="sm"
-                  onClick={onAddMedication}
-                  className="h-7 md:h-8 px-3 md:px-4 text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1 md:mr-2" />
-                  Add Medication
-                </Button>
-              </div>
-            )}
-
-            <Separator className="my-2" />
-
-            {/* E-Prescribing Section */}
-            <div className="space-y-2 md:space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Pill className="h-4 w-4 text-primary flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm md:text-base text-foreground truncate">
-                      E-Prescribing
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Send electronic prescriptions to pharmacy
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onAddPrescription || onShowPrescriptionForm}
-                  className="h-6 md:h-7 px-2 md:px-3 text-xs flex-shrink-0"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Add</span>
-                </Button>
-              </div>
-
-              {showPrescriptionForm && (
-                <div className="p-3 md:p-4 bg-background rounded-lg border border-border hover:shadow-sm transition-shadow">
-                  <PrescriptionForm
-                    patientId={patientId}
-                    treatmentPlanId={treatment._id as any}
-                    onSuccess={(_prescriptionId) => {
-                      onShowPrescriptionForm();
-                    }}
-                    onCancel={onShowPrescriptionForm}
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-2 md:gap-3">
-                <PrescriptionList patientId={patientId} />
-              </div>
-            </div>
           </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+
+        </div>
+      </ScrollArea>
+    </div>
   );
 });
 

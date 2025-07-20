@@ -1,14 +1,14 @@
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity } from "lucide-react";
+import { Activity, Heart, Calendar } from "lucide-react";
 import { TreatmentCard } from "./TreatmentCard";
 import type { TreatmentListProps } from "../types";
+import { cn } from "@/lib/utils";
 
 /**
  * Treatment List Component
- * Displays a list of treatments in a sidebar format
+ * Clean, header-less list of treatments with enhanced visual design
  */
 export const TreatmentList = React.memo<TreatmentListProps>(({
   treatments,
@@ -21,35 +21,74 @@ export const TreatmentList = React.memo<TreatmentListProps>(({
 }) => {
   const displayTreatments = maxItems ? treatments.slice(0, maxItems) : treatments;
 
+  // Enhanced empty state
   const defaultEmptyState = (
-    <div className="flex flex-col items-center justify-center py-6 text-center">
-      <Activity className="h-6 w-6 text-muted-foreground mb-2" />
-      <h3 className="font-medium text-sm mb-1">No treatments found</h3>
-      <p className="text-muted-foreground text-xs">
-        No treatment plans yet
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="p-4 bg-muted/30 rounded-full mb-4">
+        <Heart className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="font-semibold text-lg mb-2">No Treatment Plans</h3>
+      <p className="text-muted-foreground text-sm max-w-sm">
+        Your treatment plans will appear here once your doctor creates them for you.
       </p>
     </div>
   );
 
+  // Get active treatments count
+  const activeTreatments = treatments.filter(t => t.status === 'active').length;
+  const completedTreatments = treatments.filter(t => t.status === 'completed').length;
+
   return (
-    <Card className={`flex-1 min-h-0 flex flex-col ${className}`}>
-      <CardHeader className="pb-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold">Treatments</CardTitle>
+    <div className={cn("h-full flex flex-col", className)}>
+      {/* Enhanced Header Section */}
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">My Treatments</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track your ongoing and completed treatment plans
+            </p>
+          </div>
           {treatments.length > 0 && (
-            <Badge variant="outline" className="text-xs h-5">
-              {treatments.length}
+            <Badge variant="secondary" className="text-sm px-3 py-1">
+              {treatments.length} Total
             </Badge>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 min-h-0 p-0">
-        <ScrollArea className="h-full scrollbar-hide">
-          <div className="p-3">
+
+        {/* Treatment Stats */}
+        {treatments.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+              <div className="flex items-center gap-2">
+                <div className="p-1 bg-primary/10 rounded">
+                  <Activity className="h-3 w-3 text-primary" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</span>
+              </div>
+              <p className="text-lg font-bold text-foreground mt-1">{activeTreatments}</p>
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <div className="p-1 bg-muted rounded">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Completed</span>
+              </div>
+              <p className="text-lg font-bold text-foreground mt-1">{completedTreatments}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Treatment List */}
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="p-6">
             {displayTreatments.length === 0 ? (
               emptyState || defaultEmptyState
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {displayTreatments.map((treatment) => (
                   <TreatmentCard
                     key={treatment._id}
@@ -62,8 +101,8 @@ export const TreatmentList = React.memo<TreatmentListProps>(({
             )}
           </div>
         </ScrollArea>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 });
 

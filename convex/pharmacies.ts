@@ -217,6 +217,14 @@ export const searchByChain = query({
   },
 });
 
+// Get pharmacy by ID
+export const getById = query({
+  args: { id: v.id("pharmacies") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
 // Get pharmacy by NCPDP ID
 export const getByNcpdpId = query({
   args: { ncpdpId: v.string() },
@@ -464,5 +472,39 @@ export const getAllActive = query({
       .query("pharmacies")
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .collect();
+  },
+});
+
+// Get active pharmacies for prescription selection
+export const getActivePharmaciesForPrescription = query({
+  args: {
+    zipCode: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 20;
+
+    let query = ctx.db
+      .query("pharmacies")
+      .withIndex("by_active", (q) => q.eq("isActive", true));
+
+    if (args.zipCode) {
+      query = query.filter((q) => q.eq(q.field("address.zipCode"), args.zipCode));
+    }
+
+    const pharmacies = await query.take(limit);
+
+    // Return simplified pharmacy data for selection
+    return pharmacies.map(pharmacy => ({
+      _id: pharmacy._id,
+      name: pharmacy.name,
+      address: pharmacy.address,
+      phone: pharmacy.phone,
+      chainName: pharmacy.chainName,
+      services: pharmacy.services || [],
+      hours: pharmacy.hours,
+      deliveryAvailable: pharmacy.services?.includes("delivery") || false,
+      pickupAvailable: true, // All pharmacies support pickup
+    }));
   },
 });

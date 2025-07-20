@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { SOAPViewer } from "@/components/ui/soap-viewer";
 import {
   useReferralsAuth,
   useReferralsData,
@@ -50,6 +51,7 @@ const DoctorReferralsPage = React.memo(() => {
     handleCompleteReferral,
     handleViewSOAP,
     isProcessing,
+    soapViewer,
   } = useReferralsActions();
 
   const {
@@ -140,6 +142,43 @@ const DoctorReferralsPage = React.memo(() => {
             getStatusBadge={getStatusBadge}
           />
         </div>
+
+        {/* SOAP Viewer for full-screen document view */}
+        {soapViewer.selectedNote && (
+          <SOAPViewer
+            note={soapViewer.selectedNote}
+            open={soapViewer.isOpen}
+            onOpenChange={soapViewer.setOpen}
+            config={{
+              showBackButton: true,
+              showActions: true,
+              showPatientInfo: true,
+              showMetadata: true,
+              allowPrint: true,
+              allowDownload: true,
+              allowShare: false,
+              allowCopy: true,
+              allowExportPDF: true,
+              backButtonText: "Back to Referrals",
+              documentTitle: "SOAP Clinical Note - Referral"
+            }}
+            actions={{
+              onBack: soapViewer.closeViewer,
+              onPrint: () => window.print(),
+              onCopy: (note) => {
+                navigator.clipboard.writeText(`SOAP Note ID: ${note._id}`);
+              },
+              onDownload: (note) => {
+                // Handle download - could implement PDF generation
+                console.log("Download SOAP note:", note._id);
+              },
+              onExportPDF: (note) => {
+                // Handle PDF export
+                console.log("Export PDF for SOAP note:", note._id);
+              }
+            }}
+          />
+        )}
       </div>
     </>
   );

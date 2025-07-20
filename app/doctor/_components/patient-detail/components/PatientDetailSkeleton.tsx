@@ -50,9 +50,9 @@ export const PatientDetailSkeleton = React.memo(() => {
 
       {/* Main Content Skeleton */}
       <div className="flex-1 min-h-0">
-        <div className="h-full grid gap-4 grid-cols-1 lg:grid-cols-4">
+        <div className="h-full flex flex-col lg:flex-row gap-4">
           {/* Treatment List Skeleton */}
-          <div className="flex flex-col min-h-0 lg:col-span-1">
+          <div className="flex flex-col min-h-0 lg:w-80 lg:flex-shrink-0 order-2 lg:order-1">
             <Card className="flex-1 min-h-0 flex flex-col">
               <CardHeader className="pb-2 flex-shrink-0">
                 <div className="flex items-center justify-between">
@@ -87,7 +87,7 @@ export const PatientDetailSkeleton = React.memo(() => {
           </div>
 
           {/* Treatment Details Skeleton */}
-          <div className="flex flex-col min-h-0 lg:col-span-3">
+          <div className="flex-1 min-h-0 order-1 lg:order-2">
             <Card className="flex-1 min-h-0 flex flex-col">
               <CardHeader className="pb-3 flex-shrink-0">
                 <div className="flex items-start justify-between">
