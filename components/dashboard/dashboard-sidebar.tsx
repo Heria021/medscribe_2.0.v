@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { NavSection } from "@/lib/navigation";
+import { NotificationSheet } from "@/components/notifications/notification-sheet";
 
 interface DashboardSidebarProps {
   navigation: NavSection[];
@@ -110,15 +111,7 @@ export function DashboardSidebar({ navigation, userRole, currentPath }: Dashboar
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className="transition-all duration-200 h-9 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-              >
-                <Link href={`/${userRole}/notifications`} className="flex items-center gap-3 w-full px-3">
-                  <Bell className="h-4 w-4 text-sidebar-foreground" />
-                  <span className="font-medium text-sm text-sidebar-foreground">Notifications</span>
-                </Link>
-              </SidebarMenuButton>
+              <NotificationSheet userRole={userRole} />
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton

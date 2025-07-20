@@ -3,7 +3,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationBell } from "@/components/notifications/notification-bell";
 
 interface DashboardHeaderProps {
   user: {
@@ -27,9 +26,6 @@ export function DashboardHeader({ user, displayName }: DashboardHeaderProps) {
 
   return (
     <div className="flex items-center gap-2 h-full">
-      {/* Notifications */}
-      <NotificationBell />
-
       {/* Theme Toggle */}
       <ThemeToggle />
 
