@@ -152,25 +152,33 @@ export function DoctorPatientChat({
   })) || [];
 
   return (
-    <Card className="h-full flex flex-col bg-background border-border">
+    <Card className="h-full flex flex-col bg-background border-border py-0">
       <CardHeader className="p-0 flex-shrink-0">
-        <div className="relative overflow-hidden rounded-t-lg">
-          <div className="relative px-4">
+        <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-muted/50 via-muted/30 to-transparent">
+          <div className="relative px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
-                <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <MessageCircle className="h-4 w-4 text-primary" />
-                </div>
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
                 <CardTitle className="text-base font-semibold text-foreground tracking-tight">
                   Chat with {patientName}
                 </CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground">
                   Direct messaging
                 </p>
               </div>
+              {onClose && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 w-8 p-0 hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close chat</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>

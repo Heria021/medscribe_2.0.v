@@ -151,7 +151,6 @@ export interface PatientHeaderProps {
   onChatToggle: () => void;
   onAppointmentClick: () => void;
   onAddTreatment: () => void;
-  onAddPrescription?: () => void;
   onSOAPHistoryToggle?: () => void;
   showChat: boolean;
   showSOAPHistory?: boolean;

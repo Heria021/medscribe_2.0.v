@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "convex/react";
@@ -51,9 +51,10 @@ import {
 } from "@/lib/validations/treatment";
 
 // Local Components
-import { TreatmentMedicationEntry } from "./TreatmentMedicationEntry";
+import { NewMedicationManager, type MedicationManagerRef } from "./NewMedicationManager";
 import { TreatmentPharmacySelector } from "./TreatmentPharmacySelector";
 import { TreatmentSOAPNoteSelector } from "./TreatmentSOAPNoteSelector";
+import CompactTreatmentTemplates from "@/components/treatment/compact-treatment-templates";
 
 interface AddTreatmentFormProps {
   patientId: string;
@@ -68,6 +69,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentGoal, setCurrentGoal] = useState("");
+  const medicationManagerRef = useRef<MedicationManagerRef>(null);
 
   // Authentication and doctor profile
   const { data: session } = useSession();
@@ -93,21 +95,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
     resolver: zodResolver(treatmentFormSchema),
     defaultValues: {
       ...defaultTreatmentFormValues,
-      medicationDetails: [
-        {
-          name: "",
-          genericName: "",
-          strength: "",
-          dosageForm: "tablet",
-          ndc: "",
-          rxcui: "",
-          quantity: "",
-          frequency: "",
-          duration: "",
-          instructions: "",
-          refills: 0,
-        },
-      ],
+      medicationDetails: [], // Start with empty array
     },
   });
 
@@ -151,22 +139,17 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
       return;
     }
 
-    // Additional validation
-    if (data.medicationDetails.length === 0) {
-      toast.error("Please add at least one medication");
-      return;
-    }
+    // Validate medication details (only if medications are provided)
+    if (data.medicationDetails.length > 0) {
+      const invalidMedications = data.medicationDetails.filter(
+        med => !med.name.trim() || !med.strength.trim() || !med.frequency.trim()
+      );
 
-    // Validate medication details
-    const invalidMedications = data.medicationDetails.filter(
-      med => !med.name.trim() || !med.strength.trim() || !med.dosageForm.trim() ||
-             !med.quantity.trim() || !med.frequency.trim() || !med.instructions.trim()
-    );
-
-    if (invalidMedications.length > 0) {
-      console.error("Invalid medications found:", invalidMedications);
-      toast.error("Please complete all required medication fields");
-      return;
+      if (invalidMedications.length > 0) {
+        console.error("Invalid medications found:", invalidMedications);
+        toast.error("Please complete all required medication fields (Name, Strength, Frequency)");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -276,6 +259,24 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
                   </AlertDescription>
                 </Alert>
               )}
+
+              {/* Treatment Templates Section */}
+              <CompactTreatmentTemplates
+                onSelectTemplate={(template) => {
+                  // Auto-fill form with template data
+                  form.setValue("title", template.name);
+                  form.setValue("diagnosis", template.condition);
+                  form.setValue("plan", template.description);
+                  form.setValue("goals", template.goals);
+
+                  // Add template medications using the ref
+                  if (medicationManagerRef.current) {
+                    medicationManagerRef.current.addMedicationsFromTemplate(template.medications);
+                  }
+
+                  toast.success(`Applied template: ${template.name}`);
+                }}
+              />
 
               {/* SOAP Note Selection Section */}
               <TreatmentSOAPNoteSelector control={form.control} patientId={patientId} />
@@ -480,7 +481,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
               </div>
 
               {/* Medication Details Section */}
-              <TreatmentMedicationEntry control={form.control} />
+              <NewMedicationManager ref={medicationManagerRef} control={form.control} />
 
               {/* Pharmacy Selection Section */}
               <TreatmentPharmacySelector control={form.control} />

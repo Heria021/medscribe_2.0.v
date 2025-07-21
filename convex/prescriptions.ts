@@ -155,63 +155,7 @@ export const updateStatus = mutation({
   },
 });
 
-// Check drug interactions for a patient
-export const checkDrugInteractions = query({
-  args: {
-    patientId: v.id("patients"),
-    newMedication: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Get patient's current active prescriptions
-    const currentPrescriptions = await ctx.db
-      .query("prescriptions")
-      .withIndex("by_patient", (q) => q.eq("patientId", args.patientId))
-      .filter((q) => q.eq(q.field("status"), "filled"))
-      .collect();
 
-    const currentMedications = currentPrescriptions.map(p => p.medication.name);
-    
-    // Check for interactions with each current medication
-    const interactions = [];
-    
-    for (const currentMed of currentMedications) {
-      // Check both directions (drug1-drug2 and drug2-drug1)
-      const interaction1 = await ctx.db
-        .query("drugInteractions")
-        .withIndex("by_drug_pair", (q) => 
-          q.eq("drug1", currentMed).eq("drug2", args.newMedication)
-        )
-        .first();
-        
-      const interaction2 = await ctx.db
-        .query("drugInteractions")
-        .withIndex("by_drug_pair", (q) => 
-          q.eq("drug1", args.newMedication).eq("drug2", currentMed)
-        )
-        .first();
-
-      if (interaction1) {
-        interactions.push({
-          ...interaction1,
-          interactingMedication: currentMed,
-        });
-      }
-      
-      if (interaction2) {
-        interactions.push({
-          ...interaction2,
-          interactingMedication: currentMed,
-        });
-      }
-    }
-
-    return {
-      hasInteractions: interactions.length > 0,
-      interactions,
-      currentMedications,
-    };
-  },
-});
 
 // Add safety checks to prescription
 export const addSafetyChecks = mutation({

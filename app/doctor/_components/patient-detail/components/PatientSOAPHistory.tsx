@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SOAPViewer, useSOAPViewer } from "@/components/ui/soap-viewer";
 import {
   FileText,
@@ -19,7 +20,8 @@ import {
   UserCheck,
   Clock,
   ChevronRight,
-  Search
+  Search,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -28,6 +30,7 @@ interface PatientSOAPHistoryProps {
   patientId: Id<"patients">;
   doctorId: Id<"doctors">;
   className?: string;
+  onClose?: () => void;
 }
 
 /**
@@ -41,6 +44,7 @@ export const PatientSOAPHistory: React.FC<PatientSOAPHistoryProps> = ({
   patientId,
   doctorId,
   className,
+  onClose,
 }) => {
   // Early return if required props are missing
   if (!patientId || !doctorId) {
@@ -118,28 +122,28 @@ export const PatientSOAPHistory: React.FC<PatientSOAPHistoryProps> = ({
     }
   }, [soapViewer]);
 
-  // Get status color for SOAP note
+  // Get status color for SOAP note - using shadcn theme variables
   const getSOAPStatusColor = (note: any) => {
     if (note.shareType === "referral_share") {
-      return "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950";
+      return "border-primary/20 bg-primary/5";
     }
     return "border-border bg-background";
   };
 
-  // Get share type info
+  // Get share type info - using shadcn theme variables
   const getShareTypeInfo = (shareType: string) => {
     switch (shareType) {
       case "referral_share":
         return {
           icon: <UserCheck className="h-3 w-3" />,
           label: "Referral",
-          color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+          color: "bg-primary/10 text-primary border-primary/20"
         };
       case "direct_share":
         return {
           icon: <Share className="h-3 w-3" />,
           label: "Shared",
-          color: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+          color: "bg-secondary text-secondary-foreground border-secondary"
         };
       default:
         return {
@@ -207,76 +211,86 @@ export const PatientSOAPHistory: React.FC<PatientSOAPHistoryProps> = ({
                 <Stethoscope className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-foreground">
+                <h3 className="text-base font-semibold tracking-tight text-foreground">
                   SOAP History
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   {patient?.firstName} {patient?.lastName} - Clinical Records
                 </p>
               </div>
-              <Badge variant="secondary" className="text-xs h-6 px-2">
+              <Badge variant="secondary">
                 {filteredNotes.length}
               </Badge>
+              {onClose && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 w-8 p-0 hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close SOAP history</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex-1 min-h-0 p-0">
           {/* Filters and Search */}
-          <div className="p-3 border-b border-border bg-muted/20">
-            <div className="space-y-3">
+          <div className="p-4 border-b border-border bg-muted/20">
+            <div className="space-y-4">
               {/* Filter Buttons */}
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 {[
-                  { key: "all", label: "All", icon: <FileText className="h-3 w-3" /> },
-                  { key: "shared", label: "Shared", icon: <Share className="h-3 w-3" /> },
-                  { key: "referral", label: "Referrals", icon: <UserCheck className="h-3 w-3" /> }
+                  { key: "all", label: "All", icon: <FileText className="h-4 w-4" /> },
+                  { key: "shared", label: "Shared", icon: <Share className="h-4 w-4" /> },
+                  { key: "referral", label: "Referrals", icon: <UserCheck className="h-4 w-4" /> }
                 ].map((filter) => (
                   <Button
                     key={filter.key}
                     size="sm"
                     variant={selectedFilter === filter.key ? "default" : "ghost"}
-                    className="h-7 px-2 text-xs"
+                    className="px-3"
                     onClick={() => setSelectedFilter(filter.key as any)}
                   >
                     {filter.icon}
-                    <span className="ml-1">{filter.label}</span>
+                    <span className="ml-2">{filter.label}</span>
                   </Button>
                 ))}
               </div>
               
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                <input
-                  type="text"
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
                   placeholder="Search SOAP notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-8 pl-7 pr-3 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="pl-10"
                 />
               </div>
             </div>
           </div>
 
           <ScrollArea className="h-full">
-            <div className="p-3">
+            <div className="p-4">
               {filteredNotes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-12 h-12 bg-muted/30 rounded-lg flex items-center justify-center mb-3">
-                    <Stethoscope className="h-6 w-6 text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center mb-4">
+                    <Stethoscope className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h4 className="font-medium text-sm mb-1 text-foreground">
+                  <h4 className="font-medium text-base mb-2 text-foreground">
                     {searchQuery ? "No matching SOAP notes" : "No SOAP History"}
                   </h4>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {searchQuery
                       ? "Try adjusting your search terms"
                       : "Patient hasn't shared any clinical records yet"
                     }
                   </p>
                   {/* Test Button for Demo */}
-                  <button
+                  <Button
                     onClick={() => {
                       const testNote = {
                         _id: "test-soap-1",
@@ -294,89 +308,90 @@ export const PatientSOAPHistory: React.FC<PatientSOAPHistoryProps> = ({
                       };
                       handleViewSOAP(testNote);
                     }}
-                    className="mt-3 px-3 py-1 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                    className="mt-4"
+                    size="sm"
                   >
                     Test SOAP Viewer
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {filteredNotes.map((note) => {
                     const shareTypeInfo = getShareTypeInfo(note.shareType);
-                    
+
                     return (
                       <div
                         key={note._id}
                         className={cn(
-                          "p-3 border rounded-lg transition-all cursor-pointer group hover:shadow-sm",
+                          "p-4 border rounded-lg transition-all cursor-pointer group hover:shadow-sm",
                           getSOAPStatusColor(note)
                         )}
                         onClick={() => handleViewSOAP(note.soapNote)}
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {/* Header */}
-                          <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium text-xs text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
                                   {note.soapNote?.status || "Clinical Note"}
                                 </h4>
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn("text-xs h-4 px-1", shareTypeInfo.color)}
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-xs px-2", shareTypeInfo.color)}
                                 >
                                   {shareTypeInfo.icon}
                                   <span className="ml-1">{shareTypeInfo.label}</span>
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Calendar className="h-4 w-4" />
                                   <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
                                   <span>{new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleViewSOAP(note.soapNote);
                                 }}
                               >
-                                <Eye className="h-3 w-3" />
+                                <Eye className="h-4 w-4" />
                               </Button>
-                              <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                           </div>
 
                           {/* Content Preview */}
-                          <p className="text-xs text-muted-foreground line-clamp-2">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
                             {note.soapNote?.status?.substring(0, 100) || "No preview available"}
                             {(note.soapNote?.status?.length || 0) > 100 ? '...' : ''}
                           </p>
 
                           {/* Badges and Status */}
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {note.soapNote?.data && (
-                                <Badge variant="outline" className="text-xs h-4 px-1">
-                                  <Brain className="h-2 w-2 mr-1" />
+                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                                  <Brain className="h-3 w-3 mr-1" />
                                   AI Enhanced
                                 </Badge>
                               )}
-                              <Badge variant="secondary" className="text-xs h-4 px-1">
-                                <Shield className="h-2 w-2 mr-1" />
+                              <Badge variant="secondary">
+                                <Shield className="h-3 w-3 mr-1" />
                                 Clinical Note
                               </Badge>
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-sm text-muted-foreground">
                               {note.shareType === "referral_share" ? "Referred by" : "Shared by"} patient
                             </div>
                           </div>

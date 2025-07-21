@@ -48,7 +48,8 @@ import {
   Shield,
   Zap,
   Phone,
-  Mail
+  Mail,
+  Activity
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -56,6 +57,9 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { medicalRAGHooks } from "@/lib/services/medical-rag-hooks";
+
+import TreatmentTemplates from "@/components/treatment/treatment-templates";
+import PatientHistoryInsights from "@/components/patient/patient-history-insights";
 import { useSession } from "next-auth/react";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -160,12 +164,14 @@ type MedicationItem = Prescription;
 
 interface TreatmentFormLayoutProps {
   patientId: string;
-  onSubmit: (data: TreatmentFormData, prescriptions: MedicationItem[]) => void;
+  onSuccess?: () => void;
+  onSubmit?: (data: TreatmentFormData, prescriptions: MedicationItem[]) => void;
   onCancel: () => void;
 }
 
 export const TreatmentFormLayout: React.FC<TreatmentFormLayoutProps> = ({
   patientId,
+  onSuccess,
   onSubmit,
   onCancel,
 }) => {
@@ -395,7 +401,9 @@ export const TreatmentFormLayout: React.FC<TreatmentFormLayoutProps> = ({
       });
 
       // Submit treatment with prescriptions (for parent component)
-      await onSubmit(data, prescriptions);
+      if (onSubmit) {
+        await onSubmit(data, prescriptions);
+      }
 
       // Log to RAG system
       medicalRAGHooks.onTreatmentPlanCreated({
@@ -414,63 +422,81 @@ export const TreatmentFormLayout: React.FC<TreatmentFormLayoutProps> = ({
 
       toast.success("Treatment plan created successfully");
 
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+
     } catch (error) {
       console.error("Error submitting treatment:", error);
       toast.error("Failed to create treatment");
     }
   };
 
-  // Drug safety checking function
-  const checkDrugSafety = async (prescription: MedicationItem): Promise<SafetyCheck> => {
-    try {
-      const response = await fetch("/api/drug-interactions/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId,
-          medicationName: prescription.name,
-        }),
-      });
 
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        return {
-          drugInteractions: result.data.drugInteractions || [],
-          allergyAlerts: result.data.allergyAlerts || [],
-          contraindications: result.data.contraindications || [],
-          dosageAlerts: result.data.dosageAlerts || [],
-          hasWarnings: result.data.drugInteractions?.length > 0 ||
-                      result.data.allergyAlerts?.length > 0 ||
-                      result.data.contraindications?.length > 0 ||
-                      result.data.dosageAlerts?.length > 0,
-        };
-      }
-
-      return {
-        drugInteractions: [],
-        allergyAlerts: [],
-        contraindications: [],
-        dosageAlerts: [],
-        hasWarnings: false,
-      };
-    } catch (error) {
-      console.error("Drug safety check failed:", error);
-      return {
-        drugInteractions: [],
-        allergyAlerts: [],
-        contraindications: [],
-        dosageAlerts: [],
-        hasWarnings: false,
-      };
-    }
-  };
 
   return (
     <div className="h-full">
       {/* Three Column Layout - Full Space */}
-      <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-        {/* Left Column - Treatment Details */}
+      <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
+        {/* First Column - Treatment Templates */}
+        <Card className="flex flex-col h-full">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Treatment Templates
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 min-h-0 p-4">
+            <TreatmentTemplates
+              onSelectTemplate={(template) => {
+                // Auto-fill form with template data
+                form.setValue("title", template.name);
+                form.setValue("diagnosis", template.condition);
+                form.setValue("plan", template.description);
+                form.setValue("goals", template.goals);
+
+                // Add template medications to prescriptions
+                const templateMedications = template.medications.map((med, index) => ({
+                  id: `template-${index}`,
+                  name: med.name,
+                  strength: med.dosage,
+                  frequency: med.frequency,
+                  instructions: med.instructions,
+                  duration: med.duration,
+                  type: 'prescription' as const,
+                  quantity: "30",
+                  refills: 0,
+                  dosageForm: "tablet",
+                  pharmacyId: "",
+                  pharmacyName: "",
+                  deliveryMethod: "pickup" as const,
+                  urgency: "routine" as const,
+                  notes: `From template: ${template.name}`,
+                }));
+
+                setPrescriptions(prev => [...prev, ...templateMedications]);
+                toast.success(`Applied template: ${template.name}`);
+              }}
+            />
+
+            {/* Patient History Insights */}
+            <div className="mt-4 pt-4 border-t">
+              <PatientHistoryInsights
+                patientId={patientId as any}
+                onInsightSelect={(insight) => {
+                  // Auto-apply insights to form
+                  if (insight.type === "condition_trend" && insight.data.condition) {
+                    form.setValue("diagnosis", insight.data.condition);
+                  }
+                  toast.info(`Applied insight: ${insight.title}`);
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Second Column - Treatment Details */}
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -704,29 +730,31 @@ export const TreatmentFormLayout: React.FC<TreatmentFormLayoutProps> = ({
           </CardContent>
         </Card>
 
-        {/* Middle Column - Prescriptions */}
+        {/* Third Column - Prescriptions */}
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+              <Pill className="h-5 w-5 text-primary" />
               Prescriptions
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0 p-4">
+          <CardContent className="flex-1 min-h-0 p-4 space-y-4">
             <EnhancedPrescriptionForm
               onAdd={handleAddPrescription}
               pharmacies={pharmacies || []}
               patientId={patientId}
               isLoading={pharmacies === undefined}
             />
+
+
           </CardContent>
         </Card>
 
-        {/* Right Column - Prescriptions List */}
+        {/* Fourth Column - Added Prescriptions */}
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+              <CheckCircle className="h-5 w-5 text-primary" />
               Added Prescriptions
             </CardTitle>
           </CardHeader>

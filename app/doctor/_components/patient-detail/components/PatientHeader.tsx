@@ -27,7 +27,6 @@ export const PatientHeader = React.memo<Omit<PatientHeaderProps, 'patient'> & { 
   onChatToggle,
   onAppointmentClick,
   onAddTreatment,
-  onAddPrescription,
   onSOAPHistoryToggle,
   showChat,
   showSOAPHistory = false,
@@ -151,17 +150,7 @@ export const PatientHeader = React.memo<Omit<PatientHeaderProps, 'patient'> & { 
             Add Treatment
           </Button>
 
-          {onAddPrescription && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAddPrescription}
-              className="h-8 px-3 text-xs"
-            >
-              <Pill className="h-3 w-3 mr-1" />
-              Add Prescription
-            </Button>
-          )}
+
         </div>
       </div>
     </div>

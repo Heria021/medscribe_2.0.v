@@ -200,31 +200,40 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
               </div>
             )}
 
-            {/* Medications Count */}
-            {treatment.medicationDetails && treatment.medicationDetails.length > 0 ? (
+            {/* Treatment Goals */}
+            {treatment.goals && treatment.goals.length > 0 ? (
               <div className="p-4 bg-muted/30 rounded-lg border border-border">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-primary/10 rounded">
-                    <Pill className="h-4 w-4 text-primary" />
+                    <Target className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Your Medications</span>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Your Treatment Goals</span>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">{treatment.medicationDetails.length} Prescribed</p>
-                  <p className="text-xs text-muted-foreground">Active prescriptions in your treatment</p>
+                <div className="space-y-2">
+                  {treatment.goals.slice(0, 2).map((goal, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                      <p className="text-sm text-foreground leading-relaxed">{goal}</p>
+                    </div>
+                  ))}
+                  {treatment.goals.length > 2 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      +{treatment.goals.length - 2} more goal{treatment.goals.length - 2 !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="p-4 bg-muted/30 rounded-lg border border-border">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-primary/10 rounded">
-                    <Pill className="h-4 w-4 text-primary" />
+                  <div className="p-1.5 bg-muted/20 rounded">
+                    <Target className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medications</span>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Your Treatment Goals</span>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-foreground">No medications prescribed</p>
-                  <p className="text-xs text-muted-foreground">Medications may be added to your treatment</p>
+                  <p className="text-sm text-foreground">No goals set yet</p>
+                  <p className="text-xs text-muted-foreground">Your doctor will set treatment goals</p>
                 </div>
               </div>
             )}

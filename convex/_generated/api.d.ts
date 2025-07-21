@@ -24,7 +24,6 @@ import type * as doctorExceptions from "../doctorExceptions.js";
 import type * as doctorPatientConversations from "../doctorPatientConversations.js";
 import type * as doctorPatients from "../doctorPatients.js";
 import type * as doctors from "../doctors.js";
-import type * as drugInteractions from "../drugInteractions.js";
 import type * as emailAutomation from "../emailAutomation.js";
 import type * as emailService from "../emailService.js";
 import type * as emailTemplates_appointmentFollowup from "../emailTemplates/appointmentFollowup.js";
@@ -70,7 +69,6 @@ declare const fullApi: ApiFromModules<{
   doctorPatientConversations: typeof doctorPatientConversations;
   doctorPatients: typeof doctorPatients;
   doctors: typeof doctors;
-  drugInteractions: typeof drugInteractions;
   emailAutomation: typeof emailAutomation;
   emailService: typeof emailService;
   "emailTemplates/appointmentFollowup": typeof emailTemplates_appointmentFollowup;

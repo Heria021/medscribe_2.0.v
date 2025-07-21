@@ -16,10 +16,11 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import { useTreatmentViewer, TreatmentViewer } from "@/components/ui/treatment-viewer";
+import ErrorBoundary from "@/components/error/error-boundary";
 import {
   usePatientDetail,
   useTreatmentManagement,
-
   PatientHeader,
   PatientChat,
   type ActiveView,
@@ -77,26 +78,41 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
   const {
     selectedTreatmentId,
     setSelectedTreatmentId,
+    handleTreatmentStatusUpdate,
   } = useTreatmentManagement(patient?._id || null);
 
   // TreatmentViewer state management
-  // const treatmentViewer = useTreatmentViewer();
+  const treatmentViewer = useTreatmentViewer();
 
   // Fetch detailed treatment data for viewer
-  // const selectedTreatmentDetails = useQuery(
-  //   api.treatmentPlans.getWithDetailsById,
-  //   selectedTreatmentId ? { id: selectedTreatmentId as Id<"treatmentPlans"> } : "skip"
-  // );
+  const selectedTreatmentDetails = useQuery(
+    api.treatmentPlans.getWithDetailsById,
+    selectedTreatmentId ? { id: selectedTreatmentId as Id<"treatmentPlans"> } : "skip"
+  );
 
   // Note: Medication management now handled through prescription system
 
-  // Memoized handlers for performance
+  // Memoized handlers for performance with mutual exclusivity
   const handleChatToggle = useCallback(() => {
-    setShowChat(prev => !prev);
+    setShowChat(prev => {
+      const newShowChat = !prev;
+      // If opening chat, close SOAP history
+      if (newShowChat) {
+        setShowSOAPHistory(false);
+      }
+      return newShowChat;
+    });
   }, []);
 
   const handleSOAPHistoryToggle = useCallback(() => {
-    setShowSOAPHistory(prev => !prev);
+    setShowSOAPHistory(prev => {
+      const newShowSOAPHistory = !prev;
+      // If opening SOAP history, close chat
+      if (newShowSOAPHistory) {
+        setShowChat(false);
+      }
+      return newShowSOAPHistory;
+    });
   }, []);
 
   const handleAppointmentClick = useCallback(() => {
@@ -109,21 +125,16 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
 
   // Note: Medication form removed - use prescription form instead
 
-  const handleAddPrescription = useCallback(() => {
-    setActiveView("prescription-form");
-  }, []);
-
   const handleBackToOverview = useCallback(() => {
     setActiveView("overview");
   }, []);
 
   // Treatment viewer handler
   const handleViewTreatment = useCallback(() => {
-    if (selectedTreatmentId) {
-      // treatmentViewer.setOpen(true);
-      console.log("View treatment:", selectedTreatmentId);
+    if (selectedTreatmentId && selectedTreatmentDetails) {
+      treatmentViewer.openViewer(selectedTreatmentDetails);
     }
-  }, [selectedTreatmentId]);
+  }, [selectedTreatmentId, selectedTreatmentDetails, treatmentViewer]);
 
   // Note: Medication management now handled through prescription system
   // Removed unused functions: handleTreatmentComplete, handleTogglePrescriptionForm
@@ -137,7 +148,6 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
         onChatToggle={handleChatToggle}
         onAppointmentClick={handleAppointmentClick}
         onAddTreatment={handleAddTreatment}
-        onAddPrescription={handleAddPrescription}
         onSOAPHistoryToggle={handleSOAPHistoryToggle}
         showChat={showChat}
         showSOAPHistory={showSOAPHistory}
@@ -245,13 +255,17 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
             {/* Left Side: Treatment List - Fixed width on large screens */}
             <div className="flex flex-col min-h-0 lg:w-80 lg:flex-shrink-0 order-2 lg:order-1">
               {patient && (
-                <TreatmentList
-                  patientId={patient._id}
-                  selectedTreatmentId={selectedTreatmentId || undefined}
-                  onSelectTreatment={setSelectedTreatmentId}
-                  onViewTreatment={(id: string) => setSelectedTreatmentId(id)}
-                  onAddTreatment={handleAddTreatment}
-                />
+                <ErrorBoundary context="Treatment List">
+                  <TreatmentList
+                    patientId={patient._id}
+                    selectedTreatmentId={selectedTreatmentId || undefined}
+                    onSelectTreatment={setSelectedTreatmentId}
+                    onViewTreatment={handleViewTreatment}
+                    onStatusChange={(treatmentId: string, status: string) => {
+                      handleTreatmentStatusUpdate(treatmentId, status, selectedTreatmentDetails);
+                    }}
+                  />
+                </ErrorBoundary>
               )}
             </div>
 
@@ -269,14 +283,17 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                   <div className="flex flex-col min-h-0">
                     {patient ? (
                       selectedTreatmentId ? (
-                        <TreatmentDetails
-                          treatmentId={selectedTreatmentId}
-                          onEdit={() => handleAddTreatment()}
-                          onView={handleViewTreatment}
-                          onStatusChange={(status) => {
-                            console.log("Status change:", selectedTreatmentId, status);
-                          }}
-                        />
+                        <ErrorBoundary context="Treatment Details">
+                          <TreatmentDetails
+                            treatmentId={selectedTreatmentId}
+                            onView={handleViewTreatment}
+                            onStatusChange={(status) => {
+                              if (selectedTreatmentId) {
+                                handleTreatmentStatusUpdate(selectedTreatmentId, status, selectedTreatmentDetails);
+                              }
+                            }}
+                          />
+                        </ErrorBoundary>
                       ) : (
                         <Card className="h-full flex flex-col bg-background border-border">
                           <CardContent className="flex-1 flex items-center justify-center">
@@ -326,6 +343,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                       <PatientSOAPHistory
                         patientId={patient._id}
                         doctorId={doctorProfile._id}
+                        onClose={() => setShowSOAPHistory(false)}
                       />
                     </div>
                   )}
@@ -337,10 +355,11 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                     selectedTreatmentId ? (
                       <TreatmentDetails
                         treatmentId={selectedTreatmentId}
-                        onEdit={() => handleAddTreatment()}
                         onView={handleViewTreatment}
                         onStatusChange={(status) => {
-                          console.log("Status change:", selectedTreatmentId, status);
+                          if (selectedTreatmentId) {
+                            handleTreatmentStatusUpdate(selectedTreatmentId, status, selectedTreatmentDetails);
+                          }
                         }}
                       />
                     ) : (
@@ -408,6 +427,38 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
           },
         }}
       /> */}
+
+      {/* Treatment Viewer */}
+      <TreatmentViewer
+        treatment={treatmentViewer.selectedTreatment}
+        open={treatmentViewer.isOpen}
+        onOpenChange={treatmentViewer.setOpen}
+        config={{
+          showBackButton: true,
+          showActions: true,
+          showPatientInfo: true,
+          showDoctorInfo: true,
+          showMetadata: true,
+          allowPrint: true,
+          allowDownload: true,
+          allowShare: true,
+          allowCopy: true,
+          allowExportPDF: true,
+          backButtonText: "Back to Patient",
+          documentTitle: "Treatment Plan - Doctor View"
+        }}
+        actions={{
+          onBack: treatmentViewer.closeViewer,
+          onDownload: (treatment) => {
+            console.log("Downloading treatment:", treatment.title);
+            // Implement download logic
+          },
+          onShare: (treatment) => {
+            console.log("Sharing treatment:", treatment.title);
+            // Implement share logic
+          },
+        }}
+      />
     </div>
   );
 });

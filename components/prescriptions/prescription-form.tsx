@@ -116,36 +116,14 @@ export function PrescriptionForm({
   const checkDrugInteractions = async () => {
     if (!medicationName || medicationName.length < 3) return;
 
-    try {
-      const response = await fetch("/api/drug-interactions/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId,
-          medicationName,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setSafetyChecks(result.data);
-
-        const hasWarnings =
-          result.data.drugInteractions.length > 0 ||
-          result.data.allergyAlerts.length > 0 ||
-          result.data.contraindications.length > 0 ||
-          result.data.dosageAlerts.length > 0;
-
-        setShowSafetyWarnings(hasWarnings);
-
-        if (hasWarnings) {
-          toast.warning("Safety alerts detected. Please review before prescribing.");
-        }
-      }
-    } catch (error) {
-      console.error("Drug interaction check failed:", error);
-    }
+    // Drug interaction checking removed - no longer needed
+    setSafetyChecks({
+      drugInteractions: [],
+      allergyAlerts: [],
+      contraindications: [],
+      dosageAlerts: [],
+    });
+    setShowSafetyWarnings(false);
   };
 
   // Check interactions when medication name changes

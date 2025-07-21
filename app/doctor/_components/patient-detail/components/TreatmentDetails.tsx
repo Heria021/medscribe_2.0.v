@@ -40,10 +40,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Id } from "@/convex/_generated/dataModel";
+import FollowUpScheduler from "@/components/appointments/follow-up-scheduler";
 
 interface TreatmentDetailsProps {
   treatmentId: string;
-  onEdit?: () => void;
   onView?: () => void;
   onStatusChange?: (status: string) => void;
   className?: string;
@@ -57,7 +57,6 @@ interface TreatmentDetailsProps {
  */
 export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
   treatmentId,
-  onEdit,
   onView,
   onStatusChange,
   className,
@@ -77,50 +76,91 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
   // Loading state
   if (treatment === undefined) {
     return (
-      <div className={cn("h-full p-6", className)}>
-        <div className="space-y-6">
-          {/* Header skeleton */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-64" />
-              <Skeleton className="h-4 w-48" />
+      <Card className={cn("h-full flex flex-col gap-0 py-0", className)}>
+        {/* Loading Header */}
+        <div className="p-0 flex-shrink-0">
+          <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-muted/50 via-muted/30 to-transparent">
+            <div className="relative px-4 py-3 flex items-center gap-3">
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <div className="flex-1">
+                <Skeleton className="h-5 w-40 mb-1" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
             </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-8 w-8" />
-            </div>
           </div>
-
-          {/* Info grid skeleton */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </div>
-
-          {/* Content skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-          <Skeleton className="h-48 w-full" />
         </div>
-      </div>
+
+        <CardContent className="flex-1 min-h-0 p-6">
+          <div className="space-y-6">
+            {/* Header skeleton */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-64" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-8" />
+              </div>
+            </div>
+
+            {/* Info grid skeleton */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+
+            {/* Content skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+            <Skeleton className="h-48 w-full" />
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   // Treatment not found
   if (!treatment) {
     return (
-      <div className={cn("h-full flex items-center justify-center p-12", className)}>
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Treatment not found</h3>
-          <p className="text-muted-foreground">
-            The requested treatment plan could not be found.
-          </p>
+      <Card className={cn("h-full flex flex-col gap-0 py-0", className)}>
+        {/* Header */}
+        <div className="p-0 flex-shrink-0">
+          <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-muted/50 via-muted/30 to-transparent">
+            <div className="relative px-4 py-3 flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Activity className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold tracking-tight text-foreground">
+                  Treatment Details
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  View and manage treatment plan
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <CardContent className="flex-1 min-h-0 p-0">
+          <div className="h-full flex items-center justify-center p-12">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Treatment not found</h3>
+              <p className="text-muted-foreground">
+                The requested treatment plan could not be found.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -155,7 +195,35 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
   };
 
   return (
-    <Card className={cn("h-full flex flex-col", className)}>
+    <Card className={cn("h-full flex flex-col gap-0 py-0", className)}>
+      {/* Header */}
+      <div className="p-0 flex-shrink-0">
+        <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-muted/50 via-muted/30 to-transparent">
+          <div className="relative px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Activity className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold tracking-tight text-foreground">
+                Treatment Details
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                View and manage treatment plan
+              </p>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn("capitalize", getStatusColor(treatment.status))}
+            >
+              {treatment.status === "active" && <CheckCircle className="h-3 w-3 mr-1" />}
+              {treatment.status === "completed" && <CheckCircle className="h-3 w-3 mr-1" />}
+              {treatment.status === "discontinued" && <AlertTriangle className="h-3 w-3 mr-1" />}
+              {treatment.status}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
       <CardContent className="flex-1 min-h-0 p-0">
         <ScrollArea className="h-full">
           <div className="p-6 space-y-6">
@@ -202,10 +270,6 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={onEdit}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Treatment
-                    </DropdownMenuItem>
                     {treatment.status === "active" && (
                       <DropdownMenuItem onClick={() => onStatusChange?.("completed")}>
                         <CheckCircle className="h-4 w-4 mr-2" />
@@ -293,31 +357,40 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
               </div>
             )}
 
-            {/* Medications Count */}
-            {treatment.medicationDetails && treatment.medicationDetails.length > 0 ? (
+            {/* Treatment Goals */}
+            {treatment.goals && treatment.goals.length > 0 ? (
               <div className="p-4 bg-muted/30 rounded-lg border border-border">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-primary/10 rounded">
-                    <Pill className="h-4 w-4 text-primary" />
+                    <Target className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medications</span>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Treatment Goals</span>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">{treatment.medicationDetails.length} Prescribed</p>
-                  <p className="text-xs text-muted-foreground">Active prescriptions in treatment plan</p>
+                <div className="space-y-2">
+                  {treatment.goals.slice(0, 2).map((goal, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                      <p className="text-sm text-foreground leading-relaxed">{goal}</p>
+                    </div>
+                  ))}
+                  {treatment.goals.length > 2 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      +{treatment.goals.length - 2} more goal{treatment.goals.length - 2 !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="p-4 bg-muted/30 rounded-lg border border-border">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-primary/10 rounded">
-                    <Pill className="h-4 w-4 text-primary" />
+                  <div className="p-1.5 bg-muted/20 rounded">
+                    <Target className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Medications</span>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Treatment Goals</span>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-foreground">No medications prescribed</p>
-                  <p className="text-xs text-muted-foreground">Medications can be added to treatment</p>
+                  <p className="text-sm text-foreground">No goals set</p>
+                  <p className="text-xs text-muted-foreground">Treatment goals can be added</p>
                 </div>
               </div>
             )}
@@ -326,32 +399,31 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
           {/* Main Content Sections */}
           <div className="space-y-6">
 
-            {/* Treatment Goals */}
-            {treatment.goals && treatment.goals.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Target className="h-5 w-5 text-primary" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-foreground">Treatment Goals</h2>
-                  <Badge variant="secondary" className="ml-auto">
-                    {treatment.goals.length} {treatment.goals.length === 1 ? 'Goal' : 'Goals'}
-                  </Badge>
+            {/* Follow-up Scheduling */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Calendar className="h-5 w-5 text-primary" />
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {treatment.goals.map((goal, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-background rounded border">
-                        <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-semibold text-primary">{index + 1}</span>
-                        </div>
-                        <p className="text-sm text-foreground leading-relaxed">{goal}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <h2 className="text-lg font-semibold text-foreground">Schedule Follow-up</h2>
               </div>
-            )}
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <FollowUpScheduler
+                  patientId={treatment.patientId}
+                  doctorId={treatment.doctorId}
+                  treatmentId={treatment._id}
+                  suggestedFollowUps={[
+                    "2 weeks - Check medication response",
+                    "1 month - Assess treatment progress",
+                    "3 months - Comprehensive review"
+                  ]}
+                  onScheduled={(appointmentId) => {
+                    console.log("Follow-up scheduled:", appointmentId);
+                    // Could trigger a refresh or update
+                  }}
+                />
+              </div>
+            </div>
 
             {/* Medications - Enhanced Grid Layout */}
             {treatment.medicationDetails && treatment.medicationDetails.length > 0 && (

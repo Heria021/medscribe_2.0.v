@@ -22,8 +22,6 @@ export const medicationDetailsSchema = z.object({
   genericName: z.string().optional(),
   strength: z.string().min(1, "Strength is required"),
   dosageForm: z.string().min(1, "Dosage form is required"),
-  ndc: z.string().optional(),
-  rxcui: z.string().optional(),
 
   // Dosage information
   quantity: z.string().min(1, "Quantity is required"),
