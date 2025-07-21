@@ -246,6 +246,31 @@ export const getOrderById = query({
   },
 });
 
+// Get orders for a treatment plan
+export const getOrdersByTreatmentPlanId = query({
+  args: { treatmentPlanId: v.id("treatmentPlans") },
+  handler: async (ctx, args) => {
+    const orders = await ctx.db
+      .query("prescriptionOrders")
+      .withIndex("by_treatment_plan", (q) => q.eq("treatmentPlanId", args.treatmentPlanId))
+      .order("desc")
+      .collect();
+
+    // Enrich with pharmacy information
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const pharmacy = await ctx.db.get(order.pharmacyId);
+        return {
+          ...order,
+          pharmacy,
+        };
+      })
+    );
+
+    return enrichedOrders;
+  },
+});
+
 // Cancel an order
 export const cancelOrder = mutation({
   args: {

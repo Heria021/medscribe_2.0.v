@@ -1093,6 +1093,7 @@ export default defineSchema({
     .index("by_pharmacy", ["pharmacyId"])
     .index("by_patient", ["patientId"])
     .index("by_doctor", ["doctorId"])
+    .index("by_treatment_plan", ["treatmentPlanId"])
     .index("by_status", ["status"])
     .index("by_pharmacy_status", ["pharmacyId", "status"])
     .index("by_patient_status", ["patientId", "status"])

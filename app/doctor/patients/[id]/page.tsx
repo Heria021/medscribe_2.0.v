@@ -11,10 +11,11 @@ import { AddTreatmentForm } from "@/app/doctor/_components/patient-detail/compon
 
 import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
 import { Activity, Pill } from "lucide-react";
-import { TreatmentViewer, useTreatmentViewer, type TreatmentPlan } from "@/components/ui/treatment-viewer";
+// import { TreatmentViewer, useTreatmentViewer, type TreatmentPlan } from "@/components/ui/treatment-viewer";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 import {
   usePatientDetail,
   useTreatmentManagement,
@@ -27,6 +28,7 @@ import {
 // Import new treatment components
 import { TreatmentList, TreatmentDetails } from "@/app/doctor/_components/patient-detail";
 import { SlotBasedAppointmentForm } from "@/app/doctor/_components/patient-detail/components/SlotBasedAppointmentForm";
+import { PatientSOAPHistory } from "@/app/doctor/_components/patient-detail/components/PatientSOAPHistory";
 
 
 
@@ -51,6 +53,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
   const router = useRouter();
   const [activeView, setActiveView] = useState<ActiveView>("overview");
   const [showChat, setShowChat] = useState(false);
+  const [showSOAPHistory, setShowSOAPHistory] = useState(false);
   // Removed showPrescriptionForm state as it's no longer used
 
 
@@ -77,19 +80,23 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
   } = useTreatmentManagement(patient?._id || null);
 
   // TreatmentViewer state management
-  const treatmentViewer = useTreatmentViewer();
+  // const treatmentViewer = useTreatmentViewer();
 
   // Fetch detailed treatment data for viewer
-  const selectedTreatmentDetails = useQuery(
-    api.treatmentPlans.getWithDetailsById,
-    selectedTreatmentId ? { id: selectedTreatmentId as Id<"treatmentPlans"> } : "skip"
-  );
+  // const selectedTreatmentDetails = useQuery(
+  //   api.treatmentPlans.getWithDetailsById,
+  //   selectedTreatmentId ? { id: selectedTreatmentId as Id<"treatmentPlans"> } : "skip"
+  // );
 
   // Note: Medication management now handled through prescription system
 
   // Memoized handlers for performance
   const handleChatToggle = useCallback(() => {
     setShowChat(prev => !prev);
+  }, []);
+
+  const handleSOAPHistoryToggle = useCallback(() => {
+    setShowSOAPHistory(prev => !prev);
   }, []);
 
   const handleAppointmentClick = useCallback(() => {
@@ -112,36 +119,11 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
 
   // Treatment viewer handler
   const handleViewTreatment = useCallback(() => {
-    if (selectedTreatmentDetails) {
-      // Transform the treatment data to match TreatmentViewer interface
-      const treatmentForViewer: TreatmentPlan = {
-        _id: selectedTreatmentDetails._id,
-        title: selectedTreatmentDetails.title,
-        diagnosis: selectedTreatmentDetails.diagnosis,
-        plan: selectedTreatmentDetails.plan,
-        goals: selectedTreatmentDetails.goals,
-        status: selectedTreatmentDetails.status,
-        startDate: selectedTreatmentDetails.startDate,
-        endDate: selectedTreatmentDetails.endDate,
-        createdAt: selectedTreatmentDetails.createdAt,
-        updatedAt: selectedTreatmentDetails.updatedAt,
-        medicationDetails: selectedTreatmentDetails.medicationDetails,
-        pharmacy: selectedTreatmentDetails.pharmacy || undefined,
-        doctor: selectedTreatmentDetails.doctor || undefined,
-        patient: selectedTreatmentDetails.patient || undefined,
-        // Note: SOAP note data structure is complex, will be handled in future iteration
-        soapNote: undefined,
-        patientName: selectedTreatmentDetails.patient
-          ? `${selectedTreatmentDetails.patient.firstName} ${selectedTreatmentDetails.patient.lastName}`
-          : undefined,
-        doctorName: selectedTreatmentDetails.doctor
-          ? `Dr. ${selectedTreatmentDetails.doctor.firstName} ${selectedTreatmentDetails.doctor.lastName}`
-          : undefined,
-      };
-
-      treatmentViewer.openViewer(treatmentForViewer);
+    if (selectedTreatmentId) {
+      // treatmentViewer.setOpen(true);
+      console.log("View treatment:", selectedTreatmentId);
     }
-  }, [selectedTreatmentDetails, treatmentViewer]);
+  }, [selectedTreatmentId]);
 
   // Note: Medication management now handled through prescription system
   // Removed unused functions: handleTreatmentComplete, handleTogglePrescriptionForm
@@ -156,7 +138,9 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
         onAppointmentClick={handleAppointmentClick}
         onAddTreatment={handleAddTreatment}
         onAddPrescription={handleAddPrescription}
+        onSOAPHistoryToggle={handleSOAPHistoryToggle}
         showChat={showChat}
+        showSOAPHistory={showSOAPHistory}
         isLoading={patientLoading || !patient || !doctorProfile || !currentDoctorPatient}
       />
 
@@ -271,11 +255,16 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
               )}
             </div>
 
-            {/* Right Side: Treatment Details and Chat */}
+            {/* Right Side: Treatment Details, Chat, and SOAP History */}
             <div className="flex-1 min-h-0 order-1 lg:order-2">
-              {showChat ? (
-                /* When chat is open: Split between Treatment Details and Chat */
-                <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {showChat || showSOAPHistory ? (
+                /* When chat or SOAP history is open: Split layout */
+                <div className={cn(
+                  "h-full grid gap-4",
+                  showChat && showSOAPHistory
+                    ? "grid-cols-1 lg:grid-cols-3"
+                    : "grid-cols-1 lg:grid-cols-2"
+                )}>
                   {/* Treatment Details */}
                   <div className="flex flex-col min-h-0">
                     {patient ? (
@@ -318,16 +307,28 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                   </div>
 
                   {/* Chat Interface */}
-                  <div className="h-full flex flex-col">
-                    {patient && doctorProfile && (
-                      <PatientChat
-                        doctorId={doctorProfile._id}
+                  {showChat && (
+                    <div className="h-full flex flex-col">
+                      {patient && doctorProfile && (
+                        <PatientChat
+                          doctorId={doctorProfile._id}
+                          patientId={patient._id}
+                          patientName={`${patient.firstName} ${patient.lastName}`}
+                          onClose={() => setShowChat(false)}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* SOAP History Interface */}
+                  {showSOAPHistory && patient && doctorProfile && (
+                    <div className="h-full flex flex-col">
+                      <PatientSOAPHistory
                         patientId={patient._id}
-                        patientName={`${patient.firstName} ${patient.lastName}`}
-                        onClose={() => setShowChat(false)}
+                        doctorId={doctorProfile._id}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* When chat is closed: Full width Treatment Details */
@@ -377,8 +378,8 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
       </div>
 
       {/* TreatmentViewer for full-screen document view */}
-      <TreatmentViewer
-        treatment={treatmentViewer.selectedTreatment}
+      {/* <TreatmentViewer
+        treatmentId={selectedTreatmentId}
         open={treatmentViewer.isOpen}
         onOpenChange={treatmentViewer.setOpen}
         config={{
@@ -406,7 +407,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
             // Implement share logic
           },
         }}
-      />
+      /> */}
     </div>
   );
 });

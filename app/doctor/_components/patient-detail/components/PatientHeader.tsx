@@ -10,6 +10,7 @@ import {
   MessageCircle,
   Plus,
   Pill,
+  FileText,
 } from "lucide-react";
 import { usePatientDetailFormatters } from "../hooks";
 import type { PatientHeaderProps } from "../types";
@@ -27,7 +28,9 @@ export const PatientHeader = React.memo<Omit<PatientHeaderProps, 'patient'> & { 
   onAppointmentClick,
   onAddTreatment,
   onAddPrescription,
+  onSOAPHistoryToggle,
   showChat,
+  showSOAPHistory = false,
   isLoading = false,
   className = "",
 }) => {
@@ -115,6 +118,18 @@ export const PatientHeader = React.memo<Omit<PatientHeaderProps, 'patient'> & { 
             <MessageCircle className="h-3 w-3 mr-1" />
             {showChat ? 'Hide Chat' : 'Chat'}
           </Button>
+
+          {onSOAPHistoryToggle && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onSOAPHistoryToggle}
+              className="h-8 px-3 text-xs"
+            >
+              <FileText className="h-3 w-3 mr-1" />
+              {showSOAPHistory ? 'Hide SOAP' : 'SOAP History'}
+            </Button>
+          )}
 
           <Button
             size="sm"

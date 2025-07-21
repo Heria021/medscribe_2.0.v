@@ -257,8 +257,11 @@ const PatientTreatmentsPage = React.memo(() => {
     setFilters(newFilters);
   }, []);
 
+  const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
+
   const handleViewTreatment = React.useCallback((treatment: TreatmentPlan) => {
-    treatmentViewer.openViewer(treatment);
+    setSelectedTreatmentId(treatment._id);
+    treatmentViewer.setOpen(true);
   }, [treatmentViewer]);
 
   // Authentication check
@@ -329,26 +332,28 @@ const PatientTreatmentsPage = React.memo(() => {
       </div>
 
       {/* Treatment Viewer for full-screen document view */}
-      {treatmentViewer.selectedTreatment && (
-        <TreatmentViewer
-          treatment={treatmentViewer.selectedTreatment}
-          open={treatmentViewer.isOpen}
-          onOpenChange={treatmentViewer.setOpen}
-          config={{
-            showBackButton: true,
-            showActions: true,
-            showPatientInfo: false,
-            showMetadata: true,
-            allowPrint: true,
-            allowDownload: true,
-            allowShare: false,
-            allowCopy: true,
-            allowExportPDF: false,
-            backButtonText: "Back to Treatments",
-            documentTitle: "Treatment Plan Details"
-          }}
-        />
-      )}
+      <TreatmentViewer
+        treatmentId={selectedTreatmentId}
+        open={treatmentViewer.isOpen}
+        onOpenChange={treatmentViewer.setOpen}
+        config={{
+          showBackButton: true,
+          showActions: true,
+          showPatientInfo: false,
+          showDoctorInfo: true,
+          showMetadata: false,
+          allowPrint: true,
+          allowDownload: true,
+          allowShare: false,
+          allowCopy: true,
+          allowExportPDF: false,
+          backButtonText: "Back to My Treatments",
+          documentTitle: "My Treatment Plan"
+        }}
+        actions={{
+          onBack: treatmentViewer.closeViewer,
+        }}
+      />
     </div>
   );
 });

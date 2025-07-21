@@ -124,6 +124,55 @@ export const getSharedSOAPNotesForDoctor = query({
   },
 });
 
+// Get shared SOAP notes for a specific patient-doctor relationship
+export const getSharedNotesForDoctor = query({
+  args: {
+    patientId: v.id("patients"),
+    doctorId: v.id("doctors")
+  },
+  handler: async (ctx, args) => {
+    const sharedNotes = await ctx.db
+      .query("sharedSoapNotes")
+      .withIndex("by_shared_with", (q) => q.eq("sharedWith", args.doctorId))
+      .filter((q) => q.eq(q.field("patientId"), args.patientId))
+      .order("desc")
+      .collect();
+
+    const enrichedNotes = await Promise.all(
+      sharedNotes.map(async (shared) => {
+        const soapNote = await ctx.db.get(shared.soapNoteId);
+        const patient = await ctx.db.get(shared.patientId);
+
+        let sharedByInfo = null;
+        if (shared.sharedByType === "patient") {
+          sharedByInfo = await ctx.db.get(shared.sharedBy);
+        } else if (shared.sharedByType === "doctor") {
+          sharedByInfo = await ctx.db.get(shared.sharedBy);
+        }
+
+        let referralInfo = null;
+        if (shared.referralId) {
+          referralInfo = await ctx.db.get(shared.referralId);
+        }
+
+        return {
+          ...shared,
+          soapNote,
+          patient,
+          sharedByInfo,
+          referralInfo,
+        };
+      })
+    );
+
+    // Return all notes (including completed actions) for comprehensive history
+    return enrichedNotes.filter(note =>
+      note.soapNote &&
+      note.patient
+    );
+  },
+});
+
 // Get completed actions for doctor (for history/reference)
 export const getCompletedActionsForDoctor = query({
   args: { doctorId: v.id("doctors") },

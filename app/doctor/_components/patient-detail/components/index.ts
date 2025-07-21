@@ -10,6 +10,7 @@ export { PatientDetailSkeleton } from "./PatientDetailSkeleton";
 export { TreatmentEmptyState } from "./TreatmentEmptyState";
 export { TreatmentDetailsEmptyState } from "./TreatmentDetailsEmptyState";
 export { PatientSOAPList } from "./PatientSOAPList";
+export { PatientSOAPHistory } from "./PatientSOAPHistory";
 export { TreatmentFormLayout } from "./TreatmentFormLayout";
 
 // Treatment Form Components
