@@ -3,15 +3,11 @@
 import React from "react";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AddTreatmentForm } from "@/app/doctor/_components/patient-detail/components/AddTreatmentForm";
-
 import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
-import { Activity, Pill } from "lucide-react";
-// import { TreatmentViewer, useTreatmentViewer, type TreatmentPlan } from "@/components/ui/treatment-viewer";
+import { Activity, Pill, User, Calendar } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -25,14 +21,9 @@ import {
   PatientChat,
   type ActiveView,
 } from "@/app/doctor/_components/patient-detail";
-
-// Import new treatment components
 import { TreatmentList, TreatmentDetails } from "@/app/doctor/_components/patient-detail";
 import { SlotBasedAppointmentForm } from "@/app/doctor/_components/patient-detail/components/SlotBasedAppointmentForm";
 import { PatientSOAPHistory } from "@/app/doctor/_components/patient-detail/components/PatientSOAPHistory";
-
-
-
 
 interface PatientDetailPageProps {
   params: Promise<{
@@ -41,12 +32,12 @@ interface PatientDetailPageProps {
 }
 
 /**
- * Patient Detail Page - Refactored with performance optimizations
- *
+ * Patient Detail Page - Refactored with UI standards
+ * 
  * Features:
- * - Custom hooks for clean separation of concerns
+ * - Consistent UI styling following AppointmentsList standards
  * - Performance optimized with React.memo and useCallback
- * - Reusable components for maintainability
+ * - Proper loading states and empty states
  * - Comprehensive error handling
  * - Accessibility support
  */
@@ -55,9 +46,6 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
   const [activeView, setActiveView] = useState<ActiveView>("overview");
   const [showChat, setShowChat] = useState(false);
   const [showSOAPHistory, setShowSOAPHistory] = useState(false);
-  // Removed showPrescriptionForm state as it's no longer used
-
-
 
   // Custom hooks for clean separation of concerns
   const {
@@ -68,7 +56,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
     error: patientError,
   } = usePatientDetail(params);
 
-  // Redirect if invalid patient ID (like "add")
+  // Redirect if invalid patient ID
   useEffect(() => {
     if (patientError === "Invalid patient ID") {
       router.replace("/doctor/patients");
@@ -90,13 +78,10 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
     selectedTreatmentId ? { id: selectedTreatmentId as Id<"treatmentPlans"> } : "skip"
   );
 
-  // Note: Medication management now handled through prescription system
-
-  // Memoized handlers for performance with mutual exclusivity
+  // Memoized handlers with mutual exclusivity
   const handleChatToggle = useCallback(() => {
     setShowChat(prev => {
       const newShowChat = !prev;
-      // If opening chat, close SOAP history
       if (newShowChat) {
         setShowSOAPHistory(false);
       }
@@ -107,7 +92,6 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
   const handleSOAPHistoryToggle = useCallback(() => {
     setShowSOAPHistory(prev => {
       const newShowSOAPHistory = !prev;
-      // If opening SOAP history, close chat
       if (newShowSOAPHistory) {
         setShowChat(false);
       }
@@ -123,22 +107,55 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
     setActiveView("treatment-form");
   }, []);
 
-  // Note: Medication form removed - use prescription form instead
-
   const handleBackToOverview = useCallback(() => {
     setActiveView("overview");
   }, []);
 
-  // Treatment viewer handler
   const handleViewTreatment = useCallback(() => {
     if (selectedTreatmentId && selectedTreatmentDetails) {
       treatmentViewer.openViewer(selectedTreatmentDetails);
     }
   }, [selectedTreatmentId, selectedTreatmentDetails, treatmentViewer]);
 
-  // Note: Medication management now handled through prescription system
-  // Removed unused functions: handleTreatmentComplete, handleTogglePrescriptionForm
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <div className="space-y-4">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="border rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
+            <div className="space-y-2 flex-1">
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-48 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
+  // Empty state component
+  const EmptyState = ({ icon: Icon, title, description, actionText, onAction }: {
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    description: string;
+    actionText?: string;
+    onAction?: () => void;
+  }) => (
+    <div className="border rounded-xl flex items-center justify-center p-6 h-full">
+      <div className="text-center space-y-4">
+        <Icon className="h-12 w-12 text-muted-foreground mx-auto" />
+        <h3 className="font-medium">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        {actionText && onAction && (
+          <Button variant="outline" size="sm" className="rounded-lg" onClick={onAction}>
+            {actionText}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col p-4 space-y-4">
@@ -157,42 +174,91 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
       {/* Main Content */}
       <div className="flex-1 min-h-0">
         {activeView === "treatment-form" ? (
-          <AddTreatmentForm
-            patientId={patient?._id || ""}
-            onSuccess={handleBackToOverview}
-            onCancel={handleBackToOverview}
-          />
-        ) : activeView === "prescription-form" ? (
-          <Card className="h-full flex flex-col bg-background border-border">
-            <CardHeader className="pb-3 flex-shrink-0">
+          <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+            <div className="flex-shrink-0 p-4 border-b border-border/50">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2 text-foreground">
-                  <Pill className="h-4 w-4 text-primary" />
-                  Add Prescription
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={handleBackToOverview}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <Activity className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Add Treatment</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Create a new treatment plan for the patient
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-lg" onClick={handleBackToOverview}>
                   Cancel
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className="flex-1 min-h-0 p-0">
-              <ScrollArea className="h-full">
-                <div className="p-6">
-                  {patient && (
-                    <PrescriptionForm
-                      patientId={patient._id}
-                      treatmentPlanId={selectedTreatmentId as any}
-                      onSuccess={handleBackToOverview}
-                      onCancel={handleBackToOverview}
-                    />
-                  )}
+            </div>
+            <ScrollArea className="flex-1 overflow-hidden">
+              <div className="p-6">
+                <AddTreatmentForm
+                  patientId={patient?._id || ""}
+                  onSuccess={handleBackToOverview}
+                  onCancel={handleBackToOverview}
+                />
+              </div>
+            </ScrollArea>
+          </div>
+        ) : activeView === "prescription-form" ? (
+          <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+            <div className="flex-shrink-0 p-4 border-b border-border/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <Pill className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Add Prescription</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Create a new prescription for the patient
+                    </p>
+                  </div>
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                <Button variant="outline" size="sm" className="rounded-lg" onClick={handleBackToOverview}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+            <ScrollArea className="flex-1 overflow-hidden">
+              <div className="p-6">
+                {patient ? (
+                  <PrescriptionForm
+                    patientId={patient._id}
+                    treatmentPlanId={selectedTreatmentId as any}
+                    onSuccess={handleBackToOverview}
+                    onCancel={handleBackToOverview}
+                  />
+                ) : (
+                  <LoadingSkeleton />
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         ) : activeView === "appointment-form" ? (
-          <div className="h-full flex flex-col">
-            <ScrollArea className="h-full">
+          <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+            <div className="flex-shrink-0 p-4 border-b border-border/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <Calendar className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Schedule Appointment</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Book a new appointment with the patient
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-lg" onClick={handleBackToOverview}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+            <ScrollArea className="flex-1 overflow-hidden">
               <div className="p-6">
                 {patient && currentDoctorPatient && doctorProfile ? (
                   <SlotBasedAppointmentForm
@@ -204,57 +270,16 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                     onSuccess={handleBackToOverview}
                   />
                 ) : (
-                  <div className="flex items-center justify-center min-h-[400px]">
-                    <div className="text-center space-y-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-8 w-8 rounded-full mx-auto" />
-                        <Skeleton className="h-4 w-48 mx-auto" />
-                      </div>
-                    </div>
-                  </div>
+                  <LoadingSkeleton />
                 )}
               </div>
             </ScrollArea>
           </div>
-        ) : (activeView as string) === "prescription-form" ? (
-          <Card className="h-full flex flex-col bg-background border-border">
-            <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2 text-foreground">
-                  <Pill className="h-4 w-4 text-primary" />
-                  Create E-Prescription
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={handleBackToOverview}>
-                  Cancel
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 min-h-0 p-0">
-              <ScrollArea className="h-full">
-                <div className="p-6">
-                  {patient ? (
-                    <PrescriptionForm
-                      patientId={patient._id}
-                      onSuccess={handleBackToOverview}
-                      onCancel={handleBackToOverview}
-                    />
-                  ) : (
-                    <div className="text-center space-y-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-8 w-8 rounded-full mx-auto" />
-                        <Skeleton className="h-4 w-48 mx-auto" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
         ) : (
           <div className="h-full flex flex-col lg:flex-row gap-4">
-            {/* Left Side: Treatment List - Fixed width on large screens */}
+            {/* Left Side: Treatment List */}
             <div className="flex flex-col min-h-0 lg:w-80 lg:flex-shrink-0 order-2 lg:order-1">
-              {patient && (
+              {patient ? (
                 <ErrorBoundary context="Treatment List">
                   <TreatmentList
                     patientId={patient._id}
@@ -266,13 +291,31 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                     }}
                   />
                 </ErrorBoundary>
+              ) : (
+                <div className="border rounded-xl flex flex-col overflow-hidden">
+                  <div className="flex-shrink-0 p-4 border-b border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                        <Activity className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-foreground">Treatment Plans</h3>
+                        <p className="text-xs text-muted-foreground">Loading treatments...</p>
+                      </div>
+                    </div>
+                  </div>
+                  <ScrollArea className="flex-1 overflow-hidden">
+                    <div className="p-4">
+                      <LoadingSkeleton />
+                    </div>
+                  </ScrollArea>
+                </div>
               )}
             </div>
 
             {/* Right Side: Treatment Details, Chat, and SOAP History */}
             <div className="flex-1 min-h-0 order-1 lg:order-2">
               {showChat || showSOAPHistory ? (
-                /* When chat or SOAP history is open: Split layout */
                 <div className={cn(
                   "h-full grid gap-4",
                   showChat && showSOAPHistory
@@ -295,45 +338,32 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                           />
                         </ErrorBoundary>
                       ) : (
-                        <Card className="h-full flex flex-col bg-background border-border">
-                          <CardContent className="flex-1 flex items-center justify-center">
-                            <div className="text-center space-y-4">
-                              <Activity className="h-12 w-12 mx-auto text-muted-foreground" />
-                              <div className="space-y-2">
-                                <h3 className="font-semibold">Select a Treatment</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  Choose a treatment from the list to view details
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <EmptyState
+                          icon={Activity}
+                          title="Select a Treatment"
+                          description="Choose a treatment from the list to view details"
+                        />
                       )
                     ) : (
-                      <Card className="h-full flex flex-col bg-background border-border">
-                        <CardContent className="flex-1 flex items-center justify-center">
-                          <div className="text-center space-y-4">
-                            <div className="space-y-2">
-                              <Skeleton className="h-8 w-8 rounded-full mx-auto" />
-                              <Skeleton className="h-4 w-48 mx-auto" />
-                            </div>
+                      <div className="border rounded-xl flex flex-col overflow-hidden">
+                        <ScrollArea className="flex-1 overflow-hidden">
+                          <div className="p-4">
+                            <LoadingSkeleton />
                           </div>
-                        </CardContent>
-                      </Card>
+                        </ScrollArea>
+                      </div>
                     )}
                   </div>
 
                   {/* Chat Interface */}
-                  {showChat && (
+                  {showChat && patient && doctorProfile && (
                     <div className="h-full flex flex-col">
-                      {patient && doctorProfile && (
-                        <PatientChat
-                          doctorId={doctorProfile._id}
-                          patientId={patient._id}
-                          patientName={`${patient.firstName} ${patient.lastName}`}
-                          onClose={() => setShowChat(false)}
-                        />
-                      )}
+                      <PatientChat
+                        doctorId={doctorProfile._id}
+                        patientId={patient._id}
+                        patientName={`${patient.firstName} ${patient.lastName}`}
+                        onClose={() => setShowChat(false)}
+                      />
                     </div>
                   )}
 
@@ -349,7 +379,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                   )}
                 </div>
               ) : (
-                /* When chat is closed: Full width Treatment Details */
+                /* Full width Treatment Details */
                 <div className="h-full">
                   {patient ? (
                     selectedTreatmentId ? (
@@ -363,31 +393,20 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                         }}
                       />
                     ) : (
-                      <Card className="h-full flex flex-col bg-background border-border">
-                        <CardContent className="flex-1 flex items-center justify-center">
-                          <div className="text-center space-y-4">
-                            <Activity className="h-12 w-12 mx-auto text-muted-foreground" />
-                            <div className="space-y-2">
-                              <h3 className="font-semibold">Select a Treatment</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Choose a treatment from the list to view details
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <EmptyState
+                        icon={Activity}
+                        title="Select a Treatment"
+                        description="Choose a treatment from the list to view details and manage patient care"
+                      />
                     )
                   ) : (
-                    <Card className="h-full flex flex-col bg-background border-border">
-                      <CardContent className="flex-1 flex items-center justify-center">
-                        <div className="text-center space-y-4">
-                          <div className="space-y-2">
-                            <Skeleton className="h-8 w-8 rounded-full mx-auto" />
-                            <Skeleton className="h-4 w-48 mx-auto" />
-                          </div>
+                    <div className="border rounded-xl flex flex-col overflow-hidden">
+                      <ScrollArea className="flex-1 overflow-hidden">
+                        <div className="p-4">
+                          <LoadingSkeleton />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </ScrollArea>
+                    </div>
                   )}
                 </div>
               )}
@@ -395,38 +414,6 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
           </div>
         )}
       </div>
-
-      {/* TreatmentViewer for full-screen document view */}
-      {/* <TreatmentViewer
-        treatmentId={selectedTreatmentId}
-        open={treatmentViewer.isOpen}
-        onOpenChange={treatmentViewer.setOpen}
-        config={{
-          showBackButton: true,
-          showActions: true,
-          showPatientInfo: true, // Show patient info in doctor context
-          showDoctorInfo: true,
-          showMetadata: true,
-          allowPrint: true,
-          allowDownload: true,
-          allowShare: true,
-          allowCopy: true,
-          allowExportPDF: true,
-          backButtonText: "Back to Patient Details",
-          documentTitle: "Treatment Plan - Doctor View"
-        }}
-        actions={{
-          onBack: treatmentViewer.closeViewer,
-          onDownload: (treatment) => {
-            console.log("Downloading treatment:", treatment.title);
-            // Implement download logic
-          },
-          onShare: (treatment) => {
-            console.log("Sharing treatment:", treatment.title);
-            // Implement share logic
-          },
-        }}
-      /> */}
 
       {/* Treatment Viewer */}
       <TreatmentViewer
@@ -451,11 +438,9 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
           onBack: treatmentViewer.closeViewer,
           onDownload: (treatment) => {
             console.log("Downloading treatment:", treatment.title);
-            // Implement download logic
           },
           onShare: (treatment) => {
             console.log("Sharing treatment:", treatment.title);
-            // Implement share logic
           },
         }}
       />
