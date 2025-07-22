@@ -64,7 +64,7 @@ export function AppointmentSection({
       `border-${gradient.border}`,
       className
     )}>
-      <CardHeader className="p-4 pb-2">
+      <CardHeader className="p-4 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={cn(
@@ -104,7 +104,7 @@ export function AppointmentSection({
         </div>
       </CardHeader>
       
-      <CardContent className="px-4 pt-0 pb-4">
+      <CardContent className="p-4 pt-0">
         {!hasAppointments ? (
           <div className="text-center py-6">
             <div className={cn(

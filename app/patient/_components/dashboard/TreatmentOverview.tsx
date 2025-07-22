@@ -122,20 +122,24 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
       gradient && `bg-gradient-to-br ${gradient.from} ${gradient.to}`,
       gradient && `border-${gradient.border}`
     )}>
-      <CardHeader className="flex-shrink-0">
+      <CardHeader className="p-4 pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className={cn(
-            "text-base flex items-center gap-2",
-            gradient?.textColor
-          )}>
+          <div className="flex items-center gap-3">
             <div className={cn(
-              "w-4 h-4 rounded flex items-center justify-center",
-              gradient?.iconBg
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              gradient?.iconBg || "bg-primary"
             )}>
-              <Activity className="h-3 w-3 text-white" />
+              <Activity className="h-4 w-4 text-primary-foreground" />
             </div>
-            Active Treatments
-          </CardTitle>
+            <div>
+              <h3 className={cn(
+                "font-semibold text-base",
+                gradient?.textColor || "text-foreground"
+              )}>
+                Active Treatments
+              </h3>
+            </div>
+          </div>
           <Link href="/patient/treatments">
             <Button
               variant="outline"
@@ -384,8 +388,8 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                             <div className="text-xs text-muted-foreground mt-1">
                               <div>Dosage: {prescription.dosage}</div>
                               <div>Frequency: {prescription.frequency}</div>
-                              {medication.instructions && (
-                                <div className="mt-1">Instructions: {medication.instructions}</div>
+                              {prescription.instructions && (
+                                <div className="mt-1">Instructions: {prescription.instructions}</div>
                               )}
                             </div>
                           </DropdownMenuItem>

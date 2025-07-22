@@ -49,14 +49,13 @@ export function HealthTipCard({
           </div>
           <div>
             <h3 className={cn(
-              "font-semibold text-sm",
+              "font-semibold text-base",
               gradient.textColor
             )}>
               {title}
             </h3>
             <p className={cn(
-              "text-xs",
-              gradient.textColor
+              "text-xs text-muted-foreground"
             )}>
               {subtitle}
             </p>
@@ -66,8 +65,8 @@ export function HealthTipCard({
           isFullHeight && "flex-1 flex flex-col justify-center"
         )}>
           <p className={cn(
-            "text-xs",
-            isFullHeight && "text-sm leading-relaxed",
+            "text-sm",
+            isFullHeight && "leading-relaxed",
             gradient.textColor
           )}>
             {tip}

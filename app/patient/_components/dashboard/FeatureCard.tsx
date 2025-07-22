@@ -33,7 +33,6 @@ export interface FeatureCardProps {
       disabled?: boolean;
     };
   };
-  size?: "default" | "compact";
   className?: string;
 }
 
@@ -44,10 +43,8 @@ export function FeatureCard({
   badge,
   gradient,
   actions,
-  size = "default",
   className,
 }: FeatureCardProps) {
-  const isCompact = size === "compact";
   
   return (
     <Card className={cn(
@@ -56,31 +53,25 @@ export function FeatureCard({
       `border-${gradient.border}`,
       className
     )}>
-      <CardContent className={cn(
-        isCompact ? "p-4" : "p-6"
-      )}>
-        <div className={cn(
-          isCompact ? "space-y-2" : "space-y-3"
-        )}>
+      <CardContent className="p-4">
+        <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className={cn(
-              "rounded-lg flex items-center justify-center",
-              isCompact ? "w-8 h-8" : "w-10 h-10",
+              "w-8 h-8 rounded-lg flex items-center justify-center",
               gradient.iconBg
             )}>
               {icon}
             </div>
             <div className="flex-1">
               <h3 className={cn(
-                "font-semibold",
-                isCompact ? "text-sm" : "text-lg",
+                "font-semibold text-base",
                 gradient.textColor
               )}>
                 {title}
               </h3>
               {badge && (
                 <Badge variant="secondary" className={cn(
-                  "text-xs",
+                  "text-xs mt-1",
                   gradient.badgeColor
                 )}>
                   {badge}
@@ -88,18 +79,14 @@ export function FeatureCard({
               )}
             </div>
           </div>
-          
+
           <p className={cn(
-            "text-sm",
-            gradient.textColor
+            "text-xs text-muted-foreground"
           )}>
             {description}
           </p>
-          
-          <div className={cn(
-            "flex gap-2",
-            isCompact ? "flex-col" : "flex-col sm:flex-row"
-          )}>
+
+          <div className="flex gap-2 flex-col sm:flex-row">
             {actions.secondary && (
               <Link href={actions.secondary.href} className="flex-1">
                 <Button
@@ -110,7 +97,7 @@ export function FeatureCard({
                     `hover:bg-${gradient.from.split(' ')[1]?.replace('from-', '') || 'gray'}/50`
                   )}
                   disabled={actions.secondary.disabled}
-                  size={isCompact ? "sm" : "default"}
+                  size="sm"
                 >
                   {actions.secondary.icon}
                   {actions.secondary.label}
@@ -125,7 +112,7 @@ export function FeatureCard({
                     gradient.iconBg.replace('bg-', 'bg-').replace('500', '600'),
                     `hover:${gradient.iconBg.replace('bg-', 'bg-').replace('500', '700')}`
                   )}
-                  size={isCompact ? "sm" : "default"}
+                  size="sm"
                 >
                   {actions.primary.icon}
                   {actions.primary.label}
