@@ -29,17 +29,17 @@ import { api } from "@/convex/_generated/api";
 
 const PatientListSkeleton = () => (
   <Card className="h-full flex flex-col">
-    <CardHeader className="pb-3 flex-shrink-0">
+    <CardHeader className="p-4 pb-3 flex-shrink-0">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg" />
           <Skeleton className="h-5 w-24" />
         </div>
-        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-7 w-20" />
       </div>
     </CardHeader>
-    <CardContent className="flex-1 min-h-0 p-0">
-      <div className="p-3 space-y-3">
+    <CardContent className="p-4 pt-0 flex-1 min-h-0">
+      <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -62,17 +62,17 @@ const PatientListSkeleton = () => (
 
 const AppointmentsSkeleton = () => (
   <Card className="h-full flex flex-col">
-    <CardHeader className="pb-3 flex-shrink-0">
+    <CardHeader className="p-4 pb-3 flex-shrink-0">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg" />
           <Skeleton className="h-5 w-32" />
         </div>
-        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-7 w-20" />
       </div>
     </CardHeader>
-    <CardContent className="flex-1 min-h-0 p-0">
-      <div className="p-4 space-y-3">
+    <CardContent className="p-4 pt-0 flex-1 min-h-0">
+      <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="p-3 rounded-lg border border-border space-y-2">
             <div className="flex items-center justify-between">
@@ -94,23 +94,28 @@ const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: bool
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3 flex-shrink-0">
+      <CardHeader className="p-4 pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base text-foreground">My Patients</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <Users className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-foreground">My Patients</h3>
+            </div>
           </div>
           <Link href="/doctor/patients">
-            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+            <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
+              <Users className="h-3 w-3 mr-1" />
               View All
             </Button>
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 p-0">
+      <CardContent className="p-4 pt-0 flex-1 min-h-0">
         <ScrollArea className="h-full">
           {!patients || patients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
                 <Users className="h-6 w-6 text-muted-foreground" />
               </div>
@@ -123,7 +128,7 @@ const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: bool
               </Link>
             </div>
           ) : (
-            <div className="p-3 space-y-3">
+            <div className="space-y-3">
               {patients.slice(0, 6).map((relationship) => {
                 const patient = relationship.patient;
                 const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
@@ -187,20 +192,25 @@ const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefine
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3 flex-shrink-0">
+      <CardHeader className="p-4 pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base text-foreground">Upcoming Appointments</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <Calendar className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-foreground">Upcoming Appointments</h3>
+            </div>
           </div>
           <Link href="/doctor/appointments">
-            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+            <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
+              <Calendar className="h-3 w-3 mr-1" />
               View All
             </Button>
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 p-0">
+      <CardContent className="p-4 pt-0 flex-1 min-h-0">
         <ScrollArea className="h-full">
           {sortedAppointments.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-center">
@@ -217,7 +227,7 @@ const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefine
               </div>
             </div>
           ) : (
-            <div className="p-3 space-y-2">
+            <div className="space-y-3">
               {sortedAppointments.map((appointment: any) => (
                 <div
                   key={appointment._id}
@@ -343,28 +353,27 @@ export default function DoctorDashboard() {
             </Card>
           ) : (
             <Card className="h-48 bg-background border-border p-0">
-              <CardContent className="p-4 h-full">
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary">
-                      <Users className="h-5 w-5 text-primary-foreground" />
+              <CardContent className="p-4">
+                <div className="space-y-3 h-full flex flex-col">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                      <Users className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground">
+                      <h3 className="font-semibold text-base text-foreground">
                         Patient Management Hub
                       </h3>
                       <Badge variant="secondary" className="text-xs mt-1">
-                        <Activity className="h-3 w-3 mr-1" />
                         Comprehensive Care
                       </Badge>
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                  <p className="text-xs text-muted-foreground">
                     Manage your patient roster, view medical histories, track treatment progress, and coordinate care plans all in one centralized location.
                   </p>
 
-                  <div className="flex gap-2 flex-col sm:flex-row">
+                  <div className="flex gap-2 flex-col sm:flex-row mt-auto">
                     <Button variant="outline" size="sm" asChild className="flex-1">
                       <Link href="/doctor/patients">
                         <Users className="h-4 w-4 mr-2" />
@@ -375,7 +384,6 @@ export default function DoctorDashboard() {
                       <Link href="/doctor/patients">
                         <Activity className="h-4 w-4 mr-2" />
                         Manage Care
-                        <ArrowRight className="h-4 w-4 ml-2" />
                       </Link>
                     </Button>
                   </div>
@@ -406,33 +414,40 @@ export default function DoctorDashboard() {
             </Card>
           ) : (
             <Card className="h-48 bg-background border-border p-0">
-              <CardContent className="p-4 h-full">
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-3">
+              <CardContent className="p-4">
+                <div className="space-y-3 h-full flex flex-col">
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
                       <Brain className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-foreground">
+                      <h3 className="font-semibold text-base text-foreground">
                         AI Medical Assistant
                       </h3>
                       <Badge variant="secondary" className="text-xs mt-1">
-                        <Sparkles className="h-3 w-3 mr-1" />
                         Smart Chat
                       </Badge>
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                  <p className="text-xs text-muted-foreground">
                     Chat with AI about patient records, SOAP notes, and medical insights.
                   </p>
 
-                  <Button size="sm" asChild className="w-full">
-                    <Link href="/doctor/assistant">
-                      <Brain className="h-3 w-3 mr-2" />
-                      Chat with Assistant
-                    </Link>
-                  </Button>
+                  <div className="flex gap-2 flex-col sm:flex-row mt-auto">
+                    <Button variant="outline" size="sm" asChild className="flex-1">
+                      <Link href="/doctor/assistant/history">
+                        <Brain className="h-4 w-4 mr-2" />
+                        Chat History
+                      </Link>
+                    </Button>
+                    <Button size="sm" asChild className="flex-1">
+                      <Link href="/doctor/assistant">
+                        <Brain className="h-4 w-4 mr-2" />
+                        Chat Assistant
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -460,33 +475,40 @@ export default function DoctorDashboard() {
             </Card>
           ) : (
             <Card className="h-48 bg-background border-border p-0">
-              <CardContent className="p-4 h-full">
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-3">
+              <CardContent className="p-4">
+                <div className="space-y-3 h-full flex flex-col">
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
                       <FileText className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-foreground">
+                      <h3 className="font-semibold text-base text-foreground">
                         SOAP Notes Review
                       </h3>
                       <Badge variant="secondary" className="text-xs mt-1">
-                        <FileText className="h-3 w-3 mr-1" />
                         Clinical Records
                       </Badge>
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                  <p className="text-xs text-muted-foreground">
                     Review and manage patient SOAP notes and clinical documentation.
                   </p>
 
-                  <Button size="sm" asChild className="w-full">
-                    <Link href="/doctor/shared-soap">
-                      <FileText className="h-3 w-3 mr-2" />
-                      Review Notes
-                    </Link>
-                  </Button>
+                  <div className="flex gap-2 flex-col sm:flex-row mt-auto">
+                    <Button variant="outline" size="sm" asChild className="flex-1">
+                      <Link href="/doctor/shared-soap/history">
+                        <FileText className="h-4 w-4 mr-2" />
+                        SOAP History
+                      </Link>
+                    </Button>
+                    <Button size="sm" asChild className="flex-1">
+                      <Link href="/doctor/shared-soap">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Review Notes
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
