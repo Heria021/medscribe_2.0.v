@@ -9,7 +9,6 @@ import {
   Users,
   Calendar,
   Brain,
-  ArrowRight,
   FileText,
   Activity,
   Clock,
@@ -32,13 +31,11 @@ import { ScheduleAppointmentDialog } from "./_components/appointments/components
 const PatientList = React.memo<{
   patients: any[],
   isLoading: boolean,
-  className?: string,
-  onScheduleNew?: () => void
+  className?: string
 }>(({
   patients,
   isLoading,
-  className = "",
-  onScheduleNew
+  className = ""
 }) => {
   if (isLoading) {
     return (
@@ -105,24 +102,12 @@ const PatientList = React.memo<{
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {onScheduleNew && (
-              <Button
-                size="sm"
-                className="h-7 px-3 text-xs"
-                onClick={onScheduleNew}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Schedule
-              </Button>
-            )}
-            <Link href="/doctor/patients">
-              <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
-                <Users className="h-3 w-3 mr-1" />
-                View All
-              </Button>
-            </Link>
-          </div>
+          <Link href="/doctor/patients">
+            <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
+              <Users className="h-3 w-3 mr-1" />
+              View All
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -136,34 +121,54 @@ const PatientList = React.memo<{
             return (
               <div
                 key={relationship._id}
-                className="group flex items-center gap-3 p-4 cursor-pointer transition-all duration-200 hover:bg-muted/50"
+                className="p-4 hover:bg-muted/50 transition-colors border-l-2 border-l-primary/20 hover:border-l-primary/50 cursor-pointer"
                 onClick={() => window.location.href = `/doctor/patients/${patient._id}`}
               >
-                <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-background group-hover:ring-primary/20 transition-all">
-                  <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary group-hover:bg-primary/20">
-                    {patient.firstName[0]}{patient.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-sm truncate text-foreground group-hover:text-primary transition-colors">
-                      {patient.firstName} {patient.lastName}
-                    </h4>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ArrowRight className="h-3 w-3 text-primary" />
+                <div className="flex items-start gap-3">
+                  {/* Patient Avatar */}
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
+                      {patient.firstName[0]}{patient.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Patient Details */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm text-foreground truncate">
+                          {patient.firstName} {patient.lastName}
+                        </h4>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {patient.gender || 'Not specified'} • {age} years old
+                        </p>
+                      </div>
+
+                      {/* Status Badge */}
+                      <Badge variant="secondary" className="text-xs">
+                        Active
+                      </Badge>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md">
-                      <Calendar className="h-3 w-3" />
-                      {age} years old
-                    </span>
-                    <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md truncate">
-                      <Phone className="h-3 w-3" />
-                      {patient.primaryPhone}
-                    </span>
+
+                    {/* Details Row */}
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      {/* Phone */}
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        <span>{patient.primaryPhone || 'No phone'}</span>
+                      </div>
+
+                      {/* DOB */}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>DOB: {new Date(patient.dateOfBirth).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -311,71 +316,58 @@ const AppointmentsList = React.memo<{
                     </AvatarFallback>
                   </Avatar>
 
-                  {/* Appointment Details */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    {/* Header Row */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-foreground truncate">
-                          {appointment.patient?.firstName || 'Patient'} {appointment.patient?.lastName || 'Name'}
-                        </h4>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {appointment.visitReason || 'General consultation'}
-                        </p>
+                  {/* Appointment Details - Compact 4-line layout */}
+                  <div className="flex-1 min-w-0">
+                    {/* Line 1: Patient Name + Badges */}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className="font-medium text-sm text-foreground truncate">
+                        {appointment.patient?.firstName || 'Patient'} {appointment.patient?.lastName || 'Name'}
+                      </h4>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                          {appointment.appointmentType?.replace('_', ' ') || 'consultation'}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                          {appointment.status?.replace('_', ' ') || 'scheduled'}
+                        </Badge>
                       </div>
-
-                      {/* Status Badge */}
-                      <Badge variant="secondary" className="text-xs">
-                        {appointment.status?.replace('_', ' ') || 'scheduled'}
-                      </Badge>
                     </div>
 
-                    {/* Details Row */}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {/* Date & Time */}
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {isToday ? 'Today' : appointmentDate.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                          {' '}
-                          {appointmentDate.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                        </span>
-                      </div>
+                    {/* Line 2: Visit Reason */}
+                    <p className="text-xs text-muted-foreground truncate mb-1">
+                      {appointment.visitReason || 'General consultation'}
+                    </p>
 
-                      {/* Duration */}
-                      <div className="flex items-center gap-1">
-                        <Activity className="h-3 w-3" />
-                        <span>30min</span>
-                      </div>
+                    {/* Line 3: Date & Time */}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        {isToday ? 'Today' : appointmentDate.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                        {' '}
+                        {appointmentDate.toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </span>
+                      <span className="mx-2">•</span>
+                      <Activity className="h-3 w-3" />
+                      <span>30min</span>
+                      <span className="mx-2">•</span>
+                      <Phone className="h-3 w-3" />
+                      <span>In-person</span>
+                    </div>
 
-                      {/* Location */}
-                      <div className="flex items-center gap-1">
+                    {/* Line 4: Contact Info */}
+                    {appointment.patient?.primaryPhone && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Phone className="h-3 w-3" />
-                        <span>In-person</span>
+                        <span>{appointment.patient.primaryPhone}</span>
                       </div>
-                    </div>
-
-                    {/* Type Badge and Contact */}
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {appointment.appointmentType?.replace('_', ' ') || 'consultation'}
-                      </Badge>
-
-                      {/* Patient Contact */}
-                      {appointment.patient?.primaryPhone && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Phone className="h-3 w-3" />
-                          <span>{appointment.patient.primaryPhone}</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -654,7 +646,6 @@ export default function DoctorDashboard() {
           <PatientList
             patients={patients}
             isLoading={isLoading}
-            onScheduleNew={handleScheduleNew}
           />
         </div>
 

@@ -3,14 +3,13 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Plus } from "lucide-react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
+import { cn } from "@/lib/utils";
 import {
   usePatientAuth,
   usePatientAppointments,
@@ -23,20 +22,37 @@ import {
   QuickActionsGrid,
 } from "@/app/patient/_components/appointments";
 
-// Individual skeleton components
+// Individual skeleton components following AppointmentsList patterns
 const AppointmentListSkeleton = () => (
-  <div className="p-4 space-y-2">
+  <div className="divide-y overflow-hidden">
     {Array.from({ length: 3 }).map((_, i) => (
-      <div key={i} className="border rounded-lg bg-card p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-48" />
-            <Skeleton className="h-3 w-24" />
+      <div key={i} className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            {/* Time skeleton */}
+            <div className="flex flex-col items-center gap-1 min-w-[70px]">
+              <div className="h-5 w-14 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+            </div>
+
+            {/* Doctor/Patient Info skeleton */}
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
+              <div className="space-y-1">
+                <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-40 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-36 bg-muted rounded animate-pulse" />
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-8 w-16" />
+
+          {/* Actions skeleton */}
+          <div className="flex flex-col items-end gap-2">
+            <div className="h-5 w-16 bg-muted rounded animate-pulse" />
+            <div className="flex gap-1">
+              <div className="h-7 w-16 bg-muted rounded animate-pulse" />
+              <div className="h-7 w-14 bg-muted rounded animate-pulse" />
+            </div>
           </div>
         </div>
       </div>
@@ -45,24 +61,30 @@ const AppointmentListSkeleton = () => (
 );
 
 const CompactAppointmentListSkeleton = () => (
-  <div className="p-4 space-y-2">
+  <div className="divide-y overflow-hidden">
     {Array.from({ length: 4 }).map((_, i) => (
-      <div key={i} className="p-2 space-y-1">
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-2/3" />
+      <div key={i} className="p-3">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="h-3 w-full bg-muted rounded animate-pulse" />
+          <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
+        </div>
       </div>
     ))}
   </div>
 );
 
 const QuickActionsGridSkeleton = () => (
-  <div className="space-y-2">
-    <Skeleton className="h-4 w-24" />
+  <div className="space-y-3">
+    <div className="h-4 w-24 bg-muted rounded animate-pulse" />
     <div className="grid grid-cols-3 gap-2">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="p-2 space-y-1">
-          <Skeleton className="h-6 w-6 mx-auto" />
-          <Skeleton className="h-3 w-full" />
+        <div key={i} className="p-3 space-y-2 text-center">
+          <div className="h-6 w-6 bg-muted rounded animate-pulse mx-auto" />
+          <div className="h-3 w-full bg-muted rounded animate-pulse" />
         </div>
       ))}
     </div>
@@ -71,14 +93,7 @@ const QuickActionsGridSkeleton = () => (
 
 /**
  * Patient Appointments Page - Refactored with performance optimizations
- *
- * Features:
- * - Custom hooks for clean separation of concerns
- * - Performance optimized with React.memo and useCallback
- * - Reusable components for maintainability
- * - Comprehensive error handling
- * - Accessibility support
- * - Individual skeleton loading states
+ * Following AppointmentsList UI standards and patterns
  */
 const PatientAppointmentsPage = React.memo(() => {
   // Custom hooks for clean separation of concerns
@@ -129,21 +144,19 @@ const PatientAppointmentsPage = React.memo(() => {
     if (!requestData.appointmentId || !requestData.reason) return;
 
     try {
-      // Submit reschedule request instead of direct reschedule
       await createRescheduleRequest({
         appointmentId: requestData.appointmentId,
         requestedSlotId: requestData.requestedSlotId,
         reason: requestData.reason,
       });
 
-      // Show success message
       toast.success("Reschedule request submitted successfully! The doctor's office will review your request.");
       closeRescheduleDialog();
     } catch (error) {
       console.error("Failed to submit reschedule request:", error);
       toast.error("Failed to submit reschedule request. Please try again.");
     }
-  }, [closeRescheduleDialog]);
+  }, [createRescheduleRequest, closeRescheduleDialog]);
 
   // Memoized handlers for dialog actions
   const memoizedOpenCancelDialog = React.useCallback(openCancelDialog, [openCancelDialog]);
@@ -157,7 +170,7 @@ const PatientAppointmentsPage = React.memo(() => {
 
   return (
     <>
-      <div className="h-full flex flex-col p-4 space-y-3">
+      <div className="h-full flex flex-col p-4 space-y-4">
         {/* Header */}
         <div className="flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -166,7 +179,7 @@ const PatientAppointmentsPage = React.memo(() => {
               <p className="text-muted-foreground text-sm">View and manage your medical appointments</p>
             </div>
             <Link href="/patient/appointments/book">
-              <Button size="sm" className="flex items-center gap-2 h-8 px-3">
+              <Button size="sm" className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Book Appointment
               </Button>
@@ -175,51 +188,47 @@ const PatientAppointmentsPage = React.memo(() => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Upcoming Appointments - Takes 2 columns */}
           <div className="lg:col-span-2 flex flex-col min-h-0">
-            <Card className="h-full flex flex-col overflow-hidden">
+            <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden")}>
+              {/* Header following AppointmentsList pattern */}
               <div className="flex-shrink-0 p-4 border-b border-border/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                      <Calendar className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-foreground">Upcoming Appointments</h2>
-                      <p className="text-xs text-muted-foreground">Your scheduled medical visits</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <Calendar className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  {upcomingAppointments && upcomingAppointments.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {upcomingAppointments.length} scheduled
-                    </Badge>
-                  )}
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground">Upcoming Appointments</h2>
+                    <p className="text-xs text-muted-foreground">
+                      {upcomingAppointments?.length || 0} appointment{(upcomingAppointments?.length || 0) !== 1 ? 's' : ''} scheduled
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Content */}
               <ScrollArea className="flex-1 overflow-hidden">
-                <div className="divide-y overflow-hidden">
-                  {appointmentsLoading ? (
-                    <AppointmentListSkeleton />
-                  ) : !upcomingAppointments || upcomingAppointments.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted mx-auto">
-                          <Calendar className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <h3 className="font-medium text-sm mb-1 text-foreground">No upcoming appointments</h3>
-                        <p className="text-muted-foreground text-xs mb-3 max-w-[180px]">
-                          Schedule your next appointment with your healthcare provider
-                        </p>
-                        <Link href="/patient/appointments/book">
-                          <Button size="sm" className="gap-2 h-7 px-3 text-xs">
-                            <Plus className="h-3 w-3" />
-                            Book Appointment
-                          </Button>
-                        </Link>
-                      </div>
+                {appointmentsLoading ? (
+                  <AppointmentListSkeleton />
+                ) : !upcomingAppointments || upcomingAppointments.length === 0 ? (
+                  <div className={cn("h-full flex items-center justify-center p-6")}>
+                    <div className="text-center space-y-4">
+                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <h3 className="font-medium">No upcoming appointments</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Schedule your next appointment with your healthcare provider
+                      </p>
+                      <Link href="/patient/appointments/book">
+                        <Button variant="outline" size="sm" className="rounded-lg">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Book Appointment
+                        </Button>
+                      </Link>
                     </div>
-                  ) : (
+                  </div>
+                ) : (
+                  <div className="divide-y overflow-hidden">
                     <div className="p-4">
                       <AppointmentList
                         appointments={upcomingAppointments}
@@ -229,47 +238,55 @@ const PatientAppointmentsPage = React.memo(() => {
                         onJoin={memoizedJoinCall}
                       />
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </ScrollArea>
-            </Card>
+            </div>
           </div>
 
           {/* Right Sidebar - Past Appointments & Quick Actions */}
-          <div className="flex flex-col space-y-3 min-h-0">
+          <div className="flex flex-col space-y-4 min-h-0">
             {/* Past Appointments */}
-            <Card className="h-full flex flex-col overflow-hidden">
+            <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden")}>
+              {/* Header following AppointmentsList pattern */}
               <div className="flex-shrink-0 p-4 border-b border-border/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                      <Calendar className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-semibold text-foreground">Past Appointments</h2>
-                      <p className="text-xs text-muted-foreground">Your completed medical visits</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <Calendar className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  {pastAppointments && pastAppointments.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {pastAppointments.length} completed
-                    </Badge>
-                  )}
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground">Past Appointments</h2>
+                    <p className="text-xs text-muted-foreground">
+                      {pastAppointments?.length || 0} completed
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Content */}
               <ScrollArea className="flex-1 overflow-hidden">
-                <div className="divide-y overflow-hidden">
-                  {appointmentsLoading ? (
-                    <CompactAppointmentListSkeleton />
-                  ) : (
+                {appointmentsLoading ? (
+                  <CompactAppointmentListSkeleton />
+                ) : !pastAppointments || pastAppointments.length === 0 ? (
+                  <div className={cn("h-full flex items-center justify-center p-6")}>
+                    <div className="text-center space-y-4">
+                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <h3 className="font-medium">No past appointments</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Your completed appointments will appear here
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="divide-y overflow-hidden">
                     <div className="p-4">
                       <CompactAppointmentList
-                        appointments={pastAppointments || []}
+                        appointments={pastAppointments}
                         maxItems={8}
                         showActions={false}
                       />
-                      {pastAppointments && pastAppointments.length > 8 && (
-                        <div className="pt-3 border-t border-border">
+                      {pastAppointments.length > 8 && (
+                        <div className="pt-3 border-t border-border/50 mt-3">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -281,19 +298,31 @@ const PatientAppointmentsPage = React.memo(() => {
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </ScrollArea>
-            </Card>
+            </div>
 
             {/* Quick Actions */}
-            <Card className="p-4">
+            <div className={cn("border rounded-xl p-4")}>
+              <div className="flex-shrink-0 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <Plus className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Quick Actions</h3>
+                    <p className="text-xs text-muted-foreground">Common appointment tasks</p>
+                  </div>
+                </div>
+              </div>
+
               {appointmentsLoading ? (
                 <QuickActionsGridSkeleton />
               ) : (
                 <QuickActionsGrid variant="compact" />
               )}
-            </Card>
+            </div>
           </div>
         </div>
       </div>
