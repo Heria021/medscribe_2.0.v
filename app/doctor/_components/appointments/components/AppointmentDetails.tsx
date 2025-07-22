@@ -377,13 +377,16 @@ export const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
   return (
     <div className="h-full flex flex-col border border-border/50 rounded-lg">
       {/* Compact Header */}
-      <div className="flex-shrink-0 p-3 border-b border-border/50">
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-              <Calendar className="h-3 w-3 text-primary" />
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <Calendar className="h-4 w-4 text-primary-foreground" />
             </div>
-            <h2 className="text-sm font-medium">Appointment Details</h2>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Appointment Details</h2>
+              <p className="text-xs text-muted-foreground">View and manage appointment information</p>
+            </div>
           </div>
 
           {/* Status Badge in Header */}
@@ -397,23 +400,30 @@ export const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {/* Current Appointment - Compact */}
         <div className="p-3 bg-muted/30 rounded-lg border-border/50 border">
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Current:</span>
-            <span className="font-medium">
-              {formatDate(appointment.appointmentDateTime)}
-            </span>
-            <span className="text-muted-foreground">at</span>
-            <span className="font-medium">
-              {formatTime(appointment.appointmentDateTime)}
-            </span>
-            <span className="text-muted-foreground">({appointment.duration}m)</span>
-            <span className="text-muted-foreground ml-auto">
-              ID: {appointment._id.slice(-6)}
-            </span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Current Appointment</span>
+              <span className="text-muted-foreground ml-auto text-xs">
+                ID: {appointment._id.slice(-6)}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1">
+                <span className="font-medium">
+                  {formatDate(appointment.appointmentDateTime)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-medium">
+                  {formatTime(appointment.appointmentDateTime)}
+                </span>
+                <span className="text-muted-foreground">({appointment.duration}m)</span>
+              </div>
+            </div>
           </div>
         </div>
 

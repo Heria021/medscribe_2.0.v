@@ -97,12 +97,6 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
             </Link>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Loading treatments...</span>
-          </div>
-        </CardContent>
       </Card>
     );
   }
@@ -117,27 +111,16 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
   ) || [];
 
   return (
-    <Card className={cn(
-      "h-full flex flex-col gap-0",
-      gradient && `bg-gradient-to-br ${gradient.from} ${gradient.to}`,
-      gradient && `border-${gradient.border}`
-    )}>
-      <CardHeader className="p-4 pb-3 flex-shrink-0">
+    <Card className="h-full flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              gradient?.iconBg || "bg-primary"
-            )}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
               <Activity className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <h3 className={cn(
-                "font-semibold text-base",
-                gradient?.textColor || "text-foreground"
-              )}>
-                Active Treatments
-              </h3>
+              <h3 className="text-base font-semibold text-foreground">Active Treatments</h3>
+              <p className="text-xs text-muted-foreground">Your current treatment plans</p>
             </div>
           </div>
           <Link href="/patient/treatments">
@@ -155,48 +138,30 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
             </Button>
           </Link>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 min-h-0 p-0">
-        <ScrollArea className="h-full">
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="divide-y overflow-hidden">
           {!hasAnyActive ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-              <div className={cn(
-                "w-16 h-16 rounded-full flex items-center justify-center mb-4",
-                gradient ? gradient.iconBg.replace('bg-', 'bg-').replace('500', '100') + ' dark:' + gradient.iconBg.replace('bg-', 'bg-').replace('500', '900/30') : "bg-muted"
-              )}>
-                <Activity className={cn(
-                  "h-8 w-8",
-                  gradient ? gradient.iconBg.replace('bg-', 'text-').replace('500', '600') + ' dark:' + gradient.iconBg.replace('bg-', 'text-').replace('500', '400') : "text-muted-foreground"
-                )} />
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted mx-auto">
+                  <Activity className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium text-sm mb-1 text-foreground">No Active Treatments</h3>
+                <p className="text-xs mb-3 max-w-[180px] text-muted-foreground">
+                  You don't have any active treatments at the moment.
+                </p>
+                <Link href="/patient/treatments">
+                  <Button size="sm" className="h-7 px-3 text-xs">
+                    <Plus className="h-3 w-3 mr-1" />
+                    View Treatments
+                  </Button>
+                </Link>
               </div>
-              <h3 className={cn(
-                "font-medium text-sm mb-2",
-                gradient?.textColor
-              )}>
-                No Active Treatments
-              </h3>
-              <p className={cn(
-                "text-xs mb-4 max-w-[200px]",
-                gradient?.textColor || "text-muted-foreground"
-              )}>
-                You don't have any active treatments at the moment.
-              </p>
-              <Link href="/patient/appointments/book">
-                <Button
-                  size="sm"
-                  className={cn(
-                    "h-8 px-3 text-xs text-white",
-                    gradient ? gradient.iconBg.replace('bg-', 'bg-').replace('500', '600') + ' hover:' + gradient.iconBg.replace('bg-', 'bg-').replace('500', '700') : ""
-                  )}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Book Appointment
-                </Button>
-              </Link>
             </div>
           ) : (
-            <div className="p-4 space-y-3">
+            <div className="space-y-0">
               {hasActiveTreatments && activeFilteredTreatments.map((treatment) => {
                 const treatmentPrescriptions = prescriptionsByTreatment.get(treatment._id) || [];
                 const isExpanded = expandedTreatments.has(treatment._id);
@@ -204,10 +169,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                 return (
                   <div
                     key={treatment._id}
-                    className={cn(
-                      "p-3 rounded-lg border",
-                      gradient ? `${gradient.itemBg} ${gradient.itemBorder}` : "border-border/50"
-                    )}
+                    className="p-4 bg-muted/30 hover:bg-muted/50 transition-all duration-200"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
@@ -351,7 +313,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
               })}
 
               {!hasActiveTreatments && hasStandalonePrescriptions && (
-                <div className="space-y-2">
+                <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Pill className={cn(
@@ -412,8 +374,8 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
               )}
             </div>
           )}
-        </ScrollArea>
-      </CardContent>
+        </div>
+      </ScrollArea>
     </Card>
   );
 }

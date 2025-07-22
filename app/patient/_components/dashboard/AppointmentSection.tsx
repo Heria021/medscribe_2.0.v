@@ -4,6 +4,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -58,91 +59,52 @@ export function AppointmentSection({
   const hasAppointments = appointments && appointments.length > 0;
   
   return (
-    <Card className={cn(
-      "h-full",
-      `bg-gradient-to-br ${gradient.from} ${gradient.to}`,
-      `border-${gradient.border}`,
-      className
-    )}>
-      <CardHeader className="p-4 pb-3">
+    <Card className="h-full flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              gradient.iconBg
-            )}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
               {icon}
             </div>
             <div>
-              <h3 className={cn(
-                "font-semibold text-base",
-                gradient.textColor
-              )}>
-                {title}
-              </h3>
-              <p className={cn(
-                "text-xs",
-                gradient.textColor
-              )}>
-                {description}
-              </p>
+              <h3 className="text-base font-semibold text-foreground">{title}</h3>
+              <p className="text-xs text-muted-foreground">{description}</p>
             </div>
           </div>
           <Link href={viewAllHref}>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                `border-${gradient.border.replace('border-', '')} ${gradient.textColor}`,
-                `hover:bg-${gradient.from.split(' ')[1]?.replace('from-', '') || 'gray'}/50`
-              )}
-            >
-              <Calendar className="h-3 w-3 mr-2" />
+            <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
+              <Calendar className="h-3 w-3 mr-1" />
               View All
             </Button>
           </Link>
         </div>
-      </CardHeader>
-      
-      <CardContent className="p-4 pt-0">
+      </div>
+
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="divide-y overflow-hidden">
         {!hasAppointments ? (
-          <div className="text-center py-4">
-            <div className={cn(
-              "h-8 w-8 mx-auto mb-2",
-              gradient.textColor.replace('text-', 'text-').replace('900', '400').replace('100', '400')
-            )}>
-              {emptyState.icon}
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted mx-auto">
+                <Calendar className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="font-medium text-sm mb-1 text-foreground">No Upcoming Appointments</h3>
+              <p className="text-xs mb-3 max-w-[180px] text-muted-foreground">
+                You don't have any scheduled appointments.
+              </p>
+              <Link href={emptyState.actionHref}>
+                <Button size="sm" className="h-7 px-3 text-xs">
+                  {emptyState.actionLabel}
+                </Button>
+              </Link>
             </div>
-            <p className={cn(
-              "text-sm mb-3",
-              gradient.textColor
-            )}>
-              {emptyState.message}
-            </p>
-            <Link href={emptyState.actionHref}>
-              <Button 
-                size="sm" 
-                className={cn(
-                  "text-white",
-                  gradient.iconBg.replace('bg-', 'bg-').replace('500', '600'),
-                  `hover:${gradient.iconBg.replace('bg-', 'bg-').replace('500', '700')}`
-                )}
-              >
-                {emptyState.actionLabel}
-              </Button>
-            </Link>
           </div>
         ) : (
-          <div className="space-y-3">
-            {appointments.slice(0, maxItems).map((appointment) => (
-              <div
-                key={appointment._id}
-                className={cn(
-                  "p-3 rounded-lg border",
-                  gradient.itemBg,
-                  gradient.itemBorder
-                )}
-              >
+          appointments.slice(0, maxItems).map((appointment) => (
+            <div
+              key={appointment._id}
+              className="p-4 bg-muted/30 hover:bg-muted/50 transition-all duration-200"
+            >
                 <div className="flex items-center justify-between mb-1">
                   <div className={cn(
                     "font-medium text-sm",
@@ -186,10 +148,10 @@ export function AppointmentSection({
                   </p>
                 )}
               </div>
-            ))}
-          </div>
+            ))
         )}
-      </CardContent>
+        </div>
+      </ScrollArea>
     </Card>
   );
 }

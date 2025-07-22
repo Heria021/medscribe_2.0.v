@@ -21,7 +21,7 @@ export const AppointmentFilters = React.memo<AppointmentFiltersProps>(({
   className = "",
 }) => {
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-3", className)}>
       {/* Search and Schedule Button */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1">

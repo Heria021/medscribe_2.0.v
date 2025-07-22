@@ -33,7 +33,7 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
   const primaryDiagnosis = note.soapNote ? SOAPUtils.getPrimaryDiagnosis(note.soapNote) : undefined;
   return (
     <Card className="hover:shadow-sm transition-all duration-200 border-border/50">
-      <CardContent className="p-3">
+      <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {/* Avatar & Status */}
           <div className="relative flex-shrink-0">
@@ -117,6 +117,9 @@ export const SharedSOAPNoteCard = React.memo<SharedSOAPNoteCardProps>(({
               <span className="capitalize">{note.patient?.gender}</span>
               <span>{note.patient?.dateOfBirth}</span>
             </div>
+
+            {/* Separator */}
+            <div className="border-t border-border"></div>
 
             {/* Message - Compact */}
             {note.message && (

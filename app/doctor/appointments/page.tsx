@@ -135,10 +135,10 @@ const DoctorAppointmentsPage = React.memo(() => {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-4">
+    <div className="h-full flex flex-col p-4 space-y-3">
       {/* Header */}
       <div className="flex-shrink-0 space-y-1">
-        <h1 className="text-xl font-bold tracking-tight">Appointments</h1>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Appointments</h1>
         <p className="text-muted-foreground text-sm">
           Manage your schedule and upcoming appointments
         </p>
@@ -157,7 +157,7 @@ const DoctorAppointmentsPage = React.memo(() => {
       </div>
 
       {/* Split Layout - Appointments List & Details */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Left Side - Appointments List */}
         <div className="lg:col-span-2 min-h-0">
           <AppointmentsList

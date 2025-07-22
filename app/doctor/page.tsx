@@ -93,15 +93,16 @@ const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: bool
   if (isLoading) return <PatientListSkeleton />;
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="p-4 pb-3 flex-shrink-0">
+    <Card className="h-full flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
               <Users className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-base text-foreground">My Patients</h3>
+              <h3 className="text-base font-semibold text-foreground">My Patients</h3>
+              <p className="text-xs text-muted-foreground">Manage your assigned patients</p>
             </div>
           </div>
           <Link href="/doctor/patients">
@@ -111,32 +112,34 @@ const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: bool
             </Button>
           </Link>
         </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 flex-1 min-h-0">
-        <ScrollArea className="h-full">
+      </div>
+
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="divide-y overflow-hidden">
           {!patients || patients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
-                <Users className="h-6 w-6 text-muted-foreground" />
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted mx-auto">
+                  <Users className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium text-sm mb-1 text-foreground">No Patients Yet</h3>
+                <p className="text-xs mb-3 max-w-[180px] text-muted-foreground">
+                  Patients will appear here once assigned to you
+                </p>
+                <Link href="/doctor/patients">
+                  <Button size="sm" className="h-7 px-3 text-xs">View Patients</Button>
+                </Link>
               </div>
-              <h3 className="font-medium text-sm mb-1 text-foreground">No Patients Yet</h3>
-              <p className="text-xs mb-3 max-w-[180px] text-muted-foreground">
-                Patients will appear here once assigned to you
-              </p>
-              <Link href="/doctor/patients">
-                <Button size="sm" className="h-7 px-3 text-xs">View Patients</Button>
-              </Link>
             </div>
           ) : (
-            <div className="space-y-3">
-              {patients.slice(0, 6).map((relationship) => {
+            patients.slice(0, 6).map((relationship) => {
                 const patient = relationship.patient;
                 const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
 
                 return (
                   <div
                     key={relationship._id}
-                    className="group flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/50 border border-border hover:border-primary/30 hover:shadow-sm"
+                    className="group flex items-center gap-3 p-4 cursor-pointer transition-all duration-200 bg-muted/30 hover:bg-muted/50"
                     onClick={() => window.location.href = `/doctor/patients/${patient._id}`}
                   >
                     <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-background group-hover:ring-primary/20 transition-all">
@@ -166,11 +169,10 @@ const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: bool
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              })
           )}
-        </ScrollArea>
-      </CardContent>
+        </div>
+      </ScrollArea>
     </Card>
   );
 };
@@ -191,15 +193,16 @@ const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefine
     .slice(0, 5);
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="p-4 pb-3 flex-shrink-0">
+    <Card className="h-full flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
               <Calendar className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-base text-foreground">Upcoming Appointments</h3>
+              <h3 className="text-base font-semibold text-foreground">Upcoming Appointments</h3>
+              <p className="text-xs text-muted-foreground">Your scheduled appointments this week</p>
             </div>
           </div>
           <Link href="/doctor/appointments">
@@ -209,30 +212,30 @@ const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefine
             </Button>
           </Link>
         </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 flex-1 min-h-0">
-        <ScrollArea className="h-full">
+      </div>
+
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="divide-y overflow-hidden">
           {sortedAppointments.length === 0 ? (
-            <div className="flex items-center justify-center py-6 text-center">
-              <div className="space-y-2">
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-muted">
                   <Calendar className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">No appointments this week</p>
                 <Link href="/doctor/appointments">
-                  <Button variant="outline" size="sm" className="h-6 px-3 text-xs">
+                  <Button variant="outline" size="sm" className="h-6 px-3 text-xs mt-3">
                     Schedule Appointment
                   </Button>
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {sortedAppointments.map((appointment: any) => (
-                <div
-                  key={appointment._id}
-                  className="flex items-center gap-2 p-2 rounded transition-colors bg-muted/50 border border-border hover:bg-muted"
-                >
+            sortedAppointments.map((appointment: any) => (
+              <div
+                key={appointment._id}
+                className="flex items-center gap-3 p-4 transition-all duration-200 bg-muted/30 hover:bg-muted/50"
+              >
                   <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
                   <Avatar className="h-6 w-6 flex-shrink-0">
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
@@ -257,11 +260,10 @@ const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefine
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
           )}
-        </ScrollArea>
-      </CardContent>
+        </div>
+      </ScrollArea>
     </Card>
   );
 };

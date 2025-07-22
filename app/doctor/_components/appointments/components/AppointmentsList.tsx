@@ -82,7 +82,7 @@ export const AppointmentsList = React.memo<ExtendedAppointmentsListProps>(({
       <div className={cn("h-full border rounded-xl flex flex-col", className)}>
         <div className="divide-y">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-3">
+            <div key={i} className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
                   {/* Time and Date Skeleton */}
@@ -132,7 +132,7 @@ export const AppointmentsList = React.memo<ExtendedAppointmentsListProps>(({
 
   if (appointments.length === 0) {
     return (
-      <div className={cn("h-full border rounded-xl flex items-center justify-center p-8", className)}>
+      <div className={cn("h-full border rounded-xl flex items-center justify-center p-6", className)}>
         <div className="text-center space-y-4">
           <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
           <h3 className="font-medium">No appointments found</h3>
@@ -151,15 +151,17 @@ export const AppointmentsList = React.memo<ExtendedAppointmentsListProps>(({
   return (
     <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden", className)}>
       {/* Header */}
-      <div className="flex-shrink-0 p-3 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-            <Calendar className="h-3 w-3 text-primary" />
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+            <Calendar className="h-4 w-4 text-primary-foreground" />
           </div>
-          <h3 className="text-sm font-medium">Today's Appointments</h3>
-          <span className="text-xs text-muted-foreground">
-            ({appointments.length})
-          </span>
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Today's Appointments</h3>
+            <p className="text-xs text-muted-foreground">
+              {appointments.length} appointment{appointments.length !== 1 ? 's' : ''} scheduled
+            </p>
+          </div>
         </div>
       </div>
 

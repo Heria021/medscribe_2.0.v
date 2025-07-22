@@ -76,7 +76,7 @@ const SharedSOAPPage = React.memo(() => {
 
 
   return (
-    <div className="h-full flex flex-col p-4 space-y-4">
+    <div className="h-full flex flex-col p-4 space-y-3">
       {/* Header */}
       <div className="flex-shrink-0">
         <div className="flex items-center justify-between">
