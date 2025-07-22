@@ -7,6 +7,9 @@ export interface Doctor {
   lastName: string;
   primarySpecialty?: string;
   userId?: Id<"users">;
+  email?: string;
+  phone?: string;
+  licenseNumber?: string;
 }
 
 export interface Patient {
@@ -14,6 +17,22 @@ export interface Patient {
   firstName?: string;
   lastName?: string;
   userId: Id<"users">;
+  email?: string;
+}
+
+export interface PharmacyAddress {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface Pharmacy {
+  _id: Id<"pharmacies">;
+  name: string;
+  chainName?: string;
+  address?: PharmacyAddress;
+  phone?: string;
   email?: string;
 }
 
@@ -65,6 +84,7 @@ export interface TreatmentPlan {
   endDate?: number;
   doctor?: Doctor;
   patient?: Patient;
+  pharmacy?: Pharmacy;
   medicationDetails?: MedicationDetails[]; // Updated to match schema
   medications?: Medication[]; // Keep for backward compatibility with prescriptions
   createdAt?: number;
@@ -143,6 +163,7 @@ export interface TreatmentListProps {
   emptyState?: React.ReactNode;
   className?: string;
   maxItems?: number;
+  isLoading?: boolean;
 }
 
 export interface TreatmentDetailsProps {

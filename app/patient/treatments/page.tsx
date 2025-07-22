@@ -257,7 +257,7 @@ const PatientTreatmentsPage = React.memo(() => {
     setFilters(newFilters);
   }, []);
 
-  const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
+  const [selectedTreatmentId, setSelectedTreatmentId] = useState<TreatmentPlan["_id"] | null>(null);
 
   const handleViewTreatment = React.useCallback((treatment: TreatmentPlan) => {
     setSelectedTreatmentId(treatment._id);
@@ -344,9 +344,6 @@ const PatientTreatmentsPage = React.memo(() => {
           showMetadata: false,
           allowPrint: true,
           allowDownload: true,
-          allowShare: false,
-          allowCopy: true,
-          allowExportPDF: false,
           backButtonText: "Back to My Treatments",
           documentTitle: "My Treatment Plan"
         }}
