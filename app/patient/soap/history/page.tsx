@@ -157,7 +157,7 @@ PLAN: ${note.plan}`;
   // Main SOAP History view
   return (
     <SOAPErrorBoundary>
-      <div className="h-full flex flex-col p-4 space-y-4">
+      <div className="h-full flex flex-col p-4 space-y-3">
         {/* Header */}
         <div className="flex-shrink-0 space-y-1">
           <SOAPHistoryHeader

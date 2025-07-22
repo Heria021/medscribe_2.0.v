@@ -45,7 +45,7 @@ export const SOAPNotesGrid = React.memo<SOAPNotesGridProps>(({
   // Loading skeleton
   if (loading) {
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={cn("space-y-3", className)}>
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
@@ -74,7 +74,7 @@ export const SOAPNotesGrid = React.memo<SOAPNotesGridProps>(({
       const { note, sharedWith, timelineItems } = notesWithTimelines[index];
       
       return (
-        <div style={style} className="px-2 pb-4">
+        <div style={style} className="px-2 pb-3">
           <SOAPNoteCard
             note={note}
             sharedWith={sharedWith}
@@ -109,7 +109,7 @@ export const SOAPNotesGrid = React.memo<SOAPNotesGridProps>(({
   return (
     <div className={cn("h-full flex flex-col", className)}>
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
-        <div className="space-y-4">
+        <div className="space-y-3">
           {notesWithTimelines.map(({ note, sharedWith, timelineItems }) => (
             <SOAPNoteCard
               key={note._id}

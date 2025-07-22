@@ -43,7 +43,7 @@ export const SOAPEmptyState = React.memo<SOAPEmptyStateProps>(({
 
   return (
     <Card className={cn("border-dashed", className)}>
-      <CardContent className="flex flex-col items-center justify-center py-10 px-6 text-center">
+      <CardContent className="flex flex-col items-center justify-center p-4 py-8 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-muted/30 mb-4">
           {isSearchEmpty ? (
             <Search className="h-6 w-6 text-muted-foreground" />

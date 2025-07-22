@@ -80,11 +80,11 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
         "hover:border-primary/50 transition-all duration-200 group",
         className
       )}>
-        <CardContent className="p-3">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="p-1.5 bg-muted/30 rounded shrink-0">
-                <FileText className="h-3 w-3 text-foreground" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary shrink-0">
+                <FileText className="h-4 w-4 text-primary-foreground" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-sm text-foreground truncate">
@@ -140,6 +140,7 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
               )}
             </div>
           </div>
+          <div className="border-t border-border"></div>
         </CardContent>
       </Card>
     );
@@ -151,13 +152,13 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
       "hover:border-primary/50 transition-colors group",
       className
     )}>
-      <CardContent className="p-3">
+      <CardContent className="p-4">
         <div className="space-y-3">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-muted/30 rounded">
-                <FileText className="h-3 w-3 text-foreground" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                <FileText className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
                 <h3 className="font-semibold text-sm text-foreground">
@@ -221,6 +222,9 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
               )}
             </div>
           </div>
+
+          {/* Separator */}
+          <div className="border-t border-border"></div>
 
           {/* Content Preview */}
           <div className="space-y-2">
@@ -368,7 +372,7 @@ export const SOAPNoteCard = React.memo<SOAPNoteCardProps>(({
 
       {/* Footer with Actions */}
       {showActions && (
-        <CardFooter className="px-4 py-2 bg-muted/5 border-t">
+        <CardFooter className="p-4 pt-3 bg-muted/5 border-t">
           <div className="flex items-center justify-end w-full gap-1">
             {onView ? (
               <Button
