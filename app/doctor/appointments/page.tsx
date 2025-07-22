@@ -56,7 +56,7 @@ const DoctorAppointmentsPage = React.memo(() => {
   // Auto-update selected appointment when appointments data changes
   useEffect(() => {
     if (selectedAppointment && appointments) {
-      const updatedAppointment = appointments.find(apt => apt._id === selectedAppointment._id);
+      const updatedAppointment = appointments.find((apt: Appointment) => apt._id === selectedAppointment._id);
       if (updatedAppointment && updatedAppointment.status !== selectedAppointment.status) {
         setSelectedAppointment(updatedAppointment);
       }
@@ -96,7 +96,7 @@ const DoctorAppointmentsPage = React.memo(() => {
     // If the selected appointment was updated, refresh it
     if (selectedAppointment && selectedAppointment._id === appointmentId) {
       // Find the updated appointment from the appointments list
-      const updatedAppointment = appointments?.find(apt => apt._id === appointmentId);
+      const updatedAppointment = appointments?.find((apt: Appointment) => apt._id === appointmentId);
       if (updatedAppointment) {
         setSelectedAppointment(updatedAppointment);
       }

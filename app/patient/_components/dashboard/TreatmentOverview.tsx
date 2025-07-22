@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "convex/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,9 +15,7 @@ import {
   Activity,
   Pill,
   Calendar,
-  Clock,
   Plus,
-  Loader2,
   ChevronDown,
   Info
 } from "lucide-react";
@@ -37,9 +34,14 @@ interface TreatmentOverviewProps {
     itemBg: string;
     itemBorder: string;
   };
+  className?: string;
 }
 
-export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProps) {
+export const TreatmentOverview = React.memo<TreatmentOverviewProps>(({ 
+  patientId, 
+  gradient, 
+  className = "" 
+}) => {
   const [expandedTreatments, setExpandedTreatments] = useState<Set<string>>(new Set());
 
   const toggleTreatmentExpansion = (treatmentId: string) => {
@@ -85,19 +87,37 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
 
   if (isLoading) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader className="pb-3 flex-shrink-0">
+      <div className={cn("h-full border rounded-xl flex flex-col", className)}>
+        <div className="flex-shrink-0 p-4 border-b border-border/50">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Current Treatment</CardTitle>
-            <Link href="/patient/treatments">
-              <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
-                <Activity className="h-3 w-3 mr-1" />
-                View All
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-muted rounded-lg animate-pulse" />
+              <div>
+                <div className="h-4 w-32 bg-muted rounded animate-pulse mb-1" />
+                <div className="h-3 w-40 bg-muted rounded animate-pulse" />
+              </div>
+            </div>
+            <div className="h-7 w-20 bg-muted rounded animate-pulse" />
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+        
+        <div className="flex-1 p-4">
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+                    <div className="h-3 w-64 bg-muted rounded animate-pulse" />
+                    <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                  </div>
+                  <div className="h-5 w-16 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -111,7 +131,8 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
   ) || [];
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden">
+    <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden", className)}>
+      {/* Header */}
       <div className="flex-shrink-0 p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -140,21 +161,20 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
         </div>
       </div>
 
+      {/* Content */}
       <ScrollArea className="flex-1 overflow-hidden">
         <div className="divide-y overflow-hidden">
           {!hasAnyActive ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted mx-auto">
-                  <Activity className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <h3 className="font-medium text-sm mb-1 text-foreground">No Active Treatments</h3>
-                <p className="text-xs mb-3 max-w-[180px] text-muted-foreground">
+            <div className="flex items-center justify-center p-6 h-full">
+              <div className="text-center space-y-4">
+                <Activity className="h-12 w-12 text-muted-foreground mx-auto" />
+                <h3 className="font-medium">No Active Treatments</h3>
+                <p className="text-sm text-muted-foreground max-w-[200px]">
                   You don't have any active treatments at the moment.
                 </p>
                 <Link href="/patient/treatments">
-                  <Button size="sm" className="h-7 px-3 text-xs">
-                    <Plus className="h-3 w-3 mr-1" />
+                  <Button variant="outline" size="sm" className="rounded-lg">
+                    <Plus className="h-4 w-4 mr-1" />
                     View Treatments
                   </Button>
                 </Link>
@@ -164,19 +184,18 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
             <div className="space-y-0">
               {hasActiveTreatments && activeFilteredTreatments.map((treatment) => {
                 const treatmentPrescriptions = prescriptionsByTreatment.get(treatment._id) || [];
-                const isExpanded = expandedTreatments.has(treatment._id);
 
                 return (
                   <div
                     key={treatment._id}
-                    className="p-4 bg-muted/30 hover:bg-muted/50 transition-all duration-200"
+                    className="p-4 hover:bg-muted/50 transition-all duration-200"
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <h4 className={cn(
                             "font-medium text-sm truncate",
-                            gradient?.textColor
+                            gradient?.textColor || "text-foreground"
                           )}>
                             {treatment.title}
                           </h4>
@@ -184,13 +203,13 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                             "text-xs mt-1 line-clamp-2",
                             gradient?.textColor || "text-muted-foreground"
                           )}>
-                            {treatment.description}
+                            {treatment.plan}
                           </p>
                         </div>
                         <Badge
                           variant="secondary"
                           className={cn(
-                            "text-xs ml-2 flex-shrink-0",
+                            "text-xs flex-shrink-0",
                             gradient ? `${gradient.itemBg} ${gradient.itemBorder}` : ""
                           )}
                         >
@@ -225,7 +244,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                       </div>
 
                       {treatmentPrescriptions.length > 0 && (
-                        <div className="border-t border-border/50 pt-3 mt-3">
+                        <div className="border-t border-border/50 pt-3">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1">
                               <Pill className={cn(
@@ -268,15 +287,15 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                                 <div
                                   key={index}
                                   className={cn(
-                                    "p-2 rounded border",
+                                    "p-3 rounded-lg border",
                                     gradient ? `${gradient.itemBg} ${gradient.itemBorder}` : "bg-muted/30 border-border/30"
                                   )}
                                 >
-                                  <div className="flex items-start justify-between">
+                                  <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                       <div className={cn(
                                         "font-medium text-xs truncate",
-                                        gradient?.textColor
+                                        gradient?.textColor || "text-foreground"
                                       )}>
                                         {prescription.medicationName}
                                       </div>
@@ -287,14 +306,14 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
                                         <div>Dosage: {prescription.dosage}</div>
                                         <div>Frequency: {prescription.frequency}</div>
                                         {prescription.instructions && (
-                                          <div className="text-xs">Instructions: {prescription.instructions}</div>
+                                          <div>Instructions: {prescription.instructions}</div>
                                         )}
                                       </div>
                                     </div>
                                     <Badge
                                       variant="outline"
                                       className={cn(
-                                        "text-xs h-4 ml-2 flex-shrink-0",
+                                        "text-xs h-4 flex-shrink-0",
                                         gradient && `border-${gradient.border.replace('border-', '').replace('200', '300')} ${gradient.textColor}`
                                       )}
                                     >
@@ -313,62 +332,64 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
               })}
 
               {!hasActiveTreatments && hasStandalonePrescriptions && (
-                <div className="p-4 space-y-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Pill className={cn(
-                        "h-4 w-4",
-                        gradient ? gradient.iconBg.replace('bg-', 'text-').replace('500', '600') + ' dark:' + gradient.iconBg.replace('bg-', 'text-').replace('500', '400') : "text-primary"
-                      )} />
-                      <h3 className={cn(
-                        "font-medium text-sm",
-                        gradient?.textColor
-                      )}>
-                        Current Medications
-                      </h3>
+                <div className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Pill className={cn(
+                          "h-4 w-4",
+                          gradient ? gradient.iconBg.replace('bg-', 'text-').replace('500', '600') + ' dark:' + gradient.iconBg.replace('bg-', 'text-').replace('500', '400') : "text-primary"
+                        )} />
+                        <h3 className={cn(
+                          "font-medium text-sm",
+                          gradient?.textColor || "text-foreground"
+                        )}>
+                          Current Medications
+                        </h3>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-6 px-2 text-xs",
+                              gradient?.textColor || "text-muted-foreground",
+                              "hover:bg-black/5 dark:hover:bg-white/5"
+                            )}
+                          >
+                            <Info className="h-3 w-3 mr-1" />
+                            View All ({standalonePrescriptions.length})
+                            <ChevronDown className="h-3 w-3 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64">
+                          {standalonePrescriptions.map((prescription) => (
+                            <DropdownMenuItem key={prescription._id} className="flex-col items-start p-3">
+                              <div className="font-medium text-sm">{prescription.medicationName}</div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                <div>Dosage: {prescription.dosage}</div>
+                                <div>Frequency: {prescription.frequency}</div>
+                                {prescription.instructions && (
+                                  <div className="mt-1">Instructions: {prescription.instructions}</div>
+                                )}
+                              </div>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "h-6 px-2 text-xs",
-                            gradient?.textColor || "text-muted-foreground",
-                            "hover:bg-black/5 dark:hover:bg-white/5"
-                          )}
-                        >
-                          <Info className="h-3 w-3 mr-1" />
-                          View All ({standalonePrescriptions.length})
-                          <ChevronDown className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-64">
-                        {standalonePrescriptions.map((prescription) => (
-                          <DropdownMenuItem key={prescription._id} className="flex-col items-start p-3">
-                            <div className="font-medium text-sm">{prescription.medicationName}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              <div>Dosage: {prescription.dosage}</div>
-                              <div>Frequency: {prescription.frequency}</div>
-                              {prescription.instructions && (
-                                <div className="mt-1">Instructions: {prescription.instructions}</div>
-                              )}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className={cn(
-                    "p-3 rounded-lg border text-center",
-                    gradient ? `${gradient.itemBg} ${gradient.itemBorder}` : "border-border/50"
-                  )}>
-                    <p className={cn(
-                      "text-xs",
-                      gradient?.textColor || "text-muted-foreground"
+                    <div className={cn(
+                      "p-3 rounded-lg border text-center",
+                      gradient ? `${gradient.itemBg} ${gradient.itemBorder}` : "border-border/50 bg-muted/30"
                     )}>
-                      {standalonePrescriptions.length} active prescription{standalonePrescriptions.length > 1 ? 's' : ''} • Click "View All" for details
-                    </p>
+                      <p className={cn(
+                        "text-xs",
+                        gradient?.textColor || "text-muted-foreground"
+                      )}>
+                        {standalonePrescriptions.length} active prescription{standalonePrescriptions.length > 1 ? 's' : ''} • Click "View All" for details
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -376,6 +397,8 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
           )}
         </div>
       </ScrollArea>
-    </Card>
+    </div>
   );
-}
+});
+
+TreatmentOverview.displayName = "TreatmentOverview";

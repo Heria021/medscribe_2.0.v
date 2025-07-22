@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Plus } from "lucide-react";
@@ -156,12 +157,12 @@ const PatientAppointmentsPage = React.memo(() => {
 
   return (
     <>
-      <div className="h-full flex flex-col space-y-4">
+      <div className="h-full flex flex-col p-4 space-y-3">
         {/* Header */}
         <div className="flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-semibold">My Appointments</h1>
+            <div className="space-y-1">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">My Appointments</h1>
               <p className="text-muted-foreground text-sm">View and manage your medical appointments</p>
             </div>
             <Link href="/patient/appointments/book">
@@ -177,10 +178,18 @@ const PatientAppointmentsPage = React.memo(() => {
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Upcoming Appointments - Takes 2 columns */}
           <div className="lg:col-span-2 flex flex-col min-h-0">
-            <div className="flex-1 min-h-0 flex flex-col border rounded-lg bg-card">
-              <div className="p-4 pb-3 flex-shrink-0 border-b">
+            <Card className="h-full flex flex-col overflow-hidden">
+              <div className="flex-shrink-0 p-4 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-medium">Upcoming Appointments</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                      <Calendar className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-foreground">Upcoming Appointments</h2>
+                      <p className="text-xs text-muted-foreground">Your scheduled medical visits</p>
+                    </div>
+                  </div>
                   {upcomingAppointments && upcomingAppointments.length > 0 && (
                     <Badge variant="outline" className="text-xs">
                       {upcomingAppointments.length} scheduled
@@ -188,25 +197,27 @@ const PatientAppointmentsPage = React.memo(() => {
                   )}
                 </div>
               </div>
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
+              <ScrollArea className="flex-1 overflow-hidden">
+                <div className="divide-y overflow-hidden">
                   {appointmentsLoading ? (
                     <AppointmentListSkeleton />
                   ) : !upcomingAppointments || upcomingAppointments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-                        <Calendar className="h-8 w-8 text-muted-foreground" />
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted mx-auto">
+                          <Calendar className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <h3 className="font-medium text-sm mb-1 text-foreground">No upcoming appointments</h3>
+                        <p className="text-muted-foreground text-xs mb-3 max-w-[180px]">
+                          Schedule your next appointment with your healthcare provider
+                        </p>
+                        <Link href="/patient/appointments/book">
+                          <Button size="sm" className="gap-2 h-7 px-3 text-xs">
+                            <Plus className="h-3 w-3" />
+                            Book Appointment
+                          </Button>
+                        </Link>
                       </div>
-                      <h3 className="font-medium mb-2">No upcoming appointments</h3>
-                      <p className="text-muted-foreground text-sm mb-4 max-w-sm">
-                        Schedule your next appointment with your healthcare provider
-                      </p>
-                      <Link href="/patient/appointments/book">
-                        <Button size="sm" className="gap-2 h-8 px-4">
-                          <Plus className="h-4 w-4" />
-                          Book Appointment
-                        </Button>
-                      </Link>
                     </div>
                   ) : (
                     <div className="p-4">
@@ -219,18 +230,26 @@ const PatientAppointmentsPage = React.memo(() => {
                       />
                     </div>
                   )}
-                </ScrollArea>
-              </div>
-            </div>
+                </div>
+              </ScrollArea>
+            </Card>
           </div>
 
           {/* Right Sidebar - Past Appointments & Quick Actions */}
           <div className="flex flex-col space-y-3 min-h-0">
             {/* Past Appointments */}
-            <div className="flex-1 min-h-0 flex flex-col border rounded-lg bg-card">
-              <div className="p-4 pb-3 flex-shrink-0 border-b">
+            <Card className="h-full flex flex-col overflow-hidden">
+              <div className="flex-shrink-0 p-4 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-medium">Past Appointments</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                      <Calendar className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-foreground">Past Appointments</h2>
+                      <p className="text-xs text-muted-foreground">Your completed medical visits</p>
+                    </div>
+                  </div>
                   {pastAppointments && pastAppointments.length > 0 && (
                     <Badge variant="outline" className="text-xs">
                       {pastAppointments.length} completed
@@ -238,8 +257,8 @@ const PatientAppointmentsPage = React.memo(() => {
                   )}
                 </div>
               </div>
-              <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full">
+              <ScrollArea className="flex-1 overflow-hidden">
+                <div className="divide-y overflow-hidden">
                   {appointmentsLoading ? (
                     <CompactAppointmentListSkeleton />
                   ) : (
@@ -263,18 +282,18 @@ const PatientAppointmentsPage = React.memo(() => {
                       )}
                     </div>
                   )}
-                </ScrollArea>
-              </div>
-            </div>
+                </div>
+              </ScrollArea>
+            </Card>
 
             {/* Quick Actions */}
-            <div className="border rounded-lg bg-card p-4">
+            <Card className="p-4">
               {appointmentsLoading ? (
                 <QuickActionsGridSkeleton />
               ) : (
                 <QuickActionsGrid variant="compact" />
               )}
-            </div>
+            </Card>
           </div>
         </div>
       </div>
