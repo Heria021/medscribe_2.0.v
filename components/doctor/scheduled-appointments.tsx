@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, Clock, MapPin, User, Phone, Video, FileText } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Phone, Video, FileText, Plus } from "lucide-react";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
@@ -15,11 +15,13 @@ import { cn } from "@/lib/utils";
 interface ScheduledAppointmentsProps {
   doctorId: Id<"doctors">;
   className?: string;
+  onScheduleNew?: () => void;
 }
 
 export function ScheduledAppointments({
   doctorId,
-  className
+  className,
+  onScheduleNew
 }: ScheduledAppointmentsProps) {
   const weekAppointments = useQuery(api.appointments.getWeekByDoctor, {
     doctorId,
@@ -140,12 +142,24 @@ export function ScheduledAppointments({
               This Week's Schedule
             </CardTitle>
           </div>
-          <Link href="/doctor/appointments">
-            <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              View All
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {onScheduleNew && (
+              <Button
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={onScheduleNew}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Schedule
+              </Button>
+            )}
+            <Link href="/doctor/appointments">
+              <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                <Clock className="h-3 w-3 mr-1" />
+                View All
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 p-0">

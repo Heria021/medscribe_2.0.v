@@ -13,6 +13,7 @@ import {
 } from "@/app/doctor/_components/appointments";
 import { useAppointmentActions } from "@/app/doctor/_components/appointments/hooks/useAppointmentActions";
 import { RescheduleDialog } from "@/app/doctor/_components/appointments/components/RescheduleDialog";
+import { ScheduleAppointmentDialog } from "@/app/doctor/_components/appointments/components/ScheduleAppointmentDialog";
 
 /**
  * Doctor Appointments Page - Refactored with performance optimizations
@@ -25,8 +26,9 @@ import { RescheduleDialog } from "@/app/doctor/_components/appointments/componen
  * - Accessibility support
  */
 const DoctorAppointmentsPage = React.memo(() => {
-  // State for selected appointment
+  // State for selected appointment and dialogs
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 
   // Custom hooks for clean separation of concerns
   const {
@@ -86,8 +88,7 @@ const DoctorAppointmentsPage = React.memo(() => {
   ];
 
   const handleScheduleNew = () => {
-    // TODO: Implement schedule new appointment
-    console.log("Schedule new appointment");
+    setShowScheduleDialog(true);
   };
 
   const handleAppointmentAction = (action: string, appointmentId: any) => {
@@ -190,6 +191,15 @@ const DoctorAppointmentsPage = React.memo(() => {
         onOpenChange={setShowRescheduleDialog}
         onReschedule={handleReschedule}
       />
+
+      {/* Schedule New Appointment Dialog */}
+      {doctorProfile && (
+        <ScheduleAppointmentDialog
+          open={showScheduleDialog}
+          onOpenChange={setShowScheduleDialog}
+          doctorProfile={doctorProfile}
+        />
+      )}
     </div>
   );
 });

@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { useQuery } from "convex/react";
+import React, { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { useSession } from "next-auth/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Activity,
   Calendar,
@@ -40,7 +67,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Id } from "@/convex/_generated/dataModel";
-import FollowUpScheduler from "@/components/appointments/follow-up-scheduler";
+import { PatientSlotSelector } from "@/components/appointments/PatientSlotSelector";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 interface TreatmentDetailsProps {
   treatmentId: string;
@@ -48,6 +79,317 @@ interface TreatmentDetailsProps {
   onStatusChange?: (status: string) => void;
   className?: string;
 }
+
+interface ScheduleAppointmentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  treatment: any;
+  doctorProfile: any;
+}
+
+// Zod schema for appointment form validation
+const appointmentFormSchema = z.object({
+  appointmentType: z.string().min(1, "Please select an appointment type"),
+  visitReason: z.string().min(1, "Please provide a visit reason").min(10, "Visit reason must be at least 10 characters"),
+  notes: z.string().optional(),
+  selectedSlotId: z.string().min(1, "Please select a time slot"),
+});
+
+type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
+
+/**
+ * ScheduleAppointmentDialog Component
+ *
+ * Beautiful UI with proven appointment creation logic
+ * Uses the same API calls as SlotBasedAppointmentForm but with our custom UI
+ */
+const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogProps>(({
+  open,
+  onOpenChange,
+  treatment,
+  doctorProfile,
+}) => {
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
+
+  // React Hook Form setup
+  const form = useForm<AppointmentFormValues>({
+    resolver: zodResolver(appointmentFormSchema),
+    defaultValues: {
+      appointmentType: "follow_up",
+      visitReason: "",
+      notes: "",
+      selectedSlotId: "",
+    },
+  });
+
+  const { handleSubmit, formState: { isSubmitting }, reset, setValue, watch } = form;
+  const selectedSlotId = watch("selectedSlotId");
+
+  // Use the same mutation as SlotBasedAppointmentForm
+  const createAppointmentWithSlot = useMutation(api.appointments.createWithSlot);
+
+  // Get doctor-patient relationship
+  const patientId = treatment?.patient?._id;
+  const doctorPatientRelationship = useQuery(
+    api.doctorPatients.getDoctorPatientRelationship,
+    treatment && doctorProfile && patientId ? {
+      doctorId: doctorProfile._id,
+      patientId
+    } : "skip"
+  );
+
+  const handleSlotSelect = (slotId: string, slotInfo: any) => {
+    setValue("selectedSlotId", slotId);
+    setSelectedSlot(slotInfo);
+  };
+
+  const formatTime = (time: string) => {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const handleClose = () => {
+    reset();
+    setSelectedSlot(null);
+    onOpenChange(false);
+  };
+
+  // Use the exact same appointment creation logic as SlotBasedAppointmentForm
+  const onSubmit = async (values: AppointmentFormValues) => {
+    if (!treatment || !doctorProfile || !doctorPatientRelationship) {
+      toast.error("Missing required data. Please try again.");
+      return;
+    }
+
+    try {
+      const appointmentId = await createAppointmentWithSlot({
+        doctorPatientId: doctorPatientRelationship._id,
+        slotId: values.selectedSlotId as Id<"timeSlots">,
+        appointmentType: values.appointmentType as any,
+        visitReason: values.visitReason,
+        location: {
+          type: "in_person",
+          address: "Clinic",
+        },
+        notes: values.notes,
+        insuranceVerified: false,
+      });
+
+      toast.success("Follow-up appointment scheduled successfully!");
+      handleClose();
+    } catch (error) {
+      console.error("Failed to schedule appointment:", error);
+      toast.error("Failed to schedule appointment. Please try again.");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl h-[90vh] p-0 flex flex-col overflow-hidden">
+        <div className="flex-shrink-0 p-6 pb-4">
+          <DialogHeader className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
+              <DialogTitle className="text-lg">Schedule Follow-up Appointment</DialogTitle>
+            </div>
+
+            {/* Treatment Info Card */}
+            {treatment && (
+              <div className="p-3 bg-muted/30 rounded-lg border-border/50 border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-sm">
+                        {treatment.title}
+                      </h4>
+                      <Badge variant="outline" className="text-xs h-5 px-1.5">
+                        Treatment Plan
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                      <span>Status: {treatment.status}</span>
+                      <span>Started: {new Date(treatment.startDate).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogDescription className="text-sm text-muted-foreground">
+              Schedule a follow-up appointment for this treatment plan.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        {/* Scrollable Content Area with Beautiful Form */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="px-6 pb-6">
+              <Form {...form}>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  {/* Visit Reason */}
+                  <FormField
+                    control={form.control}
+                    name="visitReason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                          <FormLabel className="text-sm font-medium">
+                            Visit Reason
+                          </FormLabel>
+                        </div>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe the reason for this follow-up appointment..."
+                            className="min-h-[80px] resize-none border-border/50 focus:border-primary/50 transition-colors"
+                            disabled={isSubmitting}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Appointment Type */}
+                  <FormField
+                    control={form.control}
+                    name="appointmentType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Appointment Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select appointment type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="follow_up">Follow-up</SelectItem>
+                            <SelectItem value="consultation">Consultation</SelectItem>
+                            <SelectItem value="procedure">Procedure</SelectItem>
+                            <SelectItem value="telemedicine">Telemedicine</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Time Slot Selection */}
+                  <FormField
+                    control={form.control}
+                    name="selectedSlotId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                              <FormLabel className="text-sm font-medium">Select Time Slot</FormLabel>
+                              {selectedSlot && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                  Time selected
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="border rounded-xl p-4 bg-gradient-to-br from-muted/30 to-muted/10">
+                            <PatientSlotSelector
+                              doctorId={doctorProfile._id}
+                              onSlotSelect={handleSlotSelect}
+                              selectedSlotId={selectedSlotId}
+                              showNextAvailable={true}
+                            />
+                          </div>
+
+                          {selectedSlot && (
+                            <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-950/20 dark:border-green-800/30">
+                              <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <div className="w-2 h-2 rounded-full bg-green-600 dark:bg-green-400"></div>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                  Time slot selected
+                                </p>
+                                <p className="text-xs text-green-700 dark:text-green-300">
+                                  {new Date(`${selectedSlot.date}T${selectedSlot.time}`).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })} at {formatTime(selectedSlot.time)}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Additional Notes */}
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Additional Notes</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Any additional notes for the appointment..."
+                            className="min-h-[60px] resize-none border-border/50 focus:border-primary/50 transition-colors"
+                            disabled={isSubmitting}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-muted-foreground">
+                          Optional notes that will be included with the appointment.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Form Actions */}
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleClose}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Scheduling..." : "Schedule Appointment"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </ScrollArea>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+});
+
+ScheduleAppointmentDialog.displayName = "ScheduleAppointmentDialog";
 
 /**
  * TreatmentDetails Component
@@ -61,6 +403,12 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
   onStatusChange,
   className,
 }) => {
+  // Dialog state
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+
+  // Get session for doctor profile
+  const { data: session } = useSession();
+
   // Fetch treatment details with all related data
   const treatment = useQuery(
     api.treatmentPlans.getWithDetailsById,
@@ -71,6 +419,12 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
   const prescriptionOrders = useQuery(
     api.prescriptionOrders.getOrdersByTreatmentPlanId,
     treatmentId ? { treatmentPlanId: treatmentId as Id<"treatmentPlans"> } : "skip"
+  );
+
+  // Get current doctor profile
+  const doctorProfile = useQuery(
+    api.doctors.getDoctorProfile,
+    session?.user?.id ? { userId: session.user.id as any } : "skip"
   );
 
   // Loading state
@@ -399,29 +753,30 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
           {/* Main Content Sections */}
           <div className="space-y-6">
 
-            {/* Follow-up Scheduling */}
+            {/* Actions Section - Standardized UI */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-lg font-semibold text-foreground">Schedule Follow-up</h2>
+                <h2 className="text-lg font-semibold text-foreground">Treatment Actions</h2>
               </div>
-              <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                <FollowUpScheduler
-                  patientId={treatment.patientId}
-                  doctorId={treatment.doctorId}
-                  treatmentId={treatment._id}
-                  suggestedFollowUps={[
-                    "2 weeks - Check medication response",
-                    "1 month - Assess treatment progress",
-                    "3 months - Comprehensive review"
-                  ]}
-                  onScheduled={(appointmentId) => {
-                    console.log("Follow-up scheduled:", appointmentId);
-                    // Could trigger a refresh or update
-                  }}
-                />
+              <div className="grid gap-3">
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 justify-start hover:bg-muted/50 border-border/50"
+                  onClick={() => setScheduleDialogOpen(true)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">Schedule Follow-up Appointment</div>
+                      <div className="text-sm text-muted-foreground">Book a follow-up visit for this treatment</div>
+                    </div>
+                  </div>
+                </Button>
               </div>
             </div>
 
@@ -700,6 +1055,16 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
           </div>
         </ScrollArea>
       </CardContent>
+
+      {/* Schedule Appointment Dialog */}
+      {doctorProfile && (
+        <ScheduleAppointmentDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          treatment={treatment}
+          doctorProfile={doctorProfile}
+        />
+      )}
     </Card>
   );
 });
