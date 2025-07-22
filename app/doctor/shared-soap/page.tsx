@@ -76,13 +76,13 @@ const SharedSOAPPage = React.memo(() => {
 
 
   return (
-    <div className="h-full flex flex-col space-y-6">
-      {/* Modern Header */}
+    <div className="h-full flex flex-col p-4 space-y-4">
+      {/* Header */}
       <div className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Shared SOAP Notes</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Shared SOAP Notes</h1>
+            <p className="text-muted-foreground text-sm">
               Review and take action on notes shared by patients
             </p>
           </div>

@@ -176,8 +176,8 @@ export default function PatientDashboard() {
   return (
     <div className="h-full flex flex-col p-4 space-y-4">
       {/* Header */}
-      <div className="flex-shrink-0">
-        <h1 className="text-xl font-bold tracking-tight">
+      <div className="flex-shrink-0 space-y-1">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
           Welcome back, {patientProfile?.firstName || "Patient"}!
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -186,7 +186,7 @@ export default function PatientDashboard() {
       </div>
 
       {/* Main Features Layout: 1/2 SOAP + 1/4 AI Assistant + 1/4 Order Medication */}
-      <div className="flex-shrink-0 grid gap-4 lg:grid-cols-4">
+      <div className="flex-shrink-0 grid gap-3 lg:grid-cols-4">
         {/* SOAP Generation - Takes 2 columns (1/2) */}
         <div className="lg:col-span-2">
           {patientProfile ? (
@@ -257,7 +257,7 @@ export default function PatientDashboard() {
       </div>
 
       {/* New 3-Column Grid: Takes full remaining space */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-hidden">
         {/* Left Column - Health Tips + Order Medication */}
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex-1 overflow-y-auto">

@@ -22,8 +22,8 @@ export const SOAPHistoryHeader = React.memo<SOAPHistoryHeaderProps>(({
 }) => {
   return (
     <div className={cn("flex items-center justify-between", className)}>
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
           {title}
         </h1>
         <p className="text-muted-foreground text-sm">

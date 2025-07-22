@@ -72,19 +72,19 @@ export default function DoctorAssistant() {
 
   return (
     <ErrorBoundary>
-      <div className="h-full flex flex-col space-y-4">
+      <div className="h-full flex flex-col p-4 space-y-4">
         {/* Header */}
         <div className="flex-shrink-0 space-y-1">
-          <h1 className="text-xl font-bold tracking-tight">AI Medical Assistant</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">AI Medical Assistant</h1>
           <p className="text-muted-foreground text-sm">
             Get AI-powered insights about your patients, SOAP notes, and medical records
           </p>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-3">
           {/* Assistant Info Sidebar */}
-          <div className="lg:col-span-1 flex flex-col space-y-4 min-h-0 h-full">
+          <div className="lg:col-span-1 flex flex-col gap-3 min-h-0">
             
             {/* Chat History - Reusing SessionList from patient assistant */}
             <SessionList
@@ -102,7 +102,7 @@ export default function DoctorAssistant() {
           </div>
 
           {/* Chat Interface - Using doctor-specific ChatInterface */}
-          <div className="lg:col-span-3 min-h-0 h-full">
+          <div className="lg:col-span-3 min-h-0">
             <DoctorChatInterface
               messages={messages}
               inputMessage={inputMessage}

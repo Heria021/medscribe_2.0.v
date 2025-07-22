@@ -47,16 +47,11 @@ export function SOAPGenerateHeader({
     <div className={cn("space-y-4", className)}>
       {/* Main Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Sparkles className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold">SOAP Generation</h1>
-            <p className="text-muted-foreground">
-              AI-powered clinical documentation
-            </p>
-          </div>
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">SOAP Generation</h1>
+          <p className="text-muted-foreground text-sm">
+            AI-powered clinical documentation
+          </p>
         </div>
         
         <Badge variant="secondary" className="hidden sm:flex items-center gap-1">

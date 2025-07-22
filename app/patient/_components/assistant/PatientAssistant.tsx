@@ -22,14 +22,20 @@ import {
 // Individual skeleton components
 const SessionListSkeleton = () => (
   <Card className="h-full flex flex-col overflow-hidden bg-background border-border">
-    <CardHeader className="pb-3 flex-shrink-0">
+    <CardHeader className="p-4 pb-3 flex-shrink-0">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-24 bg-muted" />
-        <Skeleton className="h-6 w-6 bg-muted" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg bg-muted" />
+          <div>
+            <Skeleton className="h-5 w-24 bg-muted" />
+            <Skeleton className="h-3 w-32 bg-muted mt-1" />
+          </div>
+        </div>
+        <Skeleton className="h-7 w-20 bg-muted" />
       </div>
     </CardHeader>
-    <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
-      <div className="p-3 space-y-2 h-full overflow-y-auto">
+    <CardContent className="flex-1 min-h-0 p-0">
+      <div className="p-4 space-y-3 h-full overflow-y-auto">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="p-2 space-y-1">
             <Skeleton className="h-3 w-full bg-muted" />
@@ -43,10 +49,17 @@ const SessionListSkeleton = () => (
 
 const AssistantFeaturesSkeleton = () => (
   <Card className="flex-shrink-0 bg-background border-border">
-    <CardHeader className="pb-3">
-      <Skeleton className="h-4 w-32 bg-muted" />
+    <CardHeader className="p-4 pb-3">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-8 w-8 rounded-lg bg-muted" />
+        <div>
+          <Skeleton className="h-5 w-32 bg-muted" />
+          <Skeleton className="h-3 w-24 bg-muted mt-1" />
+        </div>
+      </div>
     </CardHeader>
-    <CardContent className="space-y-3">
+    <CardContent className="p-4 pt-0">
+      <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-start gap-2">
           <Skeleton className="h-3 w-3 mt-0.5 bg-muted" />
@@ -56,20 +69,27 @@ const AssistantFeaturesSkeleton = () => (
           </div>
         </div>
       ))}
+      </div>
     </CardContent>
   </Card>
 );
 
 const ChatInterfaceSkeleton = () => (
   <Card className="h-full flex flex-col overflow-hidden bg-background border-border">
-    <CardHeader className="pb-3 flex-shrink-0">
+    <CardHeader className="p-4 pb-3 flex-shrink-0">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-5 w-48 bg-muted" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg bg-muted" />
+          <div>
+            <Skeleton className="h-5 w-48 bg-muted" />
+            <Skeleton className="h-3 w-32 bg-muted mt-1" />
+          </div>
+        </div>
         <Skeleton className="h-5 w-20 bg-muted" />
       </div>
     </CardHeader>
     <CardContent className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
-      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className={`flex gap-3 ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
@@ -83,7 +103,7 @@ const ChatInterfaceSkeleton = () => (
           ))}
         </div>
       </div>
-      <div className="flex-shrink-0 p-4 border-t border-border">
+      <div className="flex-shrink-0 border-t border-border">
         <Skeleton className="h-10 w-full rounded-lg bg-muted" />
       </div>
     </CardContent>
@@ -135,19 +155,19 @@ const PatientAssistant: React.FC = () => {
   // Show main assistant interface
   return (
     <ErrorBoundary>
-      <div className="h-full flex flex-col space-y-4">
+      <div className="h-full flex flex-col p-4 space-y-4">
         {/* Header */}
         <div className="flex-shrink-0 space-y-1">
-          <h1 className="text-xl font-bold tracking-tight">AI Medical Assistant</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">AI Medical Assistant</h1>
           <p className="text-muted-foreground text-sm">
             Get AI-powered insights about your medical records, SOAP notes, and health information
           </p>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-3">
           {/* Sidebar - Full Height */}
-          <div className="lg:col-span-1 flex flex-col min-h-0 h-full gap-4">
+          <div className="lg:col-span-1 flex flex-col min-h-0 gap-3">
             {/* Session List - Takes most of the space */}
             <div className="flex-1 min-h-0">
               <ErrorBoundary>
@@ -179,7 +199,7 @@ const PatientAssistant: React.FC = () => {
           </div>
 
           {/* Chat Interface */}
-          <div className="lg:col-span-3 min-h-0 h-full">
+          <div className="lg:col-span-3 min-h-0">
             <ErrorBoundary>
               {profileLoading ? (
                 <ChatInterfaceSkeleton />

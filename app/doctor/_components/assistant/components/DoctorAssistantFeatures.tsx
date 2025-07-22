@@ -1,17 +1,23 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Brain, FileText, Users, Clock } from "lucide-react";
 
 export const DoctorAssistantFeatures: React.FC = React.memo(() => {
   return (
     <Card className="flex-shrink-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Brain className="h-4 w-4" />
-          Assistant Features
-        </CardTitle>
+      <CardHeader className="p-4 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+            <Brain className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-base text-foreground">Assistant Features</h3>
+            <p className="text-xs text-muted-foreground">AI-powered medical capabilities</p>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-3 text-xs">
+      <CardContent className="p-4 pt-0">
+        <div className="space-y-3 text-xs">
         <div className="flex items-start gap-2">
           <FileText className="h-3 w-3 mt-0.5 text-muted-foreground" />
           <div>
@@ -32,6 +38,7 @@ export const DoctorAssistantFeatures: React.FC = React.memo(() => {
             <p className="font-medium">Clinical Support</p>
             <p className="text-muted-foreground">Medical documentation assistance</p>
           </div>
+        </div>
         </div>
       </CardContent>
     </Card>

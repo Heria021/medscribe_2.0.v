@@ -44,7 +44,7 @@ export function SOAPGenerateContent({
   };
 
   return (
-    <div className={cn("h-full flex flex-col min-h-0", className)}>
+    <div className={cn("h-full flex flex-col p-4 min-h-0", className)}>
       {!state.result ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full min-h-0">
           {/* Input Section - 3 columns on desktop */}

@@ -24,27 +24,33 @@ export const SessionList: React.FC<SessionListProps> = React.memo(({
   }, [onDeleteSession]);
 
   return (
-    <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <CardTitle className="text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Chat History
+    <Card className="h-full flex flex-col overflow-hidden">
+      <CardHeader className="p-4 pb-3 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <History className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-foreground">Chat History</h3>
+              <p className="text-xs text-muted-foreground">Your conversation sessions</p>
+            </div>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className="h-6 w-6 p-0"
+            className="h-7 px-3 text-xs"
             onClick={onNewSession}
             disabled={isLoading}
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-3 w-3 mr-1" />
+            New Chat
           </Button>
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
+      <CardContent className="flex-1 min-h-0 p-0">
         <ScrollArea className="h-full">
-          <div className="p-3 space-y-1">
+          <div className="p-4 space-y-3">
             {sessions?.map((session) => (
               <div
                 key={session._id}

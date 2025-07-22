@@ -81,12 +81,12 @@ function ProfileCompletionContent({ doctorProfile }: { doctorProfile: any }) {
           )}
 
           <div className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-              <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <div className="bg-muted rounded-lg p-4 border border-border">
+              <h4 className="font-medium mb-2 flex items-center gap-2 text-foreground">
                 <Sparkles className="h-4 w-4" />
                 AI Medical Assistant Features
               </h4>
-              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Analyze patient SOAP notes with AI insights</li>
                 <li>• Get clinical recommendations and suggestions</li>
                 <li>• Review patient records and medical history</li>

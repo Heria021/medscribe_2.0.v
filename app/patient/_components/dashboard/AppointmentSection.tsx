@@ -106,7 +106,7 @@ export function AppointmentSection({
       
       <CardContent className="p-4 pt-0">
         {!hasAppointments ? (
-          <div className="text-center py-6">
+          <div className="text-center py-4">
             <div className={cn(
               "h-8 w-8 mx-auto mb-2",
               gradient.textColor.replace('text-', 'text-').replace('900', '400').replace('100', '400')

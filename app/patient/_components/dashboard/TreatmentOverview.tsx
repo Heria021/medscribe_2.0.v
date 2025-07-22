@@ -160,7 +160,7 @@ export function TreatmentOverview({ patientId, gradient }: TreatmentOverviewProp
       <CardContent className="flex-1 min-h-0 p-0">
         <ScrollArea className="h-full">
           {!hasAnyActive ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
               <div className={cn(
                 "w-16 h-16 rounded-full flex items-center justify-center mb-4",
                 gradient ? gradient.iconBg.replace('bg-', 'bg-').replace('500', '100') + ' dark:' + gradient.iconBg.replace('bg-', 'bg-').replace('500', '900/30') : "bg-muted"

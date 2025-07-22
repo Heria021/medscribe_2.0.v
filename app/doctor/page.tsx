@@ -115,7 +115,7 @@ const PatientList = ({ patients, isLoading }: { patients: any[], isLoading: bool
       <CardContent className="p-4 pt-0 flex-1 min-h-0">
         <ScrollArea className="h-full">
           {!patients || patients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex flex-col items-center justify-center py-6 text-center">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
                 <Users className="h-6 w-6 text-muted-foreground" />
               </div>
@@ -213,7 +213,7 @@ const AppointmentsList = ({ doctorId, isLoading }: { doctorId: string | undefine
       <CardContent className="p-4 pt-0 flex-1 min-h-0">
         <ScrollArea className="h-full">
           {sortedAppointments.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-center">
+            <div className="flex items-center justify-center py-6 text-center">
               <div className="space-y-2">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-muted">
                   <Calendar className="h-6 w-6 text-muted-foreground" />
@@ -316,7 +316,7 @@ export default function DoctorDashboard() {
   const isLoading = !doctorProfile;
 
   return (
-    <div className="h-full flex flex-col space-y-4">
+    <div className="h-full flex flex-col p-4 space-y-4">
       {/* Header */}
       <div className="flex-shrink-0 space-y-1">
         <h1 className="text-xl font-bold tracking-tight text-foreground">
@@ -328,7 +328,7 @@ export default function DoctorDashboard() {
       </div>
 
       {/* Main Features Layout: 1/2 Patient Management + 1/4 AI Assistant + 1/4 SOAP Review */}
-      <div className="flex-shrink-0 grid gap-4 lg:grid-cols-4">
+      <div className="flex-shrink-0 grid gap-3 lg:grid-cols-4">
         {/* Patient Management - Takes 2 columns (1/2) */}
         <div className="lg:col-span-2">
           {isLoading ? (
@@ -517,7 +517,7 @@ export default function DoctorDashboard() {
       </div>
 
       {/* Bottom Section - 2 Column Grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Left Column - Patient List */}
         <div className="flex flex-col min-h-0">
           <PatientList patients={patients} isLoading={isLoading} />
