@@ -103,6 +103,7 @@ export interface SessionListProps {
   onDeleteSession: (sessionId: Id<"chatSessions">) => Promise<void>;
   onNewSession: () => Promise<void>;
   isLoading: boolean;
+  className?: string;
 }
 
 export interface RelevantDocumentsSectionProps {

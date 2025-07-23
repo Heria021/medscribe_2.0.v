@@ -15,7 +15,6 @@ import {
   Activity,
   Pill,
   Calendar,
-  Plus,
   ChevronDown,
   Info
 } from "lucide-react";
@@ -165,19 +164,15 @@ export const TreatmentOverview = React.memo<TreatmentOverviewProps>(({
       <ScrollArea className="flex-1 overflow-hidden">
         <div className="divide-y overflow-hidden">
           {!hasAnyActive ? (
-            <div className="flex items-center justify-center p-6 h-full">
-              <div className="text-center space-y-4">
-                <Activity className="h-12 w-12 text-muted-foreground mx-auto" />
-                <h3 className="font-medium">No Active Treatments</h3>
+            <div className="flex items-center justify-center h-full min-h-[200px]">
+              <div className="text-center space-y-3">
+                <div className="w-12 h-12 bg-muted/30 rounded-lg flex items-center justify-center mx-auto">
+                  <Activity className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium text-foreground">No Active Treatments</h3>
                 <p className="text-sm text-muted-foreground max-w-[200px]">
                   You don't have any active treatments at the moment.
                 </p>
-                <Link href="/patient/treatments">
-                  <Button variant="outline" size="sm" className="rounded-lg">
-                    <Plus className="h-4 w-4 mr-1" />
-                    View Treatments
-                  </Button>
-                </Link>
               </div>
             </div>
           ) : (

@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, Clock, Plus } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -36,8 +36,8 @@ export interface AppointmentSectionProps {
   emptyState: {
     icon: React.ReactNode;
     message: string;
-    actionLabel: string;
-    actionHref: string;
+    actionLabel?: string;
+    actionHref?: string;
   };
   viewAllHref: string;
   maxItems?: number;
@@ -121,19 +121,15 @@ export const AppointmentSection = React.memo<AppointmentSectionProps>(({
       <ScrollArea className="flex-1 overflow-hidden">
         <div className="divide-y overflow-hidden">
           {!hasAppointments ? (
-            <div className="flex items-center justify-center p-6 h-full">
-              <div className="text-center space-y-4">
-                {emptyState.icon || <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />}
-                <h3 className="font-medium">{emptyState.message || "No appointments found"}</h3>
+            <div className="flex items-center justify-center h-full min-h-[200px]">
+              <div className="text-center space-y-3">
+                <div className="w-12 h-12 bg-muted/30 rounded-lg flex items-center justify-center mx-auto">
+                  <Calendar className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium text-foreground">{emptyState.message || "No appointments found"}</h3>
                 <p className="text-sm text-muted-foreground max-w-[200px]">
                   You don't have any scheduled appointments.
                 </p>
-                <Link href={emptyState.actionHref}>
-                  <Button variant="outline" size="sm" className="rounded-lg">
-                    <Plus className="h-4 w-4 mr-1" />
-                    {emptyState.actionLabel}
-                  </Button>
-                </Link>
               </div>
             </div>
           ) : (

@@ -1,6 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { DoctorMessageList } from "./DoctorMessageList";
 import { DoctorChatInput } from "./DoctorChatInput";
 import { DoctorChatInterfaceProps } from "../types";
@@ -9,9 +10,9 @@ import { useSession } from "next-auth/react";
 
 export const DoctorChatInterface: React.FC<DoctorChatInterfaceProps> = React.memo(({
   doctorId,
-  patientId,
   doctorName,
-  onClose
+  onClose,
+  className = ""
 }) => {
   const { data: session } = useSession();
   const { profile: patientProfile } = usePatientProfile();
@@ -33,37 +34,47 @@ export const DoctorChatInterface: React.FC<DoctorChatInterfaceProps> = React.mem
     : 'You';
 
   return (
-    <Card className="h-full flex flex-col bg-background border-border">
-      <CardHeader className="p-0 flex-shrink-0">
-        <div className="relative overflow-hidden rounded-t-lg">
-          <div className="relative px-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm"></div>
-                <div className="relative p-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <MessageCircle className="h-4 w-4 text-primary" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-base font-semibold text-foreground tracking-tight">
-                  Chat with Dr. {doctorName}
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Direct messaging
-                </p>
-              </div>
+    <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden", className)}>
+      {/* Header following AppointmentsList pattern */}
+      <div className="flex-shrink-0 p-4 border-b border-border/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <MessageCircle className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-foreground">
+                Chat with Dr. {doctorName}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Direct messaging
+              </p>
             </div>
           </div>
+          
+          {/* Close button if onClose is provided */}
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 min-h-0 flex flex-col p-0">
+      {/* Chat Content */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <DoctorMessageList
           messages={messages}
           isLoading={isLoading}
           doctorName={doctorName}
           patientName={patientName}
           currentUserId={session?.user?.id}
+          className="flex-1 min-h-0"
         />
         
         <DoctorChatInput
@@ -73,9 +84,10 @@ export const DoctorChatInterface: React.FC<DoctorChatInterfaceProps> = React.mem
           onKeyPress={handleKeyPress}
           isLoading={isLoading}
           placeholder={`Message Dr. ${doctorName}...`}
+          className="flex-shrink-0"
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 });
 

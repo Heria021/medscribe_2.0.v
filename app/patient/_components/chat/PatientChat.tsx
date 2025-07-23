@@ -2,11 +2,11 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, AlertCircle } from "lucide-react";
+import { MessageCircle, AlertCircle, Users, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePatientAuth } from "@/hooks/use-patient-auth";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Hooks
 import { usePatientProfile, useDoctorConversations } from "./hooks";
@@ -20,67 +20,85 @@ import {
   ChatErrorBoundary,
 } from "./components";
 
-// Individual skeleton components
+// Individual skeleton components following AppointmentsList patterns
 const DoctorConversationListSkeleton = () => (
-  <Card className="h-full flex flex-col">
-    <CardHeader className="pb-3 flex-shrink-0">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-24" />
+  <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+    {/* Header */}
+    <div className="flex-shrink-0 p-4 border-b border-border/50">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+          <Users className="h-4 w-4 text-primary-foreground" />
+        </div>
+        <div>
+          <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-24 bg-muted rounded animate-pulse mt-1" />
+        </div>
       </div>
-    </CardHeader>
-    <CardContent className="flex-1 min-h-0 p-0">
-      <div className="p-4 space-y-2 h-full overflow-y-auto">
+    </div>
+
+    {/* Content */}
+    <div className="flex-1 overflow-hidden">
+      <div className="divide-y">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
-            <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-12 flex-shrink-0" />
+          <div key={i} className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-muted rounded-full animate-pulse flex-shrink-0" />
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-12 bg-muted rounded animate-pulse flex-shrink-0" />
+                </div>
+                <div className="h-3 w-24 bg-muted rounded animate-pulse" />
               </div>
-              <Skeleton className="h-3 w-24" />
             </div>
           </div>
         ))}
       </div>
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 );
 
 const DoctorChatInterfaceSkeleton = () => (
-  <Card className="h-full flex flex-col">
-    <CardHeader className="pb-3 flex-shrink-0">
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-4 w-4" />
-        <Skeleton className="h-5 w-48" />
+  <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+    {/* Header */}
+    <div className="flex-shrink-0 p-4 border-b border-border/50">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+          <MessageCircle className="h-4 w-4 text-primary-foreground" />
+        </div>
+        <div>
+          <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-32 bg-muted rounded animate-pulse mt-1" />
+        </div>
       </div>
-    </CardHeader>
-    <CardContent className="flex-1 min-h-0 flex flex-col p-0">
-      {/* Messages Skeleton */}
-      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
+    </div>
+
+    {/* Messages Skeleton */}
+    <ScrollArea className="flex-1 overflow-hidden">
+      <div className="p-4">
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={cn("flex gap-3", i % 2 === 0 ? "justify-start" : "justify-end")}>
-              {i % 2 === 0 && <Skeleton className="w-8 h-8 rounded-full" />}
+              {i % 2 === 0 && <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />}
               <div className="max-w-[80%] space-y-2">
-                <Skeleton className="h-16 w-full rounded-lg" />
-                <Skeleton className="h-3 w-24" />
+                <div className="h-16 w-full bg-muted rounded-lg animate-pulse" />
+                <div className="h-3 w-24 bg-muted rounded animate-pulse" />
               </div>
-              {i % 2 === 1 && <Skeleton className="w-8 h-8 rounded-full" />}
+              {i % 2 === 1 && <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />}
             </div>
           ))}
         </div>
       </div>
+    </ScrollArea>
 
-      {/* Input Skeleton */}
-      <div className="border-t border-border p-4 flex-shrink-0">
-        <div className="flex gap-2">
-          <Skeleton className="flex-1 h-10" />
-          <Skeleton className="h-10 w-10" />
-        </div>
+    {/* Input Skeleton */}
+    <div className="flex-shrink-0 p-4 border-t border-border/50">
+      <div className="flex gap-2">
+        <div className="flex-1 h-10 bg-muted rounded animate-pulse" />
+        <div className="h-10 w-10 bg-muted rounded animate-pulse" />
       </div>
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 );
 
 const PatientChat: React.FC = () => {
@@ -107,8 +125,6 @@ const PatientChat: React.FC = () => {
     }
   }, [isAuthenticated, authLoading, router]);
 
-
-
   // Redirect if not authenticated
   if (authLoading || !isAuthenticated) {
     return null;
@@ -118,20 +134,40 @@ const PatientChat: React.FC = () => {
   if (session?.user?.id && patientProfile === null) {
     return (
       <div className="h-full flex flex-col space-y-4">
-        <ChatPageHeader
-          title="Chat with Doctors"
-          description="Communicate directly with your healthcare providers"
-          onBack={() => router.back()}
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+        {/* Header */}
+        <div className="flex-shrink-0 p-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <MessageCircle className="h-4 w-4 text-primary-foreground" />
+            </div>
             <div>
-              <h3 className="font-medium text-lg">Profile Not Found</h3>
-              <p className="text-sm text-muted-foreground">
-                Unable to load your patient profile. Please contact support.
+              <h1 className="text-base font-semibold text-foreground">Chat with Doctors</h1>
+              <p className="text-xs text-muted-foreground">
+                Communicate directly with your healthcare providers
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Error Content */}
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+            <h3 className="font-medium">Profile Not Found</h3>
+            <p className="text-sm text-muted-foreground">
+              Unable to load your patient profile. Please contact support.
+            </p>
+            <Button variant="outline" size="sm" className="rounded-lg">
+              Contact Support
+            </Button>
           </div>
         </div>
       </div>
@@ -142,16 +178,23 @@ const PatientChat: React.FC = () => {
     <ChatErrorBoundary>
       <div className="h-full flex flex-col space-y-4">
         {/* Header */}
-        <div className="flex-shrink-0 space-y-1">
-          <h1 className="text-xl font-bold tracking-tight">Chat with Doctors</h1>
-          <p className="text-muted-foreground text-sm">
-            Communicate directly with your healthcare providers
-          </p>
+        <div className="flex-shrink-0 p-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <MessageCircle className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-foreground">Chat with Doctors</h1>
+              <p className="text-xs text-muted-foreground">
+                Communicate directly with your healthcare providers
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
-          {/* Conversations List Sidebar - Fixed Height */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4 h-full p-4">
+          {/* Conversations List Sidebar */}
           <div className="lg:col-span-1 flex flex-col min-h-0 h-full">
             <ChatErrorBoundary>
               {conversationsLoading || profileLoading ? (
@@ -182,13 +225,14 @@ const PatientChat: React.FC = () => {
                 />
               </ChatErrorBoundary>
             ) : (
-              <div className="h-full flex items-center justify-center">
-                <ChatEmptyState
-                  icon={MessageCircle}
-                  title="Select a Doctor"
-                  description="Choose a doctor from the list to start chatting"
-                  iconSize="lg"
-                />
+              <div className="h-full border rounded-xl flex items-center justify-center p-6">
+                <div className="text-center space-y-4">
+                  <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <h3 className="font-medium">Select a Doctor</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a doctor from the list to start chatting
+                  </p>
+                </div>
               </div>
             )}
           </div>

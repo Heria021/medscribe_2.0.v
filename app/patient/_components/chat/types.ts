@@ -70,6 +70,7 @@ export interface DoctorMessageListProps {
   doctorName: string;
   patientName?: string;
   currentUserId?: string;
+  className?: string;
 }
 
 export interface DoctorChatInputProps {
@@ -80,6 +81,7 @@ export interface DoctorChatInputProps {
   isLoading: boolean;
   disabled?: boolean;
   placeholder?: string;
+  className?: string;
 }
 
 export interface DoctorConversationListProps {
@@ -101,6 +103,7 @@ export interface DoctorChatInterfaceProps {
   patientId: Id<"patients">;
   doctorName: string;
   onClose?: () => void;
+  className?: string;
 }
 
 export interface ChatPageHeaderProps {
