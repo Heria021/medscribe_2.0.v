@@ -112,7 +112,7 @@ export const TreatmentDetailsContent = React.memo<TreatmentDetailsContentProps>(
             </Badge>
           </div>
           <div className="space-y-2">
-            {treatment.medicationDetails.map((medication, index) => (
+            {treatment.medicationDetails.map((medication: any, index: number) => (
               <div key={index} className="group relative bg-card border border-border rounded-lg hover:border-primary/30 transition-all duration-200 hover:shadow-sm">
                 {/* Compact Header Row */}
                 <div className="flex items-center justify-between p-3 pb-2">

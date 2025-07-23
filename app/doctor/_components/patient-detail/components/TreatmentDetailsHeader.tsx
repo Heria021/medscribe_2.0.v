@@ -220,7 +220,7 @@ export const TreatmentDetailsHeader = React.memo<TreatmentDetailsHeaderProps>(({
           </div>
           {treatment.goals && treatment.goals.length > 0 ? (
             <div className="space-y-2">
-              {treatment.goals.slice(0, 2).map((goal, index) => (
+              {treatment.goals.slice(0, 2).map((goal: any, index: number) => (
                 <div key={index} className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0" />
                   <p className="text-sm text-foreground leading-relaxed">{goal}</p>

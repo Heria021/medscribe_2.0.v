@@ -1,32 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Control } from "react-hook-form";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { MapPin, Phone, Building, Search, Check, Pill, Clock, Star } from "lucide-react";
 
 // UI Components
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // Types
 import { type TreatmentFormData, type PharmacyOption } from "@/lib/validations/treatment";
@@ -62,14 +53,14 @@ export const TreatmentPharmacySelector: React.FC<TreatmentPharmacySelectorProps>
   }, [pharmacies, searchTerm]);
 
   // Format pharmacy address
-  const formatAddress = (address: PharmacyOption["address"]) => {
-    return `${address.street}, ${address.city}, ${address.state} ${address.zipCode}`;
-  };
+  // const formatAddress = (address: PharmacyOption["address"]) => {
+  //   return `${address.street}, ${address.city}, ${address.state} ${address.zipCode}`;
+  // };
 
   // Handle pharmacy selection
   const handlePharmacySelect = (pharmacyId: string, onChange: (value: string) => void) => {
     const pharmacy = pharmacies?.find((p) => p._id === pharmacyId);
-    setSelectedPharmacy(pharmacy || null);
+    setSelectedPharmacy(pharmacy as any || null);
     onChange(pharmacyId);
   };
 
@@ -271,7 +262,7 @@ export const TreatmentPharmacySelector: React.FC<TreatmentPharmacySelectorProps>
                                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                                     <span>{rating}</span>
                                   </div>
-                                  {pharmacy.isVerified && (
+                                  {(pharmacy as any).isVerified && (
                                     <Badge variant="outline" className="text-xs">
                                       Verified
                                     </Badge>

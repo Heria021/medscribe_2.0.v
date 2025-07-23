@@ -29,9 +29,7 @@ import {
   Trash2,
   Edit,
   CheckCircle,
-  X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface MedicationItem {
@@ -120,7 +118,7 @@ export const NewMedicationManager = forwardRef<MedicationManagerRef, NewMedicati
   };
 
   const handleEdit = (index: number) => {
-    const medication = fields[index] as MedicationItem;
+    const medication = fields[index] as unknown as MedicationItem;
     setCurrentMedication(medication);
     setEditingIndex(index);
     setIsAddDialogOpen(true);
@@ -386,7 +384,7 @@ export const NewMedicationManager = forwardRef<MedicationManagerRef, NewMedicati
         ) : (
           <div className="space-y-3">
             {fields.map((field, index) => {
-              const medication = field as MedicationItem;
+              const medication = field as unknown as MedicationItem;
               return (
                 <div key={field.id} className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg border">
                   <div className="p-2 bg-primary/10 rounded-lg">

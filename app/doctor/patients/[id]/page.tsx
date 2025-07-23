@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AddTreatmentForm } from "@/app/doctor/_components/patient-detail/components/AddTreatmentForm";
 import { PrescriptionForm } from "@/components/prescriptions/prescription-form";
-import { Activity, Pill, User, Calendar } from "lucide-react";
+import { Activity, Pill, Calendar } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
-import { useTreatmentViewer, TreatmentViewer } from "@/components/ui/treatment-viewer";
+import { useTreatmentViewer, TreatmentViewer, type TreatmentPlan } from "@/components/ui/treatment-viewer";
 import ErrorBoundary from "@/components/error/error-boundary";
 import {
   usePatientDetail,
@@ -287,7 +287,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                     onSelectTreatment={setSelectedTreatmentId}
                     onViewTreatment={handleViewTreatment}
                     onStatusChange={(treatmentId: string, status: string) => {
-                      handleTreatmentStatusUpdate(treatmentId, status, selectedTreatmentDetails);
+                      handleTreatmentStatusUpdate(treatmentId, status);
                     }}
                   />
                 </ErrorBoundary>
@@ -332,7 +332,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                             onView={handleViewTreatment}
                             onStatusChange={(status) => {
                               if (selectedTreatmentId) {
-                                handleTreatmentStatusUpdate(selectedTreatmentId, status, selectedTreatmentDetails);
+                                handleTreatmentStatusUpdate(selectedTreatmentId, status);
                               }
                             }}
                           />
@@ -388,7 +388,7 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
                         onView={handleViewTreatment}
                         onStatusChange={(status) => {
                           if (selectedTreatmentId) {
-                            handleTreatmentStatusUpdate(selectedTreatmentId, status, selectedTreatmentDetails);
+                            handleTreatmentStatusUpdate(selectedTreatmentId, status);
                           }
                         }}
                       />
@@ -428,19 +428,13 @@ const PatientDetailPage = React.memo<PatientDetailPageProps>(({ params }) => {
           showMetadata: true,
           allowPrint: true,
           allowDownload: true,
-          allowShare: true,
-          allowCopy: true,
-          allowExportPDF: true,
           backButtonText: "Back to Patient",
           documentTitle: "Treatment Plan - Doctor View"
         }}
         actions={{
           onBack: treatmentViewer.closeViewer,
-          onDownload: (treatment) => {
+          onDownload: (treatment: TreatmentPlan) => {
             console.log("Downloading treatment:", treatment.title);
-          },
-          onShare: (treatment) => {
-            console.log("Sharing treatment:", treatment.title);
           },
         }}
       />

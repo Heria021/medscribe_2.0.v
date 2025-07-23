@@ -53,7 +53,7 @@ const appointmentFormSchema = z.object({
   room: z.string().optional(),
   meetingLink: z.string().optional(),
   notes: z.string().optional(),
-  insuranceVerified: z.boolean().default(false),
+  insuranceVerified: z.boolean(),
   copayAmount: z.string().optional(),
 }).refine((data) => {
   if (data.locationType === "in_person" && !data.address?.trim()) {
@@ -94,10 +94,10 @@ const generateTimeSlots = () => {
  * Optimized for performance with React.memo
  */
 export const AppointmentForm = React.memo<AppointmentFormProps>(({
-  patientId,
+  patientId: _patientId,
   currentDoctorPatient,
-  patient,
-  doctorProfile,
+  patient: _patient,
+  doctorProfile: _doctorProfile,
   onCancel,
   onSuccess,
   className = "",

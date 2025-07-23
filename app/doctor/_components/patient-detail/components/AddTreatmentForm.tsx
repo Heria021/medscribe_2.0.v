@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "convex/react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
-import { CalendarIcon, Activity, Pill, Plus, Loader2 } from "lucide-react";
+import { CalendarIcon, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // API and Services
@@ -17,13 +17,13 @@ import { cn } from "@/lib/utils";
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import {
   Form,
   FormControl,
@@ -32,22 +32,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 // Validation and Types
 import {
   treatmentFormSchema,
-  treatmentTypes,
   defaultTreatmentFormValues,
   type TreatmentFormData,
-  type MedicationDetails,
-  type PharmacyOption,
 } from "@/lib/validations/treatment";
 
 // Local Components
@@ -352,7 +343,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
                         placeholder="Enter a treatment goal"
                         value={currentGoal}
                         onChange={(e) => setCurrentGoal(e.target.value)}
-                        onKeyPress={(e) => {
+                        onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             addGoal();

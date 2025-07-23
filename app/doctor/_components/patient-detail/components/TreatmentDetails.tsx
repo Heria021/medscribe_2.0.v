@@ -6,19 +6,13 @@ import { useSession } from "next-auth/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -39,33 +33,11 @@ import {
 import {
   Activity,
   Calendar,
-  FileText,
-  Target,
-  User,
-  Edit,
-  MoreHorizontal,
-  Clock,
   CheckCircle,
   AlertTriangle,
-  Pill,
-  MapPin,
-  Eye,
-  Stethoscope,
-  Building2,
-  Hash,
-  Timer,
   RefreshCw,
-  Package,
-  Truck,
-  ShoppingCart,
   Plus,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Id } from "@/convex/_generated/dataModel";
 import { PatientSlotSelector } from "@/components/appointments/PatientSlotSelector";
@@ -73,8 +45,8 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { TreatmentDetailsHeader } from "./TreatmentDetailsHeader";
-import { TreatmentDetailsContent } from "./TreatmentDetailsContent";
+// import { TreatmentDetailsHeader } from "./TreatmentDetailsHeader";
+// import { TreatmentDetailsContent } from "./TreatmentDetailsContent";
 
 interface TreatmentDetailsProps {
   treatmentId: string;
@@ -166,7 +138,7 @@ const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogProps>(({
     }
 
     try {
-      const appointmentId = await createAppointmentWithSlot({
+      await createAppointmentWithSlot({
         doctorPatientId: doctorPatientRelationship._id,
         slotId: values.selectedSlotId as Id<"timeSlots">,
         appointmentType: values.appointmentType as any,
@@ -293,7 +265,7 @@ const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogProps>(({
                   <FormField
                     control={form.control}
                     name="selectedSlotId"
-                    render={({ field }) => (
+                    render={({ field: _ }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium text-foreground">
                           Select Time Slot
@@ -538,19 +510,96 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {/* Treatment Header Component */}
-            <TreatmentDetailsHeader
-              treatment={treatment}
-              onView={onView}
-              onStatusChange={onStatusChange}
-            />
+            {/* Treatment Header */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    <Activity className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">{treatment?.title}</h3>
+                    <p className="text-xs text-muted-foreground">{treatment?.diagnosis}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {treatment?.status}
+                  </Badge>
+                  {onView && (
+                    <Button variant="outline" size="sm" onClick={onView}>
+                      View Full
+                    </Button>
+                  )}
+                </div>
+              </div>
 
-            {/* Treatment Content Component */}
-            <TreatmentDetailsContent
-              treatment={treatment}
-              prescriptionOrders={prescriptionOrders || []}
-              onScheduleAppointment={() => setScheduleDialogOpen(true)}
-            />
+              {/* Treatment Plan */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-foreground">Treatment Plan</h4>
+                <p className="text-sm text-muted-foreground">{treatment?.plan}</p>
+              </div>
+
+              {/* Goals */}
+              {treatment?.goals && treatment.goals.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground">Goals</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {treatment.goals.map((goal: string, index: number) => (
+                      <li key={index}>• {goal}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Prescription Orders */}
+            {prescriptionOrders && prescriptionOrders.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-foreground">Prescription Orders</h4>
+                <div className="space-y-2">
+                  {prescriptionOrders.map((order: any) => (
+                    <div key={order._id} className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{order.medicationDetails?.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {order.medicationDetails?.dosage} - {order.medicationDetails?.frequency}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setScheduleDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Schedule Follow-up
+              </Button>
+              {onStatusChange && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStatusChange("completed")}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Mark Complete
+                </Button>
+              )}
+            </div>
           </div>
         </ScrollArea>
       </div>

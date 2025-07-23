@@ -35,27 +35,7 @@ import {
 import { type TreatmentFormData } from "@/lib/validations/treatment";
 import type { Id } from "@/convex/_generated/dataModel";
 
-interface SOAPNote {
-  _id: string;
-  patientId: string;
-  data: {
-    patient_id: string;
-    session_id: string;
-    soap_notes: {
-      subjective: string;
-      objective: string;
-      assessment: string;
-      plan: string;
-    };
-    specialty_detection?: {
-      specialty: string;
-      confidence: number;
-    };
-  };
-  timestamp: number;
-  status: string;
-  createdAt: number;
-}
+
 
 interface TreatmentSOAPNoteSelectorProps {
   control: Control<TreatmentFormData>;
@@ -86,9 +66,9 @@ export const TreatmentSOAPNoteSelector: React.FC<TreatmentSOAPNoteSelectorProps>
         title: `SOAP Note - ${format(new Date(note.timestamp), "MMM dd, yyyy")}`,
         date: format(new Date(note.timestamp), "PPP"),
         specialty: note.data?.specialty_detection?.specialty || "General",
-        assessment: note.data?.soap_notes?.assessment || "",
-        plan: note.data?.soap_notes?.plan || "",
-        preview: note.data?.soap_notes?.assessment?.substring(0, 100) + "..." || "No assessment available",
+        assessment: note.data?.soap_notes?.soap_notes?.assessment?.primary_diagnosis?.diagnosis || "",
+        plan: note.data?.soap_notes?.soap_notes?.plan?.treatments?.join(", ") || "",
+        preview: note.data?.soap_notes?.soap_notes?.assessment?.primary_diagnosis?.diagnosis?.substring(0, 100) + "..." || "No assessment available",
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [soapNotes]);

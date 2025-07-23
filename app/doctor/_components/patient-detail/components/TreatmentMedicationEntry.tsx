@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useFieldArray, Control, useWatch } from "react-hook-form";
-import { Trash2, Plus, Pill, CheckCircle, Edit, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { Trash2, Plus, Pill, CheckCircle } from "lucide-react";
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -30,7 +30,7 @@ import {
   durationOptions,
   dosageFormOptions,
   type TreatmentFormData,
-  type MedicationDetails,
+
 } from "@/lib/validations/treatment";
 
 interface TreatmentMedicationEntryProps {
@@ -87,7 +87,7 @@ export const TreatmentMedicationEntry: React.FC<TreatmentMedicationEntryProps> =
 
 
   // Auto-hide detailed forms when all medications are complete and there are completed ones
-  const shouldShowCompactView = completedMedications.length > 0 && incompleteMedications.length === 0;
+  // const shouldShowCompactView = completedMedications.length > 0 && incompleteMedications.length === 0;
 
   return (
     <div className="border rounded-lg bg-card">
@@ -125,7 +125,7 @@ export const TreatmentMedicationEntry: React.FC<TreatmentMedicationEntryProps> =
           <div className="space-y-3">
             {completedMedications.map((med, index) => {
               // Find the actual field index for removal
-              const fieldIndex = fields.findIndex((field, fieldIdx) => {
+              const fieldIndex = fields.findIndex((_field, fieldIdx) => {
                 const watchedMed = watchedMedications?.[fieldIdx];
                 return watchedMed?.name === med.name &&
                        watchedMed?.strength === med.strength &&
@@ -181,10 +181,10 @@ export const TreatmentMedicationEntry: React.FC<TreatmentMedicationEntryProps> =
                       </div>
                     )}
 
-                    {med.notes && (
+                    {(med as any).notes && (
                       <div className="pt-2 border-t border-border/50">
                         <span className="text-xs text-muted-foreground uppercase tracking-wide">Notes</span>
-                        <p className="text-sm text-muted-foreground mt-1 italic">{med.notes}</p>
+                        <p className="text-sm text-muted-foreground mt-1 italic">{(med as any).notes}</p>
                       </div>
                     )}
                   </div>

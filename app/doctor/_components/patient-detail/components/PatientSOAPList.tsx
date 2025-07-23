@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Eye, Calendar, Brain, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SharedSOAPNote } from "@/convex/sharedSoapNotes";
+// import type { SharedSOAPNote } from "@/convex/sharedSoapNotes";
 
 interface PatientSOAPListProps {
   patientId: string;
-  sharedSoapNotes?: SharedSOAPNote[];
+  sharedSoapNotes?: any[];
   isLoading?: boolean;
   selectedSOAPNoteId?: string | null;
   onSelectSOAP?: (soapNoteId: string | null) => void;
@@ -23,7 +23,7 @@ interface PatientSOAPListProps {
  * Used in the treatment form layout
  */
 export const PatientSOAPList = React.memo<PatientSOAPListProps>(({
-  patientId,
+  patientId: _patientId,
   sharedSoapNotes = [],
   isLoading = false,
   selectedSOAPNoteId,

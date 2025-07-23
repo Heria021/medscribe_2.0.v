@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,13 +11,11 @@ import { SOAPViewer, useSOAPViewer } from "@/components/ui/soap-viewer";
 import {
   FileText,
   Eye,
-  Calendar,
   Brain,
   Shield,
   Stethoscope,
   Share,
   UserCheck,
-  Clock,
   ChevronRight,
   Search,
   X,
