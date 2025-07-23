@@ -45,8 +45,8 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-// import { TreatmentDetailsHeader } from "./TreatmentDetailsHeader";
-// import { TreatmentDetailsContent } from "./TreatmentDetailsContent";
+import { TreatmentDetailsHeader } from "./TreatmentDetailsHeader";
+import { TreatmentDetailsContent } from "./TreatmentDetailsContent";
 
 interface TreatmentDetailsProps {
   treatmentId: string;
@@ -71,11 +71,10 @@ const appointmentFormSchema = z.object({
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
-
 /**
  * ScheduleAppointmentDialog Component
  * 
- * Follows AppointmentsList UI patterns with consistent styling and layout
+ * Fixed overflow scroll issues with proper container heights and ScrollArea implementation
  */
 const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogProps>(({
   open,
@@ -161,213 +160,206 @@ const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogProps>(({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border rounded-xl">
-        {/* Header - Following AppointmentsList header pattern */}
-        <div className="flex-shrink-0 p-4 border-b border-border/50">
-          <DialogHeader className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-semibold text-foreground">
-                  Schedule Follow-up Appointment
-                </DialogTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Create a new appointment for this treatment plan
-                </p>
-              </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-6 py-4 border-b bg-background">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-primary-foreground" />
             </div>
+            <div>
+              <DialogTitle className="text-lg font-semibold">
+                Schedule Follow-up Appointment
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create a new appointment for this treatment plan
+              </p>
+            </div>
+          </div>
 
-            {/* Treatment Info Card - Consistent with empty state styling */}
-            {treatment && (
-              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Activity className="h-5 w-5 text-primary" />
+          {/* Treatment Info Card */}
+          {treatment && (
+            <div className="mt-4 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm text-foreground">
+                      {treatment.title}
+                    </h4>
+                    <Badge variant="outline" className="text-xs h-5 px-1.5">
+                      Treatment Plan
+                    </Badge>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-sm text-foreground">
-                        {treatment.title}
-                      </h4>
-                      <Badge variant="outline" className="text-xs h-5 px-1.5">
-                        Treatment Plan
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                      <span>Status: {treatment.status}</span>
-                      <span>Started: {new Date(treatment.startDate).toLocaleDateString()}</span>
-                    </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <span>Status: {treatment.status}</span>
+                    <span>Started: {new Date(treatment.startDate).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
-            )}
-          </DialogHeader>
+            </div>
+          )}
         </div>
 
-        {/* Scrollable Content - Following ScrollArea pattern */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="px-4 pb-4">
-              <Form {...form}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  {/* Visit Reason */}
-                  <FormField
-                    control={form.control}
-                    name="visitReason"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-foreground">
-                          Visit Reason
-                        </FormLabel>
+        {/* Scrollable Content with Form */}
+        <div className="flex-1 overflow-auto">
+          <Form {...form}>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
+              <div className="flex-1 px-6 py-4 space-y-6">
+                {/* Visit Reason */}
+                <FormField
+                  control={form.control}
+                  name="visitReason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">
+                        Visit Reason
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe the reason for this follow-up appointment..."
+                          className="min-h-[80px] resize-none border-border/50 focus:border-primary/50 transition-colors"
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Appointment Type */}
+                <FormField
+                  control={form.control}
+                  name="appointmentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">
+                        Appointment Type
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                         <FormControl>
-                          <Textarea
-                            placeholder="Describe the reason for this follow-up appointment..."
-                            className="min-h-[80px] resize-none border-border/50 focus:border-primary/50 transition-colors"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
+                          <SelectTrigger className="border-border/50 focus:border-primary/50">
+                            <SelectValue placeholder="Select appointment type" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <SelectContent>
+                          <SelectItem value="follow_up">Follow-up</SelectItem>
+                          <SelectItem value="consultation">Consultation</SelectItem>
+                          <SelectItem value="procedure">Procedure</SelectItem>
+                          <SelectItem value="telemedicine">Telemedicine</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Appointment Type */}
-                  <FormField
-                    control={form.control}
-                    name="appointmentType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-foreground">
-                          Appointment Type
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
-                          <FormControl>
-                            <SelectTrigger className="border-border/50 focus:border-primary/50">
-                              <SelectValue placeholder="Select appointment type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="follow_up">Follow-up</SelectItem>
-                            <SelectItem value="consultation">Consultation</SelectItem>
-                            <SelectItem value="procedure">Procedure</SelectItem>
-                            <SelectItem value="telemedicine">Telemedicine</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Time Slot Selection */}
+                <FormField
+                  control={form.control}
+                  name="selectedSlotId"
+                  render={({ field: _ }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">
+                        Select Time Slot
+                      </FormLabel>
+                      
+                      <div className="border rounded-xl p-4 bg-muted/30">
+                        <PatientSlotSelector
+                          doctorId={doctorProfile._id}
+                          onSlotSelect={handleSlotSelect}
+                          selectedSlotId={selectedSlotId}
+                          showNextAvailable={true}
+                        />
+                      </div>
 
-                  {/* Time Slot Selection */}
-                  <FormField
-                    control={form.control}
-                    name="selectedSlotId"
-                    render={({ field: _ }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-foreground">
-                          Select Time Slot
-                        </FormLabel>
-                        
-                        <div className="border rounded-xl p-4 bg-muted/30">
-                          <PatientSlotSelector
-                            doctorId={doctorProfile._id}
-                            onSlotSelect={handleSlotSelect}
-                            selectedSlotId={selectedSlotId}
-                            showNextAvailable={true}
-                          />
-                        </div>
-
-                        {selectedSlot && (
-                          <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-950/20 dark:border-green-800/30">
-                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                Time slot selected
-                              </p>
-                              <p className="text-xs text-green-700 dark:text-green-300">
-                                {new Date(`${selectedSlot.date}T${selectedSlot.time}`).toLocaleDateString('en-US', {
-                                  weekday: 'long',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })} at {formatTime(selectedSlot.time)}
-                              </p>
-                            </div>
+                      {selectedSlot && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-950/20 dark:border-green-800/30">
+                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              Time slot selected
+                            </p>
+                            <p className="text-xs text-green-700 dark:text-green-300">
+                              {new Date(`${selectedSlot.date}T${selectedSlot.time}`).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric'
+                              })} at {formatTime(selectedSlot.time)}
+                            </p>
                           </div>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Additional Notes */}
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-foreground">
-                          Additional Notes
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Any additional notes for the appointment..."
-                            className="min-h-[60px] resize-none border-border/50 focus:border-primary/50 transition-colors"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription className="text-xs text-muted-foreground">
-                          Optional notes that will be included with the appointment.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Form Actions - Following button pattern */}
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleClose}
-                      disabled={isSubmitting}
-                      className="rounded-lg"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="rounded-lg"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Scheduling...
-                        </>
-                      ) : (
-                        <>
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Schedule Appointment
-                        </>
+                        </div>
                       )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </div>
-          </ScrollArea>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Additional Notes */}
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">
+                        Additional Notes
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Any additional notes for the appointment..."
+                          className="min-h-[60px] resize-none border-border/50 focus:border-primary/50 transition-colors"
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs text-muted-foreground">
+                        Optional notes that will be included with the appointment.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Form Actions - Inside form for proper submission */}
+              <div className="flex-shrink-0 px-6 py-4 border-t bg-background">
+                <div className="flex justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleClose}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Scheduling...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule Appointment
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
         </div>
       </DialogContent>
     </Dialog>
   );
 });
-
-ScheduleAppointmentDialog.displayName = "ScheduleAppointmentDialog";
-
 /**
  * TreatmentDetails Component
  * 
@@ -510,96 +502,21 @@ export const TreatmentDetails = React.memo<TreatmentDetailsProps>(({
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {/* Treatment Header */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">{treatment?.title}</h3>
-                    <p className="text-xs text-muted-foreground">{treatment?.diagnosis}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {treatment?.status}
-                  </Badge>
-                  {onView && (
-                    <Button variant="outline" size="sm" onClick={onView}>
-                      View Full
-                    </Button>
-                  )}
-                </div>
-              </div>
+            {/* Treatment Header Component */}
+            <TreatmentDetailsHeader
+              treatment={treatment}
+              onView={onView}
+              onStatusChange={onStatusChange}
+            />
 
-              {/* Treatment Plan */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-foreground">Treatment Plan</h4>
-                <p className="text-sm text-muted-foreground">{treatment?.plan}</p>
-              </div>
+            {/* Treatment Content Component */}
+            <TreatmentDetailsContent
+              treatment={treatment}
+              prescriptionOrders={prescriptionOrders || []}
+              onScheduleAppointment={() => setScheduleDialogOpen(true)}
+            />
 
-              {/* Goals */}
-              {treatment?.goals && treatment.goals.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-foreground">Goals</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {treatment.goals.map((goal: string, index: number) => (
-                      <li key={index}>• {goal}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
 
-            {/* Prescription Orders */}
-            {prescriptionOrders && prescriptionOrders.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-foreground">Prescription Orders</h4>
-                <div className="space-y-2">
-                  {prescriptionOrders.map((order: any) => (
-                    <div key={order._id} className="border rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{order.medicationDetails?.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {order.medicationDetails?.dosage} - {order.medicationDetails?.frequency}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {order.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setScheduleDialogOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                Schedule Follow-up
-              </Button>
-              {onStatusChange && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStatusChange("completed")}
-                  className="flex items-center gap-2"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Mark Complete
-                </Button>
-              )}
-            </div>
           </div>
         </ScrollArea>
       </div>
