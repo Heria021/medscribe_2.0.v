@@ -40,16 +40,16 @@ export const AppointmentList = React.memo<AppointmentListProps>(({
     return appointments;
   }, [appointments, maxItems]);
 
-  // Default empty state
+  // Default empty state following AppointmentsList standards
   const defaultEmptyState = (
-    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
-      <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-        <Calendar className="h-8 w-8 text-muted-foreground" />
+    <div className="flex items-center justify-center py-12 px-6 min-h-[200px]">
+      <div className="text-center space-y-4">
+        <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
+        <h3 className="font-medium">No appointments found</h3>
+        <p className="text-sm text-muted-foreground">
+          Your appointments will appear here when scheduled
+        </p>
       </div>
-      <h3 className="font-medium mb-2">No appointments found</h3>
-      <p className="text-muted-foreground text-sm max-w-sm">
-        Your appointments will appear here when scheduled
-      </p>
     </div>
   );
 
@@ -86,9 +86,9 @@ export const AppointmentList = React.memo<AppointmentListProps>(({
     );
   }
 
-  // List variant (default)
+  // List variant (default) - using divide-y pattern
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("divide-y overflow-hidden", className)}>
       {displayedAppointments.map((appointment) => (
         <AppointmentCard
           key={appointment._id}
@@ -124,13 +124,16 @@ export const CompactAppointmentList = React.memo<AppointmentListProps>(({
     return appointments.slice(0, maxItems);
   }, [appointments, maxItems]);
 
-  // Compact empty state
+  // Compact empty state following AppointmentsList standards
   const compactEmptyState = (
-    <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-muted rounded-lg">
-      <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center mb-3">
-        <Clock className="h-6 w-6 text-muted-foreground" />
+    <div className="flex items-center justify-center py-8 px-6 min-h-[150px]">
+      <div className="text-center space-y-3">
+        <Clock className="h-10 w-10 text-muted-foreground mx-auto" />
+        <h3 className="font-medium text-sm">No appointments</h3>
+        <p className="text-xs text-muted-foreground">
+          Your completed appointments will appear here
+        </p>
       </div>
-      <p className="text-sm text-muted-foreground">No appointments</p>
     </div>
   );
 
@@ -144,7 +147,7 @@ export const CompactAppointmentList = React.memo<AppointmentListProps>(({
   }
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("divide-y overflow-hidden", className)}>
       {displayedAppointments.map((appointment) => (
         <AppointmentCard
           key={appointment._id}

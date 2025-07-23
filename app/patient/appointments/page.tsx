@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, Clock, User } from "lucide-react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -22,20 +22,21 @@ import {
   QuickActionsGrid,
 } from "@/app/patient/_components/appointments";
 
-// Individual skeleton components following AppointmentsList patterns
+// Skeleton components following AppointmentsList exact patterns
 const AppointmentListSkeleton = () => (
-  <div className="divide-y overflow-hidden">
-    {Array.from({ length: 3 }).map((_, i) => (
+  <div className="divide-y">
+    {Array.from({ length: 4 }).map((_, i) => (
       <div key={i} className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            {/* Time skeleton */}
+            {/* Time and Date Skeleton - matches AppointmentsList */}
             <div className="flex flex-col items-center gap-1 min-w-[70px]">
               <div className="h-5 w-14 bg-muted rounded animate-pulse" />
               <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-10 bg-muted rounded animate-pulse" />
             </div>
 
-            {/* Doctor/Patient Info skeleton */}
+            {/* Doctor Info Skeleton - matches AppointmentsList patient info */}
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
               <div className="space-y-1">
@@ -44,14 +45,25 @@ const AppointmentListSkeleton = () => (
                 <div className="h-3 w-36 bg-muted rounded animate-pulse" />
               </div>
             </div>
+
+            {/* Appointment Details Skeleton - matches AppointmentsList */}
+            <div className="space-y-1">
+              <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-28 bg-muted rounded animate-pulse" />
+              </div>
+            </div>
           </div>
 
-          {/* Actions skeleton */}
+          {/* Status and Actions Skeleton - matches AppointmentsList */}
           <div className="flex flex-col items-end gap-2">
             <div className="h-5 w-16 bg-muted rounded animate-pulse" />
             <div className="flex gap-1">
               <div className="h-7 w-16 bg-muted rounded animate-pulse" />
               <div className="h-7 w-14 bg-muted rounded animate-pulse" />
+              <div className="h-7 w-20 bg-muted rounded animate-pulse" />
             </div>
           </div>
         </div>
@@ -61,16 +73,27 @@ const AppointmentListSkeleton = () => (
 );
 
 const CompactAppointmentListSkeleton = () => (
-  <div className="divide-y overflow-hidden">
+  <div className="divide-y">
     {Array.from({ length: 4 }).map((_, i) => (
-      <div key={i} className="p-3">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="h-3 w-24 bg-muted rounded animate-pulse" />
-            <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+      <div key={i} className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            {/* Compact time skeleton */}
+            <div className="flex flex-col items-center gap-1 min-w-[50px]">
+              <div className="h-4 w-10 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-12 bg-muted rounded animate-pulse" />
+            </div>
+
+            {/* Compact info skeleton */}
+            <div className="space-y-1">
+              <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-36 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+            </div>
           </div>
-          <div className="h-3 w-full bg-muted rounded animate-pulse" />
-          <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
+
+          {/* Compact status */}
+          <div className="h-5 w-16 bg-muted rounded animate-pulse" />
         </div>
       </div>
     ))}
@@ -78,22 +101,19 @@ const CompactAppointmentListSkeleton = () => (
 );
 
 const QuickActionsGridSkeleton = () => (
-  <div className="space-y-3">
-    <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-    <div className="grid grid-cols-3 gap-2">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="p-3 space-y-2 text-center">
-          <div className="h-6 w-6 bg-muted rounded animate-pulse mx-auto" />
-          <div className="h-3 w-full bg-muted rounded animate-pulse" />
-        </div>
-      ))}
-    </div>
+  <div className="grid grid-cols-3 gap-2">
+    {Array.from({ length: 3 }).map((_, i) => (
+      <div key={i} className="p-3 space-y-2 text-center border rounded-lg">
+        <div className="h-6 w-6 bg-muted rounded animate-pulse mx-auto" />
+        <div className="h-3 w-full bg-muted rounded animate-pulse" />
+      </div>
+    ))}
   </div>
 );
 
 /**
- * Patient Appointments Page - Refactored with performance optimizations
- * Following AppointmentsList UI standards and patterns
+ * Patient Appointments Page - Following AppointmentsList UI standards
+ * Converted to match exact styling patterns and component structure
  */
 const PatientAppointmentsPage = React.memo(() => {
   // Custom hooks for clean separation of concerns
@@ -136,8 +156,12 @@ const PatientAppointmentsPage = React.memo(() => {
 
   // Memoized action handlers for performance
   const handleCancelAppointment = React.useCallback(async (appointmentId: any) => {
-    await cancelAppointment(appointmentId);
-    closeCancelDialog();
+    try {
+      await cancelAppointment(appointmentId);
+      closeCancelDialog();
+    } catch (error) {
+      console.error("Failed to cancel appointment:", error);
+    }
   }, [cancelAppointment, closeCancelDialog]);
 
   const handleRescheduleAppointment = React.useCallback(async (requestData: any) => {
@@ -170,36 +194,33 @@ const PatientAppointmentsPage = React.memo(() => {
 
   return (
     <>
-      <div className="h-full flex flex-col p-4 space-y-4">
-        {/* Header */}
+      <div className="h-full flex flex-col space-y-4 p-4">
+        {/* Page Header - Following AppointmentsList header pattern */}
         <div className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">My Appointments</h1>
-              <p className="text-muted-foreground text-sm">View and manage your medical appointments</p>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <Calendar className="h-4 w-4 text-primary-foreground" />
             </div>
-            <Link href="/patient/appointments/book">
-              <Button size="sm" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Book Appointment
-              </Button>
-            </Link>
+            <div>
+              <h1 className="text-base font-semibold text-foreground">My Appointments</h1>
+              <p className="text-xs text-muted-foreground">View and manage your medical appointments</p>
+            </div>
           </div>
         </div>
 
         {/* Main Content Grid */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Upcoming Appointments - Takes 2 columns */}
+          {/* Upcoming Appointments - Styled exactly like AppointmentsList */}
           <div className="lg:col-span-2 flex flex-col min-h-0">
             <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden")}>
-              {/* Header following AppointmentsList pattern */}
+              {/* Header - Exact match to AppointmentsList header */}
               <div className="flex-shrink-0 p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
                     <Calendar className="h-4 w-4 text-primary-foreground" />
                   </div>
                   <div>
-                    <h2 className="text-base font-semibold text-foreground">Upcoming Appointments</h2>
+                    <h3 className="text-base font-semibold text-foreground">Upcoming Appointments</h3>
                     <p className="text-xs text-muted-foreground">
                       {upcomingAppointments?.length || 0} appointment{(upcomingAppointments?.length || 0) !== 1 ? 's' : ''} scheduled
                     </p>
@@ -207,38 +228,18 @@ const PatientAppointmentsPage = React.memo(() => {
                 </div>
               </div>
 
-              {/* Content */}
+              {/* Appointments List - Same ScrollArea pattern */}
               <ScrollArea className="flex-1 overflow-hidden">
                 {appointmentsLoading ? (
                   <AppointmentListSkeleton />
-                ) : !upcomingAppointments || upcomingAppointments.length === 0 ? (
-                  <div className={cn("h-full flex items-center justify-center p-6")}>
-                    <div className="text-center space-y-4">
-                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <h3 className="font-medium">No upcoming appointments</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Schedule your next appointment with your healthcare provider
-                      </p>
-                      <Link href="/patient/appointments/book">
-                        <Button variant="outline" size="sm" className="rounded-lg">
-                          <Plus className="h-4 w-4 mr-1" />
-                          Book Appointment
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
                 ) : (
-                  <div className="divide-y overflow-hidden">
-                    <div className="p-4">
-                      <AppointmentList
-                        appointments={upcomingAppointments}
-                        showActions={true}
-                        onCancel={memoizedOpenCancelDialog}
-                        onReschedule={memoizedOpenRescheduleDialog}
-                        onJoin={memoizedJoinCall}
-                      />
-                    </div>
-                  </div>
+                  <AppointmentList
+                    appointments={upcomingAppointments || []}
+                    showActions={true}
+                    onCancel={memoizedOpenCancelDialog}
+                    onReschedule={memoizedOpenRescheduleDialog}
+                    onJoin={memoizedJoinCall}
+                  />
                 )}
               </ScrollArea>
             </div>
@@ -246,16 +247,16 @@ const PatientAppointmentsPage = React.memo(() => {
 
           {/* Right Sidebar - Past Appointments & Quick Actions */}
           <div className="flex flex-col space-y-4 min-h-0">
-            {/* Past Appointments */}
+            {/* Past Appointments - Same structure as main appointments */}
             <div className={cn("h-full border rounded-xl flex flex-col overflow-hidden")}>
-              {/* Header following AppointmentsList pattern */}
+              {/* Header - Same pattern */}
               <div className="flex-shrink-0 p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                    <Calendar className="h-4 w-4 text-primary-foreground" />
+                    <Clock className="h-4 w-4 text-primary-foreground" />
                   </div>
                   <div>
-                    <h2 className="text-base font-semibold text-foreground">Past Appointments</h2>
+                    <h3 className="text-base font-semibold text-foreground">Past Appointments</h3>
                     <p className="text-xs text-muted-foreground">
                       {pastAppointments?.length || 0} completed
                     </p>
@@ -267,25 +268,15 @@ const PatientAppointmentsPage = React.memo(() => {
               <ScrollArea className="flex-1 overflow-hidden">
                 {appointmentsLoading ? (
                   <CompactAppointmentListSkeleton />
-                ) : !pastAppointments || pastAppointments.length === 0 ? (
-                  <div className={cn("h-full flex items-center justify-center p-6")}>
-                    <div className="text-center space-y-4">
-                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <h3 className="font-medium">No past appointments</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Your completed appointments will appear here
-                      </p>
-                    </div>
-                  </div>
                 ) : (
                   <div className="divide-y overflow-hidden">
                     <div className="p-4">
                       <CompactAppointmentList
-                        appointments={pastAppointments}
+                        appointments={pastAppointments || []}
                         maxItems={8}
                         showActions={false}
                       />
-                      {pastAppointments.length > 8 && (
+                      {(pastAppointments?.length || 0) > 8 && (
                         <div className="pt-3 border-t border-border/50 mt-3">
                           <Button
                             variant="ghost"
@@ -293,7 +284,7 @@ const PatientAppointmentsPage = React.memo(() => {
                             className="w-full text-xs h-8 hover:bg-muted/50"
                             onClick={() => window.location.href = "/patient/appointments/history"}
                           >
-                            View all {pastAppointments.length} appointments
+                            View all {pastAppointments?.length} appointments
                           </Button>
                         </div>
                       )}
@@ -303,9 +294,10 @@ const PatientAppointmentsPage = React.memo(() => {
               </ScrollArea>
             </div>
 
-            {/* Quick Actions */}
-            <div className={cn("border rounded-xl p-4")}>
-              <div className="flex-shrink-0 mb-3">
+            {/* Quick Actions - Following AppointmentsList container pattern */}
+            <div className={cn("border rounded-xl flex flex-col")}>
+              {/* Header - Same pattern as other sections */}
+              <div className="flex-shrink-0 p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
                     <Plus className="h-4 w-4 text-primary-foreground" />
@@ -317,17 +309,20 @@ const PatientAppointmentsPage = React.memo(() => {
                 </div>
               </div>
 
-              {appointmentsLoading ? (
-                <QuickActionsGridSkeleton />
-              ) : (
-                <QuickActionsGrid variant="compact" />
-              )}
+              {/* Content */}
+              <div className="p-4">
+                {appointmentsLoading ? (
+                  <QuickActionsGridSkeleton />
+                ) : (
+                  <QuickActionsGrid variant="compact" />
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* Dialogs - Keep original functionality */}
       <CancelDialog
         open={cancelDialog.open}
         onOpenChange={closeCancelDialog}
