@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { UserCheck, Stethoscope, Loader2, ArrowRight, Building2 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
@@ -88,11 +89,11 @@ export default function SelectRolePage() {
                               <div className={`
                                 flex h-12 w-12 items-center justify-center rounded-2xl transition-colors
                                 ${selectedRole === "doctor"
-                                  ? "bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-200 dark:ring-blue-800"
-                                  : "bg-blue-50 dark:bg-blue-950/50 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50"
+                                  ? "bg-primary/10 ring-2 ring-primary/20"
+                                  : "bg-muted/50 group-hover:bg-primary/5"
                                 }
                               `}>
-                                <Stethoscope className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                <Stethoscope className="h-6 w-6 text-primary" />
                               </div>
                               <div className="flex-1 space-y-1">
                                 <div className="text-base font-semibold text-foreground">Doctor</div>
@@ -125,11 +126,11 @@ export default function SelectRolePage() {
                               <div className={`
                                 flex h-12 w-12 items-center justify-center rounded-2xl transition-colors
                                 ${selectedRole === "patient"
-                                  ? "bg-emerald-100 dark:bg-emerald-900/50 ring-2 ring-emerald-200 dark:ring-emerald-800"
-                                  : "bg-emerald-50 dark:bg-emerald-950/50 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50"
+                                  ? "bg-primary/10 ring-2 ring-primary/20"
+                                  : "bg-muted/50 group-hover:bg-primary/5"
                                 }
                               `}>
-                                <UserCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                                <UserCheck className="h-6 w-6 text-primary" />
                               </div>
                               <div className="flex-1 space-y-1">
                                 <div className="text-base font-semibold text-foreground">Patient</div>
@@ -162,11 +163,11 @@ export default function SelectRolePage() {
                               <div className={`
                                 flex h-12 w-12 items-center justify-center rounded-2xl transition-colors
                                 ${selectedRole === "pharmacy"
-                                  ? "bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-200 dark:ring-purple-800"
-                                  : "bg-purple-50 dark:bg-purple-950/50 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/50"
+                                  ? "bg-primary/10 ring-2 ring-primary/20"
+                                  : "bg-muted/50 group-hover:bg-primary/5"
                                 }
                               `}>
-                                <Building2 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                                <Building2 className="h-6 w-6 text-primary" />
                               </div>
                               <div className="flex-1 space-y-1">
                                 <div className="text-base font-semibold text-foreground">Pharmacy</div>
@@ -188,7 +189,7 @@ export default function SelectRolePage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 font-medium"
+                  className="w-full h-10 text-sm font-medium"
                   disabled={isLoading || !selectedRole}
                 >
                   {isLoading ? (
@@ -205,6 +206,16 @@ export default function SelectRolePage() {
                 </Button>
               </form>
             </Form>
+
+            {/* Login Link Footer */}
+            <div className="pt-6 border-t border-border text-center">
+              <Link
+                href="/auth/login"
+                className="text-sm text-primary hover:text-primary/80 transition-colors"
+              >
+                Already registered? Log in
+              </Link>
+            </div>
         </div>
       </div>
     </div>

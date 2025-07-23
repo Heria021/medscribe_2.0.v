@@ -17,11 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
-
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, User, Mail, Building, ArrowLeft, Stethoscope, Heart, Pill, Link2 } from "lucide-react";
+import { CheckCircle, User, Mail, Building, ArrowLeft, Stethoscope, UserCheck, Building2, Link2, CalendarIcon } from "lucide-react";
 import Link from "next/link";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type UserRole = "doctor" | "patient" | "pharmacy";
 
@@ -50,7 +53,7 @@ const step1Schema = z.object({
 // Step 2: Role-Specific Essentials (Simplified)
 const step2PatientSchema = z.object({
   phone: z.string().min(10, "Phone number is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  dateOfBirth: z.date({ required_error: "Date of birth is required" }),
   gender: z.enum(["M", "F", "O"], { required_error: "Please select a gender" }),
 });
 
@@ -96,9 +99,9 @@ export function StreamlinedRegistration({ role }: StreamlinedRegistrationProps) 
 
   const getRoleIcon = (userRole: UserRole) => {
     switch (userRole) {
-      case "patient": return Heart;
+      case "patient": return UserCheck;
       case "doctor": return Stethoscope;
-      case "pharmacy": return Pill;
+      case "pharmacy": return Building2;
       default: return User;
     }
   };
@@ -189,7 +192,7 @@ export function StreamlinedRegistration({ role }: StreamlinedRegistrationProps) 
     resolver: zodResolver(step2PatientSchema),
     defaultValues: {
       phone: "",
-      dateOfBirth: "",
+      dateOfBirth: undefined,
       gender: "M",
     },
   });
@@ -393,7 +396,7 @@ export function StreamlinedRegistration({ role }: StreamlinedRegistrationProps) 
           lastName: data.lastName,
           email: data.email,
           primaryPhone: data.phone,
-          dateOfBirth: data.dateOfBirth,
+          dateOfBirth: data.dateOfBirth ? format(data.dateOfBirth, "yyyy-MM-dd") : "1990-01-01",
           gender: data.gender,
           // Required fields with defaults for now
           addressLine1: "To be updated",
@@ -416,7 +419,7 @@ export function StreamlinedRegistration({ role }: StreamlinedRegistrationProps) 
           registrationMethod: 'manual',
           createdAt: Date.now(),
           phone: data.phone,
-          dateOfBirth: data.dateOfBirth,
+          dateOfBirth: data.dateOfBirth ? format(data.dateOfBirth, "yyyy-MM-dd") : "1990-01-01",
           gender: data.gender,
         };
         await userRAGHooks.onPatientProfileCreated(patientProfileData);
@@ -549,42 +552,72 @@ export function StreamlinedRegistration({ role }: StreamlinedRegistrationProps) 
                 )}
               />
 
-              <FormField
-                control={step2PatientForm.control}
-                name="dateOfBirth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={step2PatientForm.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick your date of birth</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={step2PatientForm.control}
-                name="gender"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="M">Male</SelectItem>
-                        <SelectItem value="F">Female</SelectItem>
-                        <SelectItem value="O">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={step2PatientForm.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="M">Male</SelectItem>
+                          <SelectItem value="F">Female</SelectItem>
+                          <SelectItem value="O">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="flex gap-4">
                 <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="flex-1">
