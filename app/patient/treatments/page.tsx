@@ -2,11 +2,8 @@
 
 import * as React from "react";
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Activity } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
   usePatientAuth,
@@ -19,134 +16,78 @@ import { TreatmentDetails } from "@/app/patient/_components/treatments/component
 import { TreatmentStats } from "@/app/patient/_components/treatments/components/TreatmentStats";
 import { TreatmentFilters } from "@/app/patient/_components/treatments/components/TreatmentFilters";
 import { TreatmentViewer, useTreatmentViewer } from "@/components/ui/treatment-viewer";
+import { cn } from "@/lib/utils";
 
-/**
- * Profile Completion Component
- */
-const ProfileCompletionContent = React.memo(({ patientProfile }: { patientProfile: any }) => {
-  // Define required fields for profile completion
-  const requiredFields = [
-    { key: 'firstName', label: 'First Name' },
-    { key: 'lastName', label: 'Last Name' },
-    { key: 'dateOfBirth', label: 'Date of Birth' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'primaryPhone', label: 'Phone Number' },
-    { key: 'email', label: 'Email' },
-    { key: 'addressLine1', label: 'Address' },
-    { key: 'city', label: 'City' },
-    { key: 'state', label: 'State' },
-    { key: 'zipCode', label: 'Zip Code' },
-    { key: 'emergencyContactName', label: 'Emergency Contact Name' },
-    { key: 'emergencyContactPhone', label: 'Emergency Contact Phone' },
-  ];
 
-  const completedRequired = useMemo(() => {
-    if (!patientProfile) return [];
-    return requiredFields.filter(field => {
-      const value = patientProfile[field.key];
-      return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
-    });
-  }, [patientProfile, requiredFields]);
-
-  const missingRequired = requiredFields.length - completedRequired.length;
-
-  return (
-    <div className="h-full w-full flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg bg-background border-border">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-foreground">Complete Your Profile to Access Treatments</CardTitle>
-          <p className="text-muted-foreground">
-            {!patientProfile
-              ? "Set up your profile to view your treatment plans and medications."
-              : `${missingRequired} required field${missingRequired !== 1 ? 's' : ''} remaining`
-            }
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Link href="/patient/settings/profile" className="block">
-            <Button className="w-full" size="lg">
-              {!patientProfile ? "Get Started" : "Complete Profile"}
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    </div>
-  );
-});
-
-ProfileCompletionContent.displayName = "ProfileCompletionContent";
 
 // Individual skeleton components
 const TreatmentListSkeleton = () => (
-  <Card className="flex-1 min-h-0 flex flex-col">
-    <CardHeader className="pb-2 flex-shrink-0">
+  <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+    <div className="flex-shrink-0 p-4 border-b border-border/50">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-5 w-6" />
+        <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+        <div className="h-5 w-6 bg-muted rounded animate-pulse" />
       </div>
-    </CardHeader>
-    <CardContent className="flex-1 min-h-0 p-0">
-      <div className="p-3 space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="p-3 space-y-2 border border-border rounded-lg bg-muted/50">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-3 w-2/3" />
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-5 w-12" />
-            </div>
+    </div>
+    <div className="flex-1 min-h-0 p-3 space-y-2">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="p-3 space-y-2 border border-border rounded-lg bg-muted/50">
+          <div className="h-4 w-full bg-muted rounded animate-pulse" />
+          <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
+          <div className="flex items-center justify-between">
+            <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+            <div className="h-5 w-12 bg-muted rounded animate-pulse" />
           </div>
-        ))}
-      </div>
-    </CardContent>
-  </Card>
+        </div>
+      ))}
+    </div>
+  </div>
 );
 
 const TreatmentDetailsSkeleton = () => (
-  <Card className="flex-1 min-h-0 flex flex-col">
-    <CardHeader className="pb-3 flex-shrink-0">
+  <div className="h-full border rounded-xl flex flex-col overflow-hidden">
+    <div className="flex-shrink-0 p-4 border-b border-border/50">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3 flex-1">
-          <Skeleton className="h-10 w-10 rounded-lg" />
+          <div className="h-10 w-10 bg-muted rounded-lg animate-pulse" />
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-5 w-48" />
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-3 w-32" />
+            <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-64 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-32 bg-muted rounded animate-pulse" />
           </div>
         </div>
-        <Skeleton className="h-6 w-16" />
+        <div className="h-6 w-16 bg-muted rounded animate-pulse" />
       </div>
-    </CardHeader>
-    <CardContent className="flex-1 min-h-0 p-0">
+    </div>
+    <ScrollArea className="flex-1 overflow-hidden">
       <div className="p-4 space-y-5">
         <div className="space-y-3">
-          <Skeleton className="h-4 w-32" />
+          <div className="h-4 w-32 bg-muted rounded animate-pulse" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="p-3 space-y-2 border border-border rounded-lg bg-muted/50">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-2/3" />
+                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-full bg-muted rounded animate-pulse" />
+                <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
               </div>
             ))}
           </div>
         </div>
       </div>
-    </CardContent>
-  </Card>
+    </ScrollArea>
+  </div>
 );
 
 const TreatmentStatsSkeleton = () => (
   <div className="flex items-center gap-3">
     <div className="text-right">
-      <Skeleton className="h-8 w-8 mb-1" />
-      <Skeleton className="h-3 w-16" />
+      <div className="h-8 w-8 bg-muted rounded animate-pulse mb-1" />
+      <div className="h-3 w-16 bg-muted rounded animate-pulse" />
     </div>
     <div className="w-px h-8 bg-border" />
     <div className="text-right">
-      <Skeleton className="h-8 w-8 mb-1" />
-      <Skeleton className="h-3 w-20" />
+      <div className="h-8 w-8 bg-muted rounded animate-pulse mb-1" />
+      <div className="h-3 w-20 bg-muted rounded animate-pulse" />
     </div>
   </div>
 );
@@ -155,13 +96,13 @@ const TreatmentFiltersSkeleton = () => (
   <div className="flex-shrink-0">
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <div className="relative flex-1 max-w-sm">
-        <Skeleton className="h-9 w-full" />
+        <div className="h-9 w-full bg-muted rounded animate-pulse" />
       </div>
       <div className="flex items-center gap-2">
-        <Skeleton className="h-4 w-12" />
+        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
         <div className="flex gap-1">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-16" />
+            <div key={i} className="h-8 w-16 bg-muted rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -212,20 +153,7 @@ const PatientTreatmentsPage = React.memo(() => {
     [isAuthenticated, isPatient]
   );
 
-  // Check if profile is complete
-  const isProfileComplete = useMemo(() => {
-    if (!patientProfile) return false;
 
-    const requiredFields = [
-      'firstName', 'lastName', 'dateOfBirth', 'gender', 'primaryPhone', 'email',
-      'addressLine1', 'city', 'state', 'zipCode', 'emergencyContactName', 'emergencyContactPhone'
-    ] as const;
-
-    return requiredFields.every(field => {
-      const value = patientProfile[field as keyof typeof patientProfile];
-      return value && (Array.isArray(value) ? value.length > 0 : value.toString().trim() !== "");
-    });
-  }, [patientProfile]);
 
   // Filter treatments based on current filters
   const filteredTreatments = useMemo(() => {
@@ -269,19 +197,19 @@ const PatientTreatmentsPage = React.memo(() => {
     return null;
   }
 
-  // Show profile completion if profile is not complete
-  if (!isProfileComplete) {
-    return <ProfileCompletionContent patientProfile={patientProfile} />;
-  }
-
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Header */}
       <div className="flex-shrink-0 space-y-1">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Treatment Overview</h1>
-            <p className="text-muted-foreground text-sm">View and manage your treatment plans and medications</p>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+              <Activity className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-foreground">Treatment Overview</h1>
+              <p className="text-xs text-muted-foreground">View and manage your treatment plans and medications</p>
+            </div>
           </div>
           {treatmentsLoading ? (
             <TreatmentStatsSkeleton />

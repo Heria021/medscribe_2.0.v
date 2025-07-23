@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Heart, Plus } from "lucide-react";
+import { Heart } from "lucide-react";
 import { TreatmentCard } from "./TreatmentCard";
 import type { TreatmentListProps } from "../types";
 import { cn } from "@/lib/utils";
@@ -73,10 +72,6 @@ export const TreatmentList = React.memo<TreatmentListProps>(({
           <p className="text-sm text-muted-foreground max-w-sm">
             Your treatment plans will appear here once your doctor creates them for you.
           </p>
-          <Button variant="outline" size="sm" className="rounded-lg">
-            <Plus className="h-4 w-4 mr-1" />
-            Request Treatment Plan
-          </Button>
         </div>
       </div>
     );
