@@ -36,6 +36,7 @@ export interface TreatmentPlanEventData {
   treatmentId: string;
   doctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD THIS
   appointmentId?: string;
   diagnosis: string;
   treatmentType: string;
@@ -54,6 +55,7 @@ export interface MedicationEventData {
   medicationId: string;
   doctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD THIS
   appointmentId?: string;
   medicationName: string;
   dosage: string;
@@ -73,6 +75,7 @@ export interface PrescriptionEventData {
   prescriptionId: string;
   doctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD THIS
   appointmentId?: string;
   medications: Array<{
     name: string;
@@ -95,6 +98,7 @@ export interface MedicalGoalEventData {
   goalId: string;
   doctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD THIS
   appointmentId?: string;
   goalType: string;
   description: string;
@@ -148,7 +152,10 @@ class MedicalRAGService {
         if (this.config.retryOnFailure) {
           setTimeout(async () => {
             try {
-              await Promise.race([embedFn(), timeoutPromise]);
+              const retryTimeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Medical RAG embedding retry timeout')), this.config.timeout);
+              });
+              await Promise.race([embedFn(), retryTimeoutPromise]);
               if (this.config.logErrors) {
                 console.log(`✅ Medical RAG embed retry: ${eventType} (${entityId})`);
               }
@@ -180,12 +187,15 @@ class MedicalRAGService {
         const durationText = treatmentData.duration ? ` Duration: ${treatmentData.duration}` : '';
         const notesText = treatmentData.notes ? ` Notes: ${treatmentData.notes}` : '';
         
-        const doctorData = `Treatment plan created for patient. Diagnosis: ${treatmentData.diagnosis}. Treatment: ${treatmentData.treatmentType} - ${treatmentData.description}.${goalsText}${durationText}${notesText}`;
-        
-        const patientData = `Treatment plan created for ${treatmentData.diagnosis}. Treatment: ${treatmentData.treatmentType} - ${treatmentData.description}.${goalsText}${durationText}`;
-        
+        // ✅ CHANGE: Include patient name in data text
+        const doctorData = `Treatment plan created for patient ${treatmentData.patientName}. Diagnosis: ${treatmentData.diagnosis}. Treatment: ${treatmentData.treatmentType} - ${treatmentData.description}.${goalsText}${durationText}. Date: ${date}.${notesText}`;
+
+        const patientData = `Treatment plan created for ${treatmentData.diagnosis}. Treatment: ${treatmentData.treatmentType} - ${treatmentData.description}.${goalsText}${durationText}. Date: ${date}.`;
+
         const metadata = {
           treatment_id: treatmentData.treatmentId,
+          patient_name: treatmentData.patientName,  // ✅ ADD THIS
+          patient_id: treatmentData.patientId,
           appointment_id: treatmentData.appointmentId,
           diagnosis: treatmentData.diagnosis,
           treatment_type: treatmentData.treatmentType,
@@ -200,7 +210,7 @@ class MedicalRAGService {
             treatmentData.doctorId,
             'treatment_plan_created',
             doctorData,
-            { ...metadata, patient_id: treatmentData.patientId }
+            metadata
           ),
           embedPatientData(
             treatmentData.patientId,
@@ -226,12 +236,15 @@ class MedicalRAGService {
         const interactionsText = medicationData.interactions?.length ? ` Interactions: ${medicationData.interactions.join(', ')}` : '';
         const notesText = medicationData.notes ? ` Notes: ${medicationData.notes}` : '';
         
-        const doctorData = `Medication prescribed: ${medicationData.medicationName} ${medicationData.dosage}, ${medicationData.frequency} for ${medicationData.duration}. Instructions: ${medicationData.instructions}${sideEffectsText}${interactionsText}${notesText}`;
-        
-        const patientData = `Medication prescribed: ${medicationData.medicationName} ${medicationData.dosage}, ${medicationData.frequency} for ${medicationData.duration}. Instructions: ${medicationData.instructions}${notesText}`;
-        
+        // ✅ CHANGE: Include patient name in data text
+        const doctorData = `Medication prescribed for patient ${medicationData.patientName}: ${medicationData.medicationName} ${medicationData.dosage}, ${medicationData.frequency} for ${medicationData.duration}. Instructions: ${medicationData.instructions}. Date: ${date}.${sideEffectsText}${interactionsText}${notesText}`;
+
+        const patientData = `Medication prescribed: ${medicationData.medicationName} ${medicationData.dosage}, ${medicationData.frequency} for ${medicationData.duration}. Instructions: ${medicationData.instructions}. Date: ${date}.${notesText}`;
+
         const metadata = {
           medication_id: medicationData.medicationId,
+          patient_name: medicationData.patientName,  // ✅ ADD THIS
+          patient_id: medicationData.patientId,
           appointment_id: medicationData.appointmentId,
           medication_name: medicationData.medicationName,
           dosage: medicationData.dosage,
@@ -247,7 +260,7 @@ class MedicalRAGService {
             medicationData.doctorId,
             'medication_prescribed',
             doctorData,
-            { ...metadata, patient_id: medicationData.patientId }
+            metadata
           ),
           embedPatientData(
             medicationData.patientId,
@@ -275,12 +288,15 @@ class MedicalRAGService {
         const pharmacyText = prescriptionData.pharmacy ? ` Pharmacy: ${prescriptionData.pharmacy}` : '';
         const notesText = prescriptionData.notes ? ` Notes: ${prescriptionData.notes}` : '';
         
-        const doctorData = `Prescription issued with ${prescriptionData.medications.length} medication(s): ${medicationsText}. Instructions: ${prescriptionData.instructions}. Refills: ${prescriptionData.refillsAllowed}${pharmacyText}${notesText}`;
-        
-        const patientData = `Prescription issued with ${prescriptionData.medications.length} medication(s): ${medicationsText}. Instructions: ${prescriptionData.instructions}. Refills: ${prescriptionData.refillsAllowed}${pharmacyText}`;
-        
+        // ✅ CHANGE: Include patient name in data text
+        const doctorData = `Prescription issued for patient ${prescriptionData.patientName} with ${prescriptionData.medications.length} medication(s): ${medicationsText}. Instructions: ${prescriptionData.instructions}. Refills: ${prescriptionData.refillsAllowed}. Date: ${date}.${pharmacyText}${notesText}`;
+
+        const patientData = `Prescription issued with ${prescriptionData.medications.length} medication(s): ${medicationsText}. Instructions: ${prescriptionData.instructions}. Refills: ${prescriptionData.refillsAllowed}. Date: ${date}.${pharmacyText}`;
+
         const metadata = {
           prescription_id: prescriptionData.prescriptionId,
+          patient_name: prescriptionData.patientName,  // ✅ ADD THIS
+          patient_id: prescriptionData.patientId,
           appointment_id: prescriptionData.appointmentId,
           medications: prescriptionData.medications,
           pharmacy: prescriptionData.pharmacy,
@@ -293,7 +309,7 @@ class MedicalRAGService {
             prescriptionData.doctorId,
             'prescription_issued',
             doctorData,
-            { ...metadata, patient_id: prescriptionData.patientId }
+            metadata
           ),
           embedPatientData(
             prescriptionData.patientId,
@@ -320,12 +336,15 @@ class MedicalRAGService {
         const targetDateText = goalData.targetDate ? ` Target date: ${new Date(goalData.targetDate).toLocaleDateString()}` : '';
         const notesText = goalData.notes ? ` Notes: ${goalData.notes}` : '';
         
-        const doctorData = `Medical goal set for patient: ${goalData.description} (${goalData.goalType}, ${goalData.priority} priority).${targetText}${currentText}${targetDateText}${notesText}`;
-        
-        const patientData = `Medical goal set: ${goalData.description} (${goalData.priority} priority).${targetText}${currentText}${targetDateText}`;
-        
+        // ✅ CHANGE: Include patient name in data text
+        const doctorData = `Medical goal set for patient ${goalData.patientName}: ${goalData.description} (${goalData.goalType}, ${goalData.priority} priority).${targetText}${currentText}${targetDateText}. Date: ${date}.${notesText}`;
+
+        const patientData = `Medical goal set: ${goalData.description} (${goalData.priority} priority).${targetText}${currentText}${targetDateText}. Date: ${date}.`;
+
         const metadata = {
           goal_id: goalData.goalId,
+          patient_name: goalData.patientName,  // ✅ ADD THIS
+          patient_id: goalData.patientId,
           appointment_id: goalData.appointmentId,
           goal_type: goalData.goalType,
           target_value: goalData.targetValue,
@@ -341,7 +360,7 @@ class MedicalRAGService {
             goalData.doctorId,
             'medical_goal_set',
             doctorData,
-            { ...metadata, patient_id: goalData.patientId }
+            metadata
           ),
           embedPatientData(
             goalData.patientId,

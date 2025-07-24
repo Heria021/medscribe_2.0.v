@@ -69,12 +69,20 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
     session?.user?.id ? { userId: session.user.id as any } : "skip"
   );
 
-  // Get doctor-patient relationship
+  // Get doctor-patient relationship with full patient and doctor details
   const doctorPatientRelation = useQuery(
     api.doctorPatients.getDoctorPatientRelationship,
     doctorProfile && patientId ? {
       doctorId: doctorProfile._id,
       patientId: patientId as Id<"patients">
+    } : "skip"
+  );
+
+  // Get full doctor-patient relationship details (includes patient and doctor objects)
+  const doctorPatientDetails = useQuery(
+    api.doctorPatients.getById,
+    doctorPatientRelation?._id ? {
+      doctorPatientId: doctorPatientRelation._id
     } : "skip"
   );
 
@@ -106,10 +114,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
 
   // Form submission handler
   const handleSubmit = async (data: TreatmentFormData) => {
-    console.log("Form submission started with data:", data);
-
     if (!doctorPatientRelation || !doctorProfile) {
-      console.error("Missing required data:", { doctorPatientRelation, doctorProfile });
       toast.error("Unable to create treatment: Missing doctor-patient relationship");
       return;
     }
@@ -137,7 +142,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
       );
 
       if (invalidMedications.length > 0) {
-        console.error("Invalid medications found:", invalidMedications);
+
         toast.error("Please complete all required medication fields (Name, Strength, Frequency)");
         return;
       }
@@ -145,19 +150,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      console.log("Creating treatment plan with data:", {
-        doctorPatientId: doctorPatientRelation._id,
-        soapNoteId: data.soapNoteId && data.soapNoteId !== "" ? data.soapNoteId : undefined,
-        title: data.title,
-        diagnosis: data.diagnosis,
-        plan: data.plan,
-        goals: data.goals,
-        status: "active",
-        startDate: data.startDate.toISOString().split('T')[0],
-        endDate: data.endDate?.toISOString().split('T')[0],
-        medicationDetails: data.medicationDetails,
-        pharmacyId: data.pharmacyId && data.pharmacyId !== "" ? data.pharmacyId : undefined,
-      });
+
 
       // Create treatment plan
       const treatmentPlanId = await createTreatmentPlan({
@@ -174,7 +167,75 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
         pharmacyId: data.pharmacyId && data.pharmacyId !== "" ? data.pharmacyId as any : undefined,
       });
 
-      console.log("Treatment plan created successfully with ID:", treatmentPlanId);
+      // 🔥 Embed treatment plan into RAG system with patient name
+      if (treatmentPlanId && doctorPatientDetails?.patient && doctorPatientDetails?.doctor) {
+        const patientName = `${doctorPatientDetails.patient.firstName} ${doctorPatientDetails.patient.lastName}`;
+
+        // Embed treatment plan
+        medicalRAGHooks.onTreatmentPlanCreated({
+          treatmentId: treatmentPlanId,
+          doctorId: doctorPatientDetails.doctor._id,
+          patientId: doctorPatientDetails.patient._id,
+          patientName,
+          appointmentId: undefined, // Could be linked to current appointment if available
+          diagnosis: data.diagnosis,
+          treatmentType: data.title, // Using title as treatment type
+          description: data.plan,
+          goals: data.goals,
+          duration: data.endDate ? `${data.startDate.toLocaleDateString()} to ${data.endDate.toLocaleDateString()}` : undefined,
+          followUpRequired: true, // Default to true for active treatment plans
+          notes: undefined,
+          createdAt: Date.now(),
+        });
+
+        // 🔥 Embed each medication into RAG system
+        if (data.medicationDetails && data.medicationDetails.length > 0) {
+          data.medicationDetails.forEach((medication, index) => {
+
+            medicalRAGHooks.onMedicationPrescribed({
+              medicationId: `${treatmentPlanId}_med_${index}`, // Generate unique ID
+              doctorId: doctorPatientDetails.doctor._id,
+              patientId: doctorPatientDetails.patient._id,
+              patientName,
+              appointmentId: undefined,
+              medicationName: medication.name,
+              dosage: `${medication.strength} ${medication.dosageForm}`,
+              frequency: medication.frequency,
+              duration: medication.duration || "As prescribed",
+              instructions: medication.instructions,
+              sideEffects: undefined, // Could be enhanced with medication database lookup
+              interactions: undefined, // Could be enhanced with interaction checking
+              notes: medication.genericName ? `Generic: ${medication.genericName}` : undefined,
+              createdAt: Date.now(),
+            });
+          });
+        }
+
+        // 🔥 Embed each treatment goal into RAG system
+        if (data.goals && data.goals.length > 0) {
+          data.goals.forEach((goal, index) => {
+
+            medicalRAGHooks.onMedicalGoalSet({
+              goalId: `${treatmentPlanId}_goal_${index}`, // Generate unique ID
+              doctorId: doctorPatientDetails.doctor._id,
+              patientId: doctorPatientDetails.patient._id,
+              patientName,
+              appointmentId: undefined,
+              goalType: "treatment_goal", // Categorize as treatment-related goal
+              description: goal,
+              targetValue: undefined, // Could be enhanced with specific target values
+              currentValue: undefined, // Could be enhanced with baseline measurements
+              targetDate: data.endDate?.getTime(), // Use treatment end date as target
+              priority: "medium" as const, // Default priority
+              status: "active" as const, // New goals are active
+              notes: `Related to ${data.diagnosis} treatment plan`,
+              createdAt: Date.now(),
+            });
+          });
+        }
+      }
+
+
 
       // Log to RAG system
       try {
@@ -194,7 +255,7 @@ export const AddTreatmentForm: React.FC<AddTreatmentFormProps> = ({
           createdAt: Date.now(),
         });
       } catch (ragError) {
-        console.warn("RAG logging failed:", ragError);
+
         // Don't fail the whole operation if RAG logging fails
       }
 
