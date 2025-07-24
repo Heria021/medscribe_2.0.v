@@ -102,11 +102,15 @@ export const AppointmentCard = React.memo<ExtendedAppointmentCardProps>(({
                 {appointment.patient?.firstName} {appointment.patient?.lastName}
               </h4>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="truncate">{appointment.visitReason}</span>
+                <span className="truncate max-w-[580px] block">
+                  {appointment.visitReason && appointment.visitReason.length > 100
+                    ? `${appointment.visitReason}...`
+                    : appointment.visitReason}
+                </span>
                 {appointment.location?.type === "telemedicine" && (
                   <>
-                    <span>•</span>
-                    <Video className="h-3 w-3" />
+                    <span className="flex-shrink-0">•</span>
+                    <Video className="h-3 w-3 flex-shrink-0" />
                   </>
                 )}
               </div>

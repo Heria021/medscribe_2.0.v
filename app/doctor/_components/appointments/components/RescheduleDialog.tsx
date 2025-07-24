@@ -29,7 +29,7 @@ interface RescheduleDialogProps {
   appointment: Appointment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onReschedule?: (appointmentId: string, newSlotId: string, reason?: string) => void;
+  onReschedule?: (appointmentId: string, newSlotId: string, reason?: string, slotData?: any) => void;
 }
 
 export const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
@@ -71,8 +71,8 @@ export const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
     try {
       setIsSubmitting(true);
 
-      // Call the reschedule handler with slot ID
-      await onReschedule?.(appointment._id, selectedSlotId, reason);
+      // Call the reschedule handler with slot ID and slot data
+      await onReschedule?.(appointment._id, selectedSlotId, reason, selectedSlot);
 
       // Reset form and close dialog
       setSelectedSlotId("");

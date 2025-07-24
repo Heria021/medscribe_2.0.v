@@ -248,6 +248,63 @@ class AppointmentRAGService {
   }
 
   /**
+   * Embed appointment rescheduled event
+   */
+  async onAppointmentRescheduled(
+    originalAppointmentData: AppointmentEventData,
+    newAppointmentData: AppointmentEventData,
+    reason: string,
+    rescheduledBy: 'doctor' | 'patient' | 'admin' = 'doctor'
+  ): Promise<void> {
+    await this.executeEmbed(
+      async () => {
+        const originalDate = new Date(originalAppointmentData.appointmentDateTime).toLocaleDateString();
+        const originalTime = new Date(originalAppointmentData.appointmentDateTime).toLocaleTimeString();
+        const newDate = new Date(newAppointmentData.appointmentDateTime).toLocaleDateString();
+        const newTime = new Date(newAppointmentData.appointmentDateTime).toLocaleTimeString();
+
+        // Enhanced data with patient and doctor names
+        const patientName = originalAppointmentData.patientName || 'patient';
+        const doctorName = originalAppointmentData.doctorName || 'doctor';
+
+        const doctorData = `Appointment rescheduled with patient ${patientName}. Original: ${originalDate} at ${originalTime}. New: ${newDate} at ${newTime}. Reason: ${reason}. Visit: ${originalAppointmentData.visitReason}`;
+        const patientData = `Appointment rescheduled with Dr. ${doctorName}. Original: ${originalDate} at ${originalTime}. New: ${newDate} at ${newTime}. Reason: ${reason}. Visit: ${originalAppointmentData.visitReason}`;
+
+        const metadata = {
+          appointment_id: originalAppointmentData.appointmentId,
+          original_appointment_date: originalDate,
+          original_appointment_time: originalTime,
+          new_appointment_date: newDate,
+          new_appointment_time: newTime,
+          appointment_type: originalAppointmentData.appointmentType,
+          visit_reason: originalAppointmentData.visitReason,
+          patient_name: patientName,
+          doctor_name: doctorName,
+          reason,
+          rescheduled_by: rescheduledBy
+        };
+
+        await Promise.all([
+          embedDoctorData(
+            originalAppointmentData.doctorId,
+            'appointment_rescheduled',
+            doctorData,
+            { ...metadata, patient_id: originalAppointmentData.patientId }
+          ),
+          embedPatientData(
+            originalAppointmentData.patientId,
+            'appointment_rescheduled',
+            patientData,
+            { ...metadata, doctor_id: originalAppointmentData.doctorId }
+          )
+        ]);
+      },
+      'appointment_rescheduled',
+      originalAppointmentData.appointmentId
+    );
+  }
+
+  /**
    * Embed appointment confirmed event
    */
   async onAppointmentConfirmed(
@@ -263,8 +320,8 @@ class AppointmentRAGService {
         const patientName = appointmentData.patientName || 'patient';
         const doctorName = appointmentData.doctorName || 'doctor';
 
-        const doctorData = `Appointment confirmed with patient ${patientName} for ${date} at ${time}. Patient visit: ${appointmentData.visitReason}`;
-        const patientData = `Appointment confirmed with Dr. ${doctorName} for ${date} at ${time}. Visit: ${appointmentData.visitReason}`;
+        const doctorData = `Appointment confirmed with patient ${patientName} for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${appointmentData.location?.type === 'in_person' ? 'in_person' : 'telemedicine'} ${appointmentData.location?.address ? `(${appointmentData.location.address})` : ''}. Confirmed by: ${confirmedBy}.`;
+        const patientData = `Appointment confirmed with Dr. ${doctorName} for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${appointmentData.location?.type === 'in_person' ? 'in_person' : 'telemedicine'}. Confirmed by: ${confirmedBy}.`;
 
         const metadata = {
           appointment_id: appointmentData.appointmentId,
@@ -274,7 +331,11 @@ class AppointmentRAGService {
           visit_reason: appointmentData.visitReason,
           patient_name: patientName,
           doctor_name: doctorName,
-          confirmed_by: confirmedBy
+          confirmed_by: confirmedBy,
+          location_type: appointmentData.location?.type,
+          location_address: appointmentData.location?.address,
+          status: 'confirmed',
+          notes: appointmentData.notes
         };
 
         await Promise.all([
@@ -308,25 +369,31 @@ class AppointmentRAGService {
     await this.executeEmbed(
       async () => {
         const date = new Date(appointmentData.appointmentDateTime).toLocaleDateString();
+        const time = new Date(appointmentData.appointmentDateTime).toLocaleTimeString();
         const durationText = duration ? ` Duration: ${duration} minutes.` : '';
-        const notesText = notes ? ` Notes: ${notes}` : '';
-        
+        const notesText = notes ? ` Completion notes: ${notes}` : '';
+
         // Enhanced data with patient and doctor names
         const patientName = appointmentData.patientName || 'patient';
         const doctorName = appointmentData.doctorName || 'doctor';
 
-        const doctorData = `Appointment completed with patient ${patientName} for ${appointmentData.visitReason}. Date: ${date}.${durationText}${notesText}`;
-        const patientData = `Appointment completed with Dr. ${doctorName} for ${appointmentData.visitReason}. Date: ${date}.${durationText}`;
+        const doctorData = `Appointment completed with patient ${patientName} for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${appointmentData.location?.type === 'in_person' ? 'in_person' : 'telemedicine'} ${appointmentData.location?.address ? `(${appointmentData.location.address})` : ''}.${durationText}${notesText}`;
+        const patientData = `Appointment completed with Dr. ${doctorName} for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${appointmentData.location?.type === 'in_person' ? 'in_person' : 'telemedicine'}.${durationText}`;
 
         const metadata = {
           appointment_id: appointmentData.appointmentId,
           appointment_date: date,
+          appointment_time: time,
           appointment_type: appointmentData.appointmentType,
           visit_reason: appointmentData.visitReason,
           patient_name: patientName,
           doctor_name: doctorName,
           duration,
-          completion_notes: notes
+          completion_notes: notes,
+          location_type: appointmentData.location?.type,
+          location_address: appointmentData.location?.address,
+          status: 'completed',
+          original_notes: appointmentData.notes
         };
 
         await Promise.all([
@@ -357,6 +424,7 @@ export const appointmentRAGHooks = new AppointmentRAGService();
 export const {
   onAppointmentScheduled,
   onAppointmentCancelled,
+  onAppointmentRescheduled,
   onAppointmentConfirmed,
   onAppointmentCompleted
 } = appointmentRAGHooks;
