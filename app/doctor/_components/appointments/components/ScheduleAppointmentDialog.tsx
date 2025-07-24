@@ -40,7 +40,6 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 interface ScheduleAppointmentDialogProps {
   open: boolean;
@@ -135,7 +134,7 @@ export const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogPro
     }
 
     try {
-      const appointmentId = await createAppointmentWithSlot({
+      await createAppointmentWithSlot({
         doctorPatientId: doctorPatientRelationship._id,
         slotId: values.selectedSlotId as Id<"timeSlots">,
         appointmentType: values.appointmentType as any,
@@ -147,29 +146,6 @@ export const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogPro
         notes: values.notes,
         insuranceVerified: false,
       });
-
-      // 🔥 Embed appointment data into RAG system (production-ready)
-      if (appointmentId && doctorPatientRelationship?.patient && selectedSlot) {
-        const appointmentDateTime = new Date(`${selectedSlot.date}T${selectedSlot.time}`).getTime();
-
-        appointmentRAGHooks.onAppointmentScheduled({
-          appointmentId: appointmentId,
-          doctorId: doctorProfile._id,
-          patientId: doctorPatientRelationship.patient._id,
-          appointmentDateTime,
-          appointmentType: values.appointmentType,
-          visitReason: values.visitReason,
-          location: {
-            type: "in_person",
-            address: "Clinic",
-          },
-          notes: values.notes || undefined,
-        }, {
-          scheduledBy: 'doctor',
-          bookingMethod: 'online',
-          insuranceVerified: false,
-        });
-      }
 
       toast.success("Appointment scheduled successfully!");
       handleClose();

@@ -73,6 +73,13 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
 
       // 🔥 Embed confirmation into RAG system (production-ready)
       if (appointmentData) {
+        const patientName = appointmentData.patient
+          ? `${appointmentData.patient.firstName} ${appointmentData.patient.lastName}`
+          : 'patient';
+        const doctorName = appointmentData.doctor
+          ? `${appointmentData.doctor.firstName} ${appointmentData.doctor.lastName}`
+          : 'doctor';
+
         appointmentRAGHooks.onAppointmentConfirmed({
           appointmentId: appointmentId,
           doctorId: appointmentData.doctor?._id || appointmentData.doctorId,
@@ -82,6 +89,8 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
           visitReason: appointmentData.visitReason,
           location: appointmentData.location,
           notes: appointmentData.notes,
+          patientName,
+          doctorName,
         }, 'doctor');
       }
     });
@@ -113,6 +122,13 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
 
       // 🔥 Embed completion into RAG system (production-ready)
       if (appointmentData) {
+        const patientName = appointmentData.patient
+          ? `${appointmentData.patient.firstName} ${appointmentData.patient.lastName}`
+          : 'patient';
+        const doctorName = appointmentData.doctor
+          ? `${appointmentData.doctor.firstName} ${appointmentData.doctor.lastName}`
+          : 'doctor';
+
         appointmentRAGHooks.onAppointmentCompleted({
           appointmentId: appointmentId,
           doctorId: appointmentData.doctor?._id || appointmentData.doctorId,
@@ -122,6 +138,8 @@ export function useAppointmentActions(): UseAppointmentActionsReturn {
           visitReason: appointmentData.visitReason,
           location: appointmentData.location,
           notes: appointmentData.notes,
+          patientName,
+          doctorName,
         }, duration, notes);
       }
     });

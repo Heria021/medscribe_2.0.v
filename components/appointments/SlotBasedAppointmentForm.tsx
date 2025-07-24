@@ -69,21 +69,20 @@ export const SlotBasedAppointmentForm: React.FC<SlotBasedAppointmentFormProps> =
   // Get slots for the next 7 days for quick date selection
   const weekStartDate = format(startOfWeek(new Date()), 'yyyy-MM-dd');
   const weekEndDate = format(addDays(new Date(), 6), 'yyyy-MM-dd');
-  
+
   const weekSlots = useQuery(api.timeSlots.getAvailableSlotsInRange, {
     doctorId,
     startDate: weekStartDate,
     endDate: weekEndDate,
   });
 
+  // Get doctor-patient relationship to access patient and doctor details
+  const doctorPatientRelation = useQuery(api.doctorPatients.getById, {
+    doctorPatientId,
+  });
+
   // Create appointment mutation
   const createAppointment = useMutation(api.appointments.createWithSlot);
-
-  // Get doctor-patient relationship details for RAG embedding
-  const doctorPatientRelationship = useQuery(
-    api.doctorPatients.getById,
-    { doctorPatientId }
-  );
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentFormSchema),
@@ -127,38 +126,47 @@ export const SlotBasedAppointmentForm: React.FC<SlotBasedAppointmentFormProps> =
         copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
       });
 
-      // 🔥 Embed appointment data into RAG system (production-ready)
-      if (appointmentId && doctorPatientRelationship?.doctor && doctorPatientRelationship?.patient) {
-        const selectedSlotData = weekSlots?.find(slot => slot._id === data.slotId);
-        if (selectedSlotData) {
-          const appointmentDateTime = new Date(`${selectedSlotData.date}T${selectedSlotData.time}`).getTime();
+      // Get the selected slot details for appointment date/time
+      const selectedSlotData = availableSlots?.find(slot => slot._id === data.slotId);
+      const appointmentDateTime = selectedSlotData
+        ? new Date(`${selectedSlotData.date}T${selectedSlotData.time}`).getTime()
+        : Date.now();
 
-          appointmentRAGHooks.onAppointmentScheduled({
-            appointmentId: appointmentId,
-            doctorId: doctorPatientRelationship.doctor._id,
-            patientId: doctorPatientRelationship.patient._id,
-            appointmentDateTime,
-            appointmentType: data.appointmentType,
-            visitReason: data.visitReason,
-            location: {
-              type: data.locationType,
-              address: data.locationType === "in_person" ? data.address : undefined,
-              room: data.locationType === "in_person" ? data.room : undefined,
-              meetingLink: data.locationType === "telemedicine" ? data.meetingLink : undefined,
-            },
-            notes: data.notes || undefined,
-          }, {
-            scheduledBy: 'doctor',
-            bookingMethod: 'online',
-            insuranceVerified: data.insuranceVerified || false,
-            copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
-          });
-        }
+      // 🔥 Embed appointment data into RAG system with patient and doctor names
+      if (doctorPatientRelation?.patient && doctorPatientRelation?.doctor && appointmentId) {
+        const patientName = `${doctorPatientRelation.patient.firstName} ${doctorPatientRelation.patient.lastName}`;
+        const doctorName = `${doctorPatientRelation.doctor.firstName} ${doctorPatientRelation.doctor.lastName}`;
+
+        appointmentRAGHooks.onAppointmentScheduled({
+          appointmentId: appointmentId,
+          doctorId: doctorId,
+          patientId: doctorPatientRelation.patient._id,
+          appointmentDateTime,
+          appointmentType: data.appointmentType,
+          visitReason: data.visitReason,
+          location: {
+            type: data.locationType,
+            address: data.locationType === "in_person" ? data.address : undefined,
+            room: data.locationType === "in_person" ? data.room : undefined,
+            meetingLink: data.locationType === "telemedicine" ? data.meetingLink : undefined,
+          },
+          notes: data.notes || undefined,
+          patientName,
+          doctorName,
+        }, {
+          scheduledBy: 'doctor',
+          bookingMethod: 'online',
+          insuranceVerified: data.insuranceVerified,
+          copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
+          timeSlotId: data.slotId,
+        });
       }
 
+      toast.success("Appointment scheduled successfully!");
       onSuccess?.();
     } catch (error) {
       console.error("Error creating appointment:", error);
+      toast.error("Failed to schedule appointment. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

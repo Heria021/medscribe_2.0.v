@@ -34,8 +34,6 @@ import {
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
-import { useQuery } from "convex/react";
 
 interface CreateAppointmentDialogProps {
   open: boolean;
@@ -85,12 +83,6 @@ export function CreateAppointmentDialog({
   // Create appointment mutation
   const createAppointment = useMutation(api.appointments.create);
 
-  // Get doctor-patient relationship details for RAG embedding
-  const doctorPatientRelationship = useQuery(
-    api.doctorPatients.getById,
-    { doctorPatientId: doctorPatientId as any }
-  );
-
   const handleCreate = async () => {
     if (!appointmentType || !visitReason.trim() || !appointmentDate || !appointmentTime) {
       toast.error("Please fill in all required fields");
@@ -112,7 +104,7 @@ export function CreateAppointmentDialog({
 
     setIsCreating(true);
     try {
-      const appointmentId = await createAppointment({
+      await createAppointment({
         doctorPatientId: doctorPatientId as any,
         appointmentDateTime: dateTime.getTime(),
         duration,
@@ -130,34 +122,10 @@ export function CreateAppointmentDialog({
         copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
       });
 
-      // 🔥 Embed appointment data into RAG system (production-ready)
-      if (appointmentId && doctorPatientRelationship?.doctor && doctorPatientRelationship?.patient) {
-        appointmentRAGHooks.onAppointmentScheduled({
-          appointmentId: appointmentId,
-          doctorId: doctorPatientRelationship.doctor._id,
-          patientId: doctorPatientRelationship.patient._id,
-          appointmentDateTime: dateTime.getTime(),
-          appointmentType: appointmentType,
-          visitReason: visitReason,
-          location: {
-            type: locationType,
-            address: locationType === "in_person" ? address : undefined,
-            room: locationType === "in_person" ? room : undefined,
-            meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
-          },
-          notes: notes.trim() || undefined,
-        }, {
-          scheduledBy: 'doctor',
-          bookingMethod: 'online',
-          insuranceVerified: insuranceVerified || false,
-          copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
-        });
-      }
-
       toast.success("Appointment scheduled successfully!");
       onOpenChange(false);
       onSuccess?.();
-
+      
       // Reset form
       resetForm();
     } catch (error) {

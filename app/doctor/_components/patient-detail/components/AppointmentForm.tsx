@@ -35,7 +35,6 @@ import { toast } from "sonner";
 import { APPOINTMENT_TYPES, DURATIONS } from "../types";
 import type { AppointmentFormProps } from "../types";
 import { cn } from "@/lib/utils";
-import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 // Zod validation schema
 const appointmentFormSchema = z.object({
@@ -129,7 +128,7 @@ export const AppointmentForm = React.memo<AppointmentFormProps>(({
       // Convert date and time to timestamp
       const appointmentDateTime = new Date(`${data.appointmentDate}T${data.appointmentTime}`).getTime();
 
-      const appointmentId = await createAppointment({
+      await createAppointment({
         doctorPatientId: currentDoctorPatient._id,
         appointmentDateTime,
         duration: data.duration,
@@ -146,30 +145,6 @@ export const AppointmentForm = React.memo<AppointmentFormProps>(({
         insuranceVerified: data.insuranceVerified,
         copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
       });
-
-      // 🔥 Embed appointment data into RAG system (production-ready)
-      if (appointmentId && _patient && _doctorProfile) {
-        appointmentRAGHooks.onAppointmentScheduled({
-          appointmentId: appointmentId,
-          doctorId: _doctorProfile._id,
-          patientId: _patient._id,
-          appointmentDateTime,
-          appointmentType: data.appointmentType,
-          visitReason: data.visitReason,
-          location: {
-            type: data.locationType,
-            address: data.address || undefined,
-            room: data.room || undefined,
-            meetingLink: data.meetingLink || undefined,
-          },
-          notes: data.notes || undefined,
-        }, {
-          scheduledBy: 'doctor',
-          bookingMethod: 'online',
-          insuranceVerified: data.insuranceVerified || false,
-          copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
-        });
-      }
 
       toast.success("Appointment scheduled successfully!");
       onSuccess();

@@ -22,7 +22,7 @@ const DEFAULT_CONFIG: RAGConfig = {
   enabled: process.env.NODE_ENV !== 'test' && typeof window !== 'undefined',
   async: true,
   retryOnFailure: true,
-  logErrors: process.env.NODE_ENV === 'development',
+  logErrors: false, // Clean production logging
   timeout: 5000, // 5 second timeout
 };
 
@@ -43,6 +43,9 @@ export interface AppointmentEventData {
     meetingLink?: string;
   };
   notes?: string;
+  // Enhanced with patient and doctor names for better RAG embedding
+  patientName?: string;
+  doctorName?: string;
 }
 
 /**
@@ -99,7 +102,10 @@ class AppointmentRAGService {
         if (this.config.retryOnFailure) {
           setTimeout(async () => {
             try {
-              await Promise.race([embedFn(), timeoutPromise]);
+              const retryTimeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('RAG embedding retry timeout')), this.config.timeout);
+              });
+              await Promise.race([embedFn(), retryTimeoutPromise]);
               if (this.config.logErrors) {
                 console.log(`✅ RAG embed retry: ${eventType} (${appointmentId})`);
               }
@@ -133,10 +139,26 @@ class AppointmentRAGService {
         const date = new Date(appointmentData.appointmentDateTime).toLocaleDateString();
         const time = new Date(appointmentData.appointmentDateTime).toLocaleTimeString();
         
-        const doctorData = `Appointment scheduled with patient for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${appointmentData.location.type}${appointmentData.notes ? `. Notes: ${appointmentData.notes}` : ''}`;
-        
-        const patientData = `Appointment scheduled for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${appointmentData.location.type}${appointmentData.notes ? `. Notes: ${appointmentData.notes}` : ''}`;
-        
+        // Enhanced data with patient and doctor names
+        const patientName = appointmentData.patientName || 'patient';
+        const doctorName = appointmentData.doctorName || 'doctor';
+
+
+
+        // Enhanced data format matching your exact specification
+        const locationText = appointmentData.location.type === 'in_person'
+          ? `in_person${appointmentData.location.room ? ` at ${appointmentData.location.room}` : ''}${appointmentData.location.address ? ` (${appointmentData.location.address})` : ''}`
+          : `telemedicine${appointmentData.location.meetingLink ? ` via ${appointmentData.location.meetingLink}` : ''}`;
+
+        const instructionsText = appointmentData.notes ? ` ${appointmentData.notes}` : '';
+
+        const doctorData = `Appointment scheduled with patient ${patientName} for ${appointmentData.visitReason}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${locationText}.${instructionsText}`;
+
+        const patientData = `Appointment scheduled for ${appointmentData.visitReason} with Dr. ${doctorName}. Date: ${date} at ${time}. Type: ${appointmentData.appointmentType}. Location: ${locationText}.${instructionsText}`;
+
+
+
+        // Enhanced metadata matching your exact specification
         const commonMetadata = {
           appointment_id: appointmentData.appointmentId,
           appointment_date: date,
@@ -144,7 +166,13 @@ class AppointmentRAGService {
           appointment_type: appointmentData.appointmentType,
           visit_reason: appointmentData.visitReason,
           location_type: appointmentData.location.type,
-          ...metadata
+          patient_name: patientName,
+          doctor_name: doctorName,
+          scheduled_by: metadata.scheduledBy,
+          booking_method: metadata.bookingMethod,
+          insurance_verified: metadata.insuranceVerified,
+          copay_amount: metadata.copayAmount,
+          time_slot_id: metadata.timeSlotId
         };
 
         await Promise.all([
@@ -180,15 +208,21 @@ class AppointmentRAGService {
         const date = new Date(appointmentData.appointmentDateTime).toLocaleDateString();
         const time = new Date(appointmentData.appointmentDateTime).toLocaleTimeString();
         
-        const doctorData = `Appointment cancelled for ${date} at ${time}. Reason: ${reason}. Patient visit: ${appointmentData.visitReason}`;
-        const patientData = `Appointment cancelled for ${date} at ${time}. Reason: ${reason}. Visit: ${appointmentData.visitReason}`;
-        
+        // Enhanced data with patient and doctor names
+        const patientName = appointmentData.patientName || 'patient';
+        const doctorName = appointmentData.doctorName || 'doctor';
+
+        const doctorData = `Appointment cancelled with patient ${patientName} for ${date} at ${time}. Reason: ${reason}. Patient visit: ${appointmentData.visitReason}`;
+        const patientData = `Appointment cancelled with Dr. ${doctorName} for ${date} at ${time}. Reason: ${reason}. Visit: ${appointmentData.visitReason}`;
+
         const metadata = {
           appointment_id: appointmentData.appointmentId,
           appointment_date: date,
           appointment_time: time,
           appointment_type: appointmentData.appointmentType,
           visit_reason: appointmentData.visitReason,
+          patient_name: patientName,
+          doctor_name: doctorName,
           reason,
           cancelled_by: cancelledBy
         };
@@ -225,15 +259,21 @@ class AppointmentRAGService {
         const date = new Date(appointmentData.appointmentDateTime).toLocaleDateString();
         const time = new Date(appointmentData.appointmentDateTime).toLocaleTimeString();
         
-        const doctorData = `Appointment confirmed for ${date} at ${time}. Patient visit: ${appointmentData.visitReason}`;
-        const patientData = `Appointment confirmed for ${date} at ${time}. Visit: ${appointmentData.visitReason}`;
-        
+        // Enhanced data with patient and doctor names
+        const patientName = appointmentData.patientName || 'patient';
+        const doctorName = appointmentData.doctorName || 'doctor';
+
+        const doctorData = `Appointment confirmed with patient ${patientName} for ${date} at ${time}. Patient visit: ${appointmentData.visitReason}`;
+        const patientData = `Appointment confirmed with Dr. ${doctorName} for ${date} at ${time}. Visit: ${appointmentData.visitReason}`;
+
         const metadata = {
           appointment_id: appointmentData.appointmentId,
           appointment_date: date,
           appointment_time: time,
           appointment_type: appointmentData.appointmentType,
           visit_reason: appointmentData.visitReason,
+          patient_name: patientName,
+          doctor_name: doctorName,
           confirmed_by: confirmedBy
         };
 
@@ -271,14 +311,20 @@ class AppointmentRAGService {
         const durationText = duration ? ` Duration: ${duration} minutes.` : '';
         const notesText = notes ? ` Notes: ${notes}` : '';
         
-        const doctorData = `Appointment completed for ${appointmentData.visitReason}. Date: ${date}.${durationText}${notesText}`;
-        const patientData = `Appointment completed for ${appointmentData.visitReason}. Date: ${date}.${durationText}`;
-        
+        // Enhanced data with patient and doctor names
+        const patientName = appointmentData.patientName || 'patient';
+        const doctorName = appointmentData.doctorName || 'doctor';
+
+        const doctorData = `Appointment completed with patient ${patientName} for ${appointmentData.visitReason}. Date: ${date}.${durationText}${notesText}`;
+        const patientData = `Appointment completed with Dr. ${doctorName} for ${appointmentData.visitReason}. Date: ${date}.${durationText}`;
+
         const metadata = {
           appointment_id: appointmentData.appointmentId,
           appointment_date: date,
           appointment_type: appointmentData.appointmentType,
           visit_reason: appointmentData.visitReason,
+          patient_name: patientName,
+          doctor_name: doctorName,
           duration,
           completion_notes: notes
         };

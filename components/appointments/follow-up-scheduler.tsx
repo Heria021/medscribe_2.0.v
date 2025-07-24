@@ -38,7 +38,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, addDays, addWeeks, addMonths, isAfter, isBefore, startOfDay } from "date-fns";
 import type { Id } from "@/convex/_generated/dataModel";
-import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 interface FollowUpSchedulerProps {
   patientId: Id<"patients">;
@@ -231,27 +230,6 @@ export const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         notes,
         insuranceVerified: false,
       });
-
-      // 🔥 Embed appointment data into RAG system (production-ready)
-      if (appointmentId && doctorPatientRelationship?.patient && doctorPatientRelationship?.doctor) {
-        appointmentRAGHooks.onAppointmentScheduled({
-          appointmentId: appointmentId,
-          doctorId: doctorId,
-          patientId: patientId,
-          appointmentDateTime: appointmentDateTime.getTime(),
-          appointmentType: appointmentType,
-          visitReason: `Follow-up appointment${treatmentId ? ' for treatment' : ''}`,
-          location: {
-            type: "in_person",
-            address: "Clinic",
-          },
-          notes: notes || undefined,
-        }, {
-          scheduledBy: 'doctor',
-          bookingMethod: 'online',
-          insuranceVerified: false,
-        });
-      }
 
       toast.success("Follow-up appointment scheduled successfully!");
       onScheduled?.(appointmentId);

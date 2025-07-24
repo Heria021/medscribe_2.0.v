@@ -89,21 +89,20 @@ export const SlotBasedAppointmentDialog: React.FC<SlotBasedAppointmentDialogProp
   // Get slots for the next 7 days for quick date selection
   const weekStartDate = format(startOfWeek(new Date()), 'yyyy-MM-dd');
   const weekEndDate = format(addDays(new Date(), 6), 'yyyy-MM-dd');
-  
+
   const weekSlots = useQuery(api.timeSlots.getAvailableSlotsInRange, {
     doctorId,
     startDate: weekStartDate,
     endDate: weekEndDate,
   });
 
+  // Get doctor-patient relationship to access patient and doctor details
+  const doctorPatientRelation = useQuery(api.doctorPatients.getById, {
+    doctorPatientId,
+  });
+
   // Create appointment mutation
   const createAppointment = useMutation(api.appointments.createWithSlot);
-
-  // Get doctor-patient relationship details for RAG embedding
-  const doctorPatientRelationship = useQuery(
-    api.doctorPatients.getById,
-    { doctorPatientId }
-  );
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -146,33 +145,45 @@ export const SlotBasedAppointmentDialog: React.FC<SlotBasedAppointmentDialogProp
         copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
       });
 
-      // 🔥 Embed appointment data into RAG system (production-ready)
-      if (appointmentId && doctorPatientRelationship?.doctor && doctorPatientRelationship?.patient) {
-        const selectedSlotData = weekSlots?.find(slot => slot._id === selectedSlot);
-        if (selectedSlotData) {
-          const appointmentDateTime = new Date(`${selectedSlotData.date}T${selectedSlotData.time}`).getTime();
+      // Get the selected slot details for appointment date/time
+      const selectedSlotData = availableSlots?.find(slot => slot._id === selectedSlot);
+      const appointmentDateTime = selectedSlotData
+        ? new Date(`${selectedSlotData.date}T${selectedSlotData.time}`).getTime()
+        : Date.now();
 
-          appointmentRAGHooks.onAppointmentScheduled({
-            appointmentId: appointmentId,
-            doctorId: doctorPatientRelationship.doctor._id,
-            patientId: doctorPatientRelationship.patient._id,
-            appointmentDateTime,
-            appointmentType: appointmentType,
-            visitReason: visitReason,
-            location: {
-              type: locationType,
-              address: locationType === "in_person" ? address : undefined,
-              room: locationType === "in_person" ? room : undefined,
-              meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
-            },
-            notes: notes || undefined,
-          }, {
-            scheduledBy: 'doctor',
-            bookingMethod: 'online',
-            insuranceVerified: insuranceVerified || false,
-            copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
-          });
-        }
+      // 🔥 Embed appointment data into RAG system with patient and doctor names
+      if (doctorPatientRelation?.patient && doctorPatientRelation?.doctor && appointmentId) {
+        const patientName = `${doctorPatientRelation.patient.firstName} ${doctorPatientRelation.patient.lastName}`;
+        const doctorName = `${doctorPatientRelation.doctor.firstName} ${doctorPatientRelation.doctor.lastName}`;
+
+        // Enhanced appointment data with detailed information
+        const enhancedNotes = notes
+          ? `${notes}. Patient should bring current medication list and any recent medical records.`
+          : "Patient should bring current medication list and any recent medical records.";
+
+        appointmentRAGHooks.onAppointmentScheduled({
+          appointmentId: appointmentId,
+          doctorId: doctorId,
+          patientId: doctorPatientRelation.patient._id,
+          appointmentDateTime,
+          appointmentType: appointmentType,
+          visitReason,
+          location: {
+            type: locationType,
+            address: locationType === "in_person" ? address : undefined,
+            room: locationType === "in_person" ? room : undefined,
+            meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
+          },
+          notes: enhancedNotes,
+          patientName,
+          doctorName,
+        }, {
+          scheduledBy: 'doctor',
+          bookingMethod: 'online',
+          insuranceVerified,
+          copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
+          timeSlotId: selectedSlot,
+        });
       }
 
       toast.success("Appointment scheduled successfully!");
