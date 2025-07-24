@@ -24,6 +24,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 const appointmentFormSchema = z.object({
   slotId: z.string().min(1, "Please select a time slot"),
@@ -78,6 +79,12 @@ export const SlotBasedAppointmentForm: React.FC<SlotBasedAppointmentFormProps> =
   // Create appointment mutation
   const createAppointment = useMutation(api.appointments.createWithSlot);
 
+  // Get doctor-patient relationship details for RAG embedding
+  const doctorPatientRelationship = useQuery(
+    api.doctorPatients.getById,
+    { doctorPatientId }
+  );
+
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
@@ -104,7 +111,7 @@ export const SlotBasedAppointmentForm: React.FC<SlotBasedAppointmentFormProps> =
   const onSubmit = async (data: AppointmentFormData) => {
     setIsSubmitting(true);
     try {
-      await createAppointment({
+      const appointmentId = await createAppointment({
         doctorPatientId,
         slotId: data.slotId as Id<"timeSlots">,
         appointmentType: data.appointmentType as any,
@@ -119,6 +126,35 @@ export const SlotBasedAppointmentForm: React.FC<SlotBasedAppointmentFormProps> =
         insuranceVerified: data.insuranceVerified,
         copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
       });
+
+      // 🔥 Embed appointment data into RAG system (production-ready)
+      if (appointmentId && doctorPatientRelationship?.doctor && doctorPatientRelationship?.patient) {
+        const selectedSlotData = weekSlots?.find(slot => slot._id === data.slotId);
+        if (selectedSlotData) {
+          const appointmentDateTime = new Date(`${selectedSlotData.date}T${selectedSlotData.time}`).getTime();
+
+          appointmentRAGHooks.onAppointmentScheduled({
+            appointmentId: appointmentId,
+            doctorId: doctorPatientRelationship.doctor._id,
+            patientId: doctorPatientRelationship.patient._id,
+            appointmentDateTime,
+            appointmentType: data.appointmentType,
+            visitReason: data.visitReason,
+            location: {
+              type: data.locationType,
+              address: data.locationType === "in_person" ? data.address : undefined,
+              room: data.locationType === "in_person" ? data.room : undefined,
+              meetingLink: data.locationType === "telemedicine" ? data.meetingLink : undefined,
+            },
+            notes: data.notes || undefined,
+          }, {
+            scheduledBy: 'doctor',
+            bookingMethod: 'online',
+            insuranceVerified: data.insuranceVerified || false,
+            copayAmount: data.copayAmount ? parseFloat(data.copayAmount) : undefined,
+          });
+        }
+      }
 
       onSuccess?.();
     } catch (error) {

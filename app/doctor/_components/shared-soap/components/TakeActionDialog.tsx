@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 import type { SharedSOAPNote } from "../types";
 import { soapRAGHooks } from "@/lib/services/soap-rag-hooks";
+import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 interface TakeActionDialogProps {
   open: boolean;
@@ -150,7 +151,7 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
         });
 
         // Create appointment with slot
-        await createAppointmentWithSlot({
+        const appointmentId = await createAppointmentWithSlot({
           doctorPatientId,
           slotId: selectedSlotId as any,
           appointmentType: appointmentType as any,
@@ -165,6 +166,31 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
           insuranceVerified: false,
           copayAmount: undefined,
         });
+
+        // 🔥 Embed appointment data into RAG system (production-ready)
+        if (appointmentId && selectedSlot) {
+          const appointmentDateTime = new Date(`${selectedSlot.date}T${selectedSlot.time}`).getTime();
+
+          appointmentRAGHooks.onAppointmentScheduled({
+            appointmentId: appointmentId,
+            doctorId: doctorId,
+            patientId: note.patient._id,
+            appointmentDateTime,
+            appointmentType: appointmentType,
+            visitReason: visitReason,
+            location: {
+              type: locationType,
+              address: locationType === "in_person" ? address : undefined,
+              room: locationType === "in_person" ? room : undefined,
+              meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
+            },
+            notes: notes || undefined,
+          }, {
+            scheduledBy: 'doctor',
+            bookingMethod: 'online',
+            insuranceVerified: false,
+          });
+        }
 
         if (note._id) {
           await updateActionStatus({

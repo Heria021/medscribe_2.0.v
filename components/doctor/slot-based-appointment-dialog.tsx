@@ -39,6 +39,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 interface SlotBasedAppointmentDialogProps {
   open: boolean;
@@ -98,6 +99,12 @@ export const SlotBasedAppointmentDialog: React.FC<SlotBasedAppointmentDialogProp
   // Create appointment mutation
   const createAppointment = useMutation(api.appointments.createWithSlot);
 
+  // Get doctor-patient relationship details for RAG embedding
+  const doctorPatientRelationship = useQuery(
+    api.doctorPatients.getById,
+    { doctorPatientId }
+  );
+
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (!open) {
@@ -123,7 +130,7 @@ export const SlotBasedAppointmentDialog: React.FC<SlotBasedAppointmentDialogProp
 
     setIsCreating(true);
     try {
-      await createAppointment({
+      const appointmentId = await createAppointment({
         doctorPatientId,
         slotId: selectedSlot as Id<"timeSlots">,
         appointmentType: appointmentType as any,
@@ -138,6 +145,35 @@ export const SlotBasedAppointmentDialog: React.FC<SlotBasedAppointmentDialogProp
         insuranceVerified,
         copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
       });
+
+      // 🔥 Embed appointment data into RAG system (production-ready)
+      if (appointmentId && doctorPatientRelationship?.doctor && doctorPatientRelationship?.patient) {
+        const selectedSlotData = weekSlots?.find(slot => slot._id === selectedSlot);
+        if (selectedSlotData) {
+          const appointmentDateTime = new Date(`${selectedSlotData.date}T${selectedSlotData.time}`).getTime();
+
+          appointmentRAGHooks.onAppointmentScheduled({
+            appointmentId: appointmentId,
+            doctorId: doctorPatientRelationship.doctor._id,
+            patientId: doctorPatientRelationship.patient._id,
+            appointmentDateTime,
+            appointmentType: appointmentType,
+            visitReason: visitReason,
+            location: {
+              type: locationType,
+              address: locationType === "in_person" ? address : undefined,
+              room: locationType === "in_person" ? room : undefined,
+              meetingLink: locationType === "telemedicine" ? meetingLink : undefined,
+            },
+            notes: notes || undefined,
+          }, {
+            scheduledBy: 'doctor',
+            bookingMethod: 'online',
+            insuranceVerified: insuranceVerified || false,
+            copayAmount: copayAmount ? parseFloat(copayAmount) : undefined,
+          });
+        }
+      }
 
       toast.success("Appointment scheduled successfully!");
       onSuccess?.();
