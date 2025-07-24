@@ -40,6 +40,7 @@ export interface SOAPNoteEventData {
   soapNoteId: string;
   doctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD PATIENT NAME
   appointmentId?: string;
 
   // Core SOAP content (extracted from either legacy or enhanced structure)
@@ -96,6 +97,7 @@ export interface SOAPSharingEventData {
   fromDoctorId: string;
   toDoctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD PATIENT NAME
   shareReason: string;
   permissions: 'view' | 'edit' | 'comment';
   expiresAt?: number;
@@ -111,6 +113,7 @@ export interface SOAPActionEventData {
   soapNoteId: string;
   doctorId: string;
   patientId: string;
+  patientName: string;  // ✅ ADD PATIENT NAME
   actionType: 'accepted' | 'rejected' | 'reviewed' | 'commented' | 'updated';
   comments?: string;
   changes?: string;
@@ -199,7 +202,11 @@ class SOAPRAGService {
         if (this.config.retryOnFailure) {
           setTimeout(async () => {
             try {
-              await Promise.race([embedFn(), timeoutPromise]);
+              const retryTimeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('SOAP RAG embedding retry timeout')), this.config.timeout);
+              });
+
+              await Promise.race([embedFn(), retryTimeoutPromise]);
               if (this.config.logErrors) {
                 console.log(`✅ SOAP RAG embed retry: ${eventType} (${entityId})`);
               }
@@ -244,12 +251,15 @@ class SOAPRAGService {
         const sessionText = soapData.sessionId ? ` Session: ${soapData.sessionId}` : '';
         const processingText = soapData.processingTime ? ` Processing Time: ${soapData.processingTime}` : '';
 
-        const doctorData = `SOAP note created for patient visit on ${date}${enhancedText}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Subjective: ${soapData.subjective}. Objective: ${soapData.objective}. Assessment: ${soapData.assessment}. Plan: ${soapData.plan}.${diagnosisText}${primaryDiagnosisText}${medicationsText}${allergiesText}${vitalSignsText}${followUpText}${recommendationsText}${specialtyText}${qualityText}${safetyText}${redFlagsText}${sessionText}${processingText}`;
+        // ✅ UPDATED: Include patient name in doctor data
+        const doctorData = `SOAP note created for patient ${soapData.patientName} visit on ${date}${enhancedText}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Subjective: ${soapData.subjective}. Objective: ${soapData.objective}. Assessment: ${soapData.assessment}. Plan: ${soapData.plan}.${diagnosisText}${primaryDiagnosisText}${medicationsText}${allergiesText}${vitalSignsText}${followUpText}${recommendationsText}${specialtyText}${qualityText}${safetyText}${redFlagsText}${sessionText}${processingText}`;
 
         const patientData = `Medical visit documented on ${date}${enhancedText}. Chief complaint: ${soapData.chiefComplaint || 'Not specified'}. Assessment: ${soapData.assessment}. Treatment plan: ${soapData.plan}.${diagnosisText}${primaryDiagnosisText}${medicationsText}${allergiesText}${followUpText}${recommendationsText}${safetyText}${redFlagsText}`;
         
         const metadata = {
           soap_note_id: soapData.soapNoteId,
+          patient_name: soapData.patientName,  // ✅ ADD PATIENT NAME
+          patient_id: soapData.patientId,
           appointment_id: soapData.appointmentId,
           chief_complaint: soapData.chiefComplaint,
           primary_diagnosis: soapData.primaryDiagnosis,
@@ -298,6 +308,7 @@ class SOAPRAGService {
     soapNote: any,
     doctorId: string,
     patientId: string,
+    patientName: string,  // ✅ ADD PATIENT NAME PARAMETER
     appointmentId?: string
   ): SOAPNoteEventData {
     const enhancedData = this.extractEnhancedSOAPData(soapNote);
@@ -306,6 +317,7 @@ class SOAPRAGService {
       soapNoteId: soapNote._id,
       doctorId,
       patientId,
+      patientName,  // ✅ ADD PATIENT NAME
       appointmentId,
       subjective: enhancedData.subjective || '',
       objective: enhancedData.objective || '',
@@ -344,15 +356,18 @@ class SOAPRAGService {
         const expiryText = sharingData.expiresAt ? ` Expires: ${new Date(sharingData.expiresAt).toLocaleDateString()}` : '';
         const messageText = sharingData.message ? ` Message: ${sharingData.message}` : '';
         
-        const fromDoctorData = `SOAP note shared with colleague on ${date}. Patient case shared for: ${sharingData.shareReason}. Permissions: ${sharingData.permissions}.${expiryText}${messageText}`;
-        
-        const toDoctorData = `SOAP note received from colleague on ${date}. Patient case shared for: ${sharingData.shareReason}. Permissions: ${sharingData.permissions}.${expiryText}${messageText}`;
-        
+        // ✅ UPDATED: Include patient name in sharing data
+        const fromDoctorData = `SOAP note shared with colleague on ${date} for patient ${sharingData.patientName}. Patient case shared for: ${sharingData.shareReason}. Permissions: ${sharingData.permissions}.${expiryText}${messageText}`;
+
+        const toDoctorData = `SOAP note received from colleague on ${date} for patient ${sharingData.patientName}. Patient case shared for: ${sharingData.shareReason}. Permissions: ${sharingData.permissions}.${expiryText}${messageText}`;
+
         const patientData = `Medical records shared between healthcare providers on ${date} for: ${sharingData.shareReason}`;
         
         const metadata = {
           share_id: sharingData.shareId,
           soap_note_id: sharingData.soapNoteId,
+          patient_name: sharingData.patientName,  // ✅ ADD PATIENT NAME
+          patient_id: sharingData.patientId,
           from_doctor_id: sharingData.fromDoctorId,
           to_doctor_id: sharingData.toDoctorId,
           share_reason: sharingData.shareReason,
@@ -398,13 +413,16 @@ class SOAPRAGService {
         const changesText = actionData.changes ? ` Changes: ${actionData.changes}` : '';
         const reasonText = actionData.reason ? ` Reason: ${actionData.reason}` : '';
         
-        const doctorData = `SOAP note ${actionData.actionType} on ${date}.${commentsText}${changesText}${reasonText}`;
-        
+        // ✅ UPDATED: Include patient name in action data
+        const doctorData = `SOAP note ${actionData.actionType} on ${date} for patient ${actionData.patientName}.${commentsText}${changesText}${reasonText}`;
+
         const patientData = `Medical record ${actionData.actionType} by healthcare provider on ${date}.${reasonText}`;
-        
+
         const metadata = {
           action_id: actionData.actionId,
           soap_note_id: actionData.soapNoteId,
+          patient_name: actionData.patientName,  // ✅ ADD PATIENT NAME
+          patient_id: actionData.patientId,
           action_type: actionData.actionType,
           comments: actionData.comments,
           changes: actionData.changes,
@@ -440,12 +458,15 @@ class SOAPRAGService {
       async () => {
         const date = new Date(soapData.updatedAt || soapData.createdAt).toLocaleDateString();
         
-        const doctorData = `SOAP note updated on ${date}. Changes: ${changes}. Current assessment: ${soapData.assessment}. Current plan: ${soapData.plan}`;
-        
+        // ✅ UPDATED: Include patient name in update data
+        const doctorData = `SOAP note updated on ${date} for patient ${soapData.patientName}. Changes: ${changes}. Current assessment: ${soapData.assessment}. Current plan: ${soapData.plan}`;
+
         const patientData = `Medical record updated on ${date}. Updated assessment: ${soapData.assessment}. Updated treatment plan: ${soapData.plan}`;
-        
+
         const metadata = {
           soap_note_id: soapData.soapNoteId,
+          patient_name: soapData.patientName,  // ✅ ADD PATIENT NAME
+          patient_id: soapData.patientId,
           appointment_id: soapData.appointmentId,
           changes,
           status: soapData.status,

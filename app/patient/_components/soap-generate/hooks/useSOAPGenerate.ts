@@ -523,6 +523,7 @@ export function useSOAPGenerate(patientProfile?: PatientProfile): UseSOAPGenerat
           soapNoteId,
           doctorId,
           patientId: patientProfile._id,
+          patientName: `${patientProfile.firstName} ${patientProfile.lastName}`,  // ✅ ADD PATIENT NAME
           appointmentId: undefined, // Could be linked if created from appointment
           subjective: result.data.soap_notes?.subjective || soapData?.subjective?.chief_complaint || '',
           objective: result.data.soap_notes?.objective || JSON.stringify(soapData?.objective) || '',

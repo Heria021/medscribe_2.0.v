@@ -128,6 +128,7 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
             soapNoteId: note.soapNote._id,
             doctorId,
             patientId: note.patient._id,
+            patientName: `${note.patient.firstName} ${note.patient.lastName}`,  // ✅ ADD PATIENT NAME
             actionType: 'reviewed',
             comments: assistanceText.trim(),
             reason: 'Medical assistance provided to patient',
@@ -179,6 +180,7 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
             soapNoteId: note.soapNote._id,
             doctorId,
             patientId: note.patient._id,
+            patientName: `${note.patient.firstName} ${note.patient.lastName}`,  // ✅ ADD PATIENT NAME
             actionType: 'accepted',
             comments: `Appointment scheduled: ${visitReason}`,
             reason: 'Appointment scheduled based on shared SOAP note',
@@ -221,6 +223,7 @@ export const TakeActionDialog: React.FC<TakeActionDialogProps> = ({
             soapNoteId: note.soapNote._id,
             doctorId,
             patientId: note.patient._id,
+            patientName: `${note.patient.firstName} ${note.patient.lastName}`,  // ✅ ADD PATIENT NAME
             actionType: 'accepted',
             comments: referralReason.trim(),
             reason: 'Referral created based on shared SOAP note',

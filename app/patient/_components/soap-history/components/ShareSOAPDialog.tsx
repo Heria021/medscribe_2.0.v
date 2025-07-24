@@ -88,6 +88,7 @@ export function ShareSOAPDialog({
           fromDoctorId: 'doctor_from_context', // This should be extracted from context
           toDoctorId: selectedDoctorId,
           patientId,
+          patientName: 'Patient Name', // ✅ ADD PATIENT NAME - should be extracted from context
           shareReason: message.trim() || 'Patient shared SOAP note for medical consultation',
           permissions: 'view',
           message: message.trim() || undefined,

@@ -48,6 +48,7 @@ export function useSharedSOAPActions(): UseSharedSOAPActionsReturn {
         soapNoteId: note.soapNote._id,
         doctorId,
         patientId: note.patient._id,
+        patientName: `${note.patient.firstName} ${note.patient.lastName}`,  // ✅ ADD PATIENT NAME
         actionType: 'reviewed',
         comments: 'SOAP note reviewed by doctor',
         reason: 'Doctor reviewed shared SOAP note',
