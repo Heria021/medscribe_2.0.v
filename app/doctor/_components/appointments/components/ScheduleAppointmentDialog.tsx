@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { appointmentRAGHooks } from "@/lib/services/appointment-rag-hooks";
 
 interface ScheduleAppointmentDialogProps {
   open: boolean;
@@ -59,8 +60,81 @@ const appointmentFormSchema = z.object({
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 
 /**
+ * Helper function to embed appointment data into RAG system
+ */
+async function embedAppointmentToRAG(
+  appointmentId: string,
+  context: {
+    doctorProfile: any;
+    selectedPatientId: string;
+    selectedSlot: any;
+    appointmentData: AppointmentFormValues;
+    doctorPatients: any[];
+  }
+) {
+  if (!appointmentId) return;
+
+  const { doctorProfile, selectedPatientId, selectedSlot, appointmentData, doctorPatients } = context;
+
+  // Get patient data from the doctorPatients list
+  const selectedPatientData = doctorPatients?.find(dp => dp.patient?._id === selectedPatientId)?.patient;
+
+  if (!selectedPatientData || !selectedSlot) {
+    console.warn("RAG Embedding: Missing patient or slot data");
+    return;
+  }
+
+  try {
+    // Create appointment date/time from slot data
+    const appointmentDateTime = selectedSlot.date && selectedSlot.time
+      ? new Date(`${selectedSlot.date}T${selectedSlot.time}`).getTime()
+      : selectedSlot.startTime
+        ? new Date(selectedSlot.startTime).getTime()
+        : Date.now();
+
+    // Validate date/time
+    if (isNaN(appointmentDateTime)) {
+      console.warn("RAG Embedding: Invalid appointment date/time");
+      return;
+    }
+
+    // Create patient and doctor names
+    const patientName = `${selectedPatientData.firstName} ${selectedPatientData.lastName}`;
+    const doctorName = doctorProfile.title
+      ? `${doctorProfile.title} ${doctorProfile.lastName}`
+      : `Dr. ${doctorProfile.lastName}`;
+
+    // Embed appointment data into RAG system
+    await appointmentRAGHooks.onAppointmentScheduled({
+      appointmentId,
+      doctorId: doctorProfile._id,
+      patientId: selectedPatientData._id,
+      appointmentDateTime,
+      appointmentType: appointmentData.appointmentType,
+      visitReason: appointmentData.visitReason,
+      location: {
+        type: "in_person",
+        address: "Clinic",
+      },
+      notes: appointmentData.notes,
+      patientName,
+      doctorName,
+    }, {
+      scheduledBy: 'doctor',
+      bookingMethod: 'online',
+      insuranceVerified: false,
+      timeSlotId: appointmentData.selectedSlotId,
+    });
+
+  } catch (error) {
+    console.error("RAG Embedding failed:", error);
+    // Don't fail the appointment creation if RAG embedding fails
+  }
+}
+
+/**
  * ScheduleAppointmentDialog Component
- * 
+ *
  * Beautiful UI for scheduling appointments with patient selection
  * Reuses the proven appointment creation logic with elegant design
  */
@@ -134,7 +208,7 @@ export const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogPro
     }
 
     try {
-      await createAppointmentWithSlot({
+      const appointmentId = await createAppointmentWithSlot({
         doctorPatientId: doctorPatientRelationship._id,
         slotId: values.selectedSlotId as Id<"timeSlots">,
         appointmentType: values.appointmentType as any,
@@ -147,10 +221,18 @@ export const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogPro
         insuranceVerified: false,
       });
 
+      // 🔥 Embed appointment into RAG system
+      await embedAppointmentToRAG(appointmentId, {
+        doctorProfile,
+        selectedPatientId,
+        selectedSlot,
+        appointmentData: values,
+        doctorPatients,
+      });
+
       toast.success("Appointment scheduled successfully!");
       handleClose();
     } catch (error) {
-      console.error("Failed to schedule appointment:", error);
       toast.error("Failed to schedule appointment. Please try again.");
     }
   };
