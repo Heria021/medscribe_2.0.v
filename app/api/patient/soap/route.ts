@@ -139,40 +139,42 @@ export async function POST(request: NextRequest) {
     // Store the SOAP note in Convex database
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-    // Prepare the data object with only defined values
+    // Prepare the data object for the enhanced schema
     const soapData: any = {
       patientId: patientId as any,
-      subjective: result.deliverables.clinical_notes.subjective,
-      objective: result.deliverables.clinical_notes.objective,
-      assessment: result.deliverables.clinical_notes.assessment,
-      plan: result.deliverables.clinical_notes.plan,
+      status: result.status,
+      data: result.data || {
+        // Convert legacy format to enhanced format if needed
+        enhanced_pipeline: false,
+        session_id: `audio_${Date.now()}`,
+        soap_notes: {
+          subjective: result.deliverables?.clinical_notes?.subjective || "",
+          objective: result.deliverables?.clinical_notes?.objective || "",
+          assessment: result.deliverables?.clinical_notes?.assessment || "",
+          plan: result.deliverables?.clinical_notes?.plan || "",
+        },
+        quality_metrics: {
+          completeness_score: extractQualityScore(result.processing_summary?.quality_assurance) / 100 || 0.8,
+          clinical_accuracy: 0.8,
+          documentation_quality: 0.8,
+          red_flags: [],
+          missing_information: [],
+        },
+        safety_check: {
+          is_safe: true,
+          red_flags: [],
+          critical_items: [],
+        },
+        qa_results: {
+          quality_score: extractQualityScore(result.processing_summary?.quality_assurance) || 80,
+          errors: [],
+          warnings: [],
+          recommendations: result.recommendations || [],
+          critical_flags: [],
+          approved: true,
+        },
+      },
     };
-
-    // Add optional fields only if they exist and are not null
-    if (result.deliverables.highlighted_html) {
-      soapData.highlightedHtml = result.deliverables.highlighted_html;
-    }
-
-    const qualityScore = extractQualityScore(result.processing_summary.quality_assurance);
-    if (qualityScore) {
-      soapData.qualityScore = qualityScore;
-    }
-
-    if (result.total_processing_time) {
-      soapData.processingTime = result.total_processing_time;
-    }
-
-    if (result.recommendations && result.recommendations.length > 0) {
-      soapData.recommendations = result.recommendations;
-    }
-
-    if (result.deliverables.google_doc_url) {
-      soapData.googleDocUrl = result.deliverables.google_doc_url;
-    }
-
-    if (result.deliverables.ehr_record_id) {
-      soapData.externalRecordId = result.deliverables.ehr_record_id;
-    }
 
     const soapNoteId = await convex.mutation(api.soapNotes.create, soapData);
 

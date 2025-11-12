@@ -60,16 +60,11 @@ export function SOAPGenerateContent({
                   fileName={state.fileName}
                   isProcessing={state.isProcessing}
                 />
-              ) : state.mode === 'text' ? (
+              ) : (
                 <TextInputSection
                   value={state.textInput}
                   onChange={actions.setTextInput}
                   onProcess={actions.handleTextProcess}
-                  isProcessing={state.isProcessing}
-                />
-              ) : (
-                <ConversationInputSection
-                  onProcess={actions.handleConversationProcess}
                   isProcessing={state.isProcessing}
                 />
               )}
@@ -122,14 +117,14 @@ export function SOAPGenerateContent({
                 <FileText className="h-4 w-4" />
                 Text Input
               </Button>
-              <Button
+              {/* <Button
                 variant={state.mode === 'conversation' ? 'default' : 'outline'}
                 onClick={() => actions.setMode('conversation')}
                 className="flex items-center gap-2 justify-start h-10"
               >
                 <MessageSquare className="h-4 w-4" />
                 Conversation
-              </Button>
+              </Button> */}
             </div>
 
             {/* Guidelines Section - Open layout without card */}

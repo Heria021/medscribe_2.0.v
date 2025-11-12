@@ -133,30 +133,17 @@ export async function POST(request: NextRequest) {
     // Store the SOAP note in Convex database if needed
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-    // For enhanced API response, extract SOAP data
+    // For enhanced API response, save the complete data structure
     let soapNoteId = null;
-    if (result.data && result.data.soap_notes) {
+    if (result.data) {
       try {
         const soapData: any = {
           patientId: patient_id as any,
-          subjective: result.data.soap_notes.subjective || "",
-          objective: result.data.soap_notes.objective || "",
-          assessment: result.data.soap_notes.assessment || "",
-          plan: result.data.soap_notes.plan || "",
+          status: result.status,
+          data: result.data, // Pass the complete API response data structure
         };
 
-        // Add enhanced fields if available
-        if (result.data.soap_notes.soap_notes) {
-          soapData.enhancedData = result.data.soap_notes.soap_notes;
-        }
-        if (result.data.quality_metrics) {
-          soapData.qualityMetrics = result.data.quality_metrics;
-        }
-        if (result.data.specialty_detection) {
-          soapData.specialtyDetection = result.data.specialty_detection;
-        }
-
-        soapNoteId = await convex.mutation(api.soapNotes.createEnhanced, soapData);
+        soapNoteId = await convex.mutation(api.soapNotes.create, soapData);
       } catch (convexError) {
         console.error("Error saving to Convex:", convexError);
         // Continue without failing the request
