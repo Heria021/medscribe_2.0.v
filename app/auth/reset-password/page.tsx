@@ -11,6 +11,7 @@ import { useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/lib/validations/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -150,8 +151,8 @@ function ResetPasswordForm() {
                 Back to Login
               </Link>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
