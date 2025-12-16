@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
           plan: result.deliverables?.clinical_notes?.plan || "",
         },
         quality_metrics: {
-          completeness_score: extractQualityScore(result.processing_summary?.quality_assurance) / 100 || 0.8,
+          completeness_score: (extractQualityScore(result.processing_summary?.quality_assurance) ?? 80) / 100,
           clinical_accuracy: 0.8,
           documentation_quality: 0.8,
           red_flags: [],
