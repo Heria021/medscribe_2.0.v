@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { authOptions } from "@/lib/auth";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -19,7 +20,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get the user ID from the session
-    const userId = session.user.id;
+    const userId = session.user.id as Id<"users">;
 
     // Delete the user account and all related data
     const result = await convex.mutation(api.users.deleteUserAccount, {
