@@ -683,7 +683,7 @@ const FinalCTASection: React.FC<NavigationProps> = ({ handleNavigation }) => (
 );
 
 // Main Companion Page Component
-export const CompanionPage = () => {
+const CompanionPage = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
