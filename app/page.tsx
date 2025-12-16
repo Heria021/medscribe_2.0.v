@@ -902,7 +902,7 @@ const DoctorAccessSection: React.FC<NavigationProps> = ({ handleNavigation }) =>
 };
 
 // Main App Component
-export const App: React.FC = () => {
+const App: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
