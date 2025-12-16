@@ -227,7 +227,7 @@ export const ScheduleAppointmentDialog = React.memo<ScheduleAppointmentDialogPro
         selectedPatientId,
         selectedSlot,
         appointmentData: values,
-        doctorPatients,
+        doctorPatients: doctorPatients || [],
       });
 
       toast.success("Appointment scheduled successfully!");

@@ -88,7 +88,7 @@ export default function DoctorAssistant() {
             
             {/* Chat History - Reusing SessionList from patient assistant */}
             <SessionList
-              sessions={sessions}
+              sessions={sessions as any}
               currentSessionId={currentSessionId}
               onSelectSession={selectSession}
               onDeleteSession={deleteSession}

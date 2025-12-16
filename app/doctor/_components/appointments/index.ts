@@ -41,7 +41,7 @@ export type {
   AppointmentsSkeletonProps,
   
   // Utility types
-  AppointmentFilters,
+  AppointmentFilters as AppointmentFilterState,
   AppointmentAction,
   AppointmentActionPayload,
   AppointmentError,

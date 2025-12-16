@@ -37,8 +37,10 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { useAppointmentFormatters, useAppointmentActions } from "../hooks";
 import type { Appointment } from "../types";
+import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 
 interface AppointmentDetailsProps {
@@ -75,6 +77,7 @@ export const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
   appointment,
   onStatusChange,
 }) => {
+  const { data: session } = useSession();
   const { formatTime, formatDate, getStatusColor, getStatusIcon } = useAppointmentFormatters();
 
   // Appointment actions hook (UPDATED for new slot-based system)
@@ -98,8 +101,8 @@ export const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
   // Fetch reschedule requests for this appointment
   const rescheduleRequests = useQuery(
     api.appointmentRescheduleRequests.getByDoctor,
-    appointment ? {
-      doctorId: appointment.doctor?._id,
+    appointment?.doctor?._id ? {
+      doctorId: appointment.doctor._id,
       status: "pending"
     } : "skip"
   );
@@ -128,14 +131,16 @@ export const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
   };
 
   const handleSubmitResponse = async () => {
-    if (!selectedRequest || !appointment?.doctor?.userId) return;
+    if (!selectedRequest || !session?.user?.id) return;
+
+    const userId = session.user.id as Id<"users">;
 
     try {
       if (responseType === "approve") {
         await approveRequest({
           requestId: selectedRequest._id as any,
           adminNotes: adminNotes || undefined,
-          respondedBy: appointment.doctor.userId,
+          respondedBy: userId,
         });
         toast.success("Reschedule request approved!");
       } else {
@@ -146,7 +151,7 @@ export const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({
         await rejectRequest({
           requestId: selectedRequest._id as any,
           adminNotes: adminNotes,
-          respondedBy: appointment.doctor.userId,
+          respondedBy: userId,
         });
         toast.success("Reschedule request rejected");
       }

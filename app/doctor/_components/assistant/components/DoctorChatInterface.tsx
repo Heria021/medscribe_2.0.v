@@ -57,7 +57,6 @@ export const DoctorChatInterface: React.FC<DoctorChatInterfaceProps> = React.mem
           onSend={onSendMessage}
           onKeyPress={onKeyPress}
           isLoading={isLoading}
-          placeholder="Ask me about patient records, SOAP notes, clinical insights..."
         />
       </CardContent>
     </Card>
